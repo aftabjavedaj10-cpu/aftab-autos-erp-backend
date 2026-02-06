@@ -1,0 +1,61 @@
+#!/bin/bash
+# Aftab Autos ERP - Verification & Deployment Script
+
+echo "🔍 Aftab Autos ERP - Pre-Launch Checklist"
+echo "==========================================="
+echo ""
+
+# Check if in correct directory
+if [ ! -f "INTEGRATION_GUIDE.md" ]; then
+  echo "❌ Please run this script from the project root directory"
+  exit 1
+fi
+
+echo "✅ Backend Files Verification"
+echo "----------------------------"
+[ -f "backend/app.js" ] && echo "  ✓ app.js exists" || echo "  ✗ app.js missing"
+[ -f "backend/.env" ] && echo "  ✓ .env exists" || echo "  ✗ .env missing"
+[ -f "backend/database.sql" ] && echo "  ✓ database.sql exists" || echo "  ✗ database.sql missing"
+[ -f "backend/config/db.js" ] && echo "  ✓ db.js exists" || echo "  ✗ db.js missing"
+[ -f "backend/controllers/productController.js" ] && echo "  ✓ productController.js exists" || echo "  ✗ productController.js missing"
+[ -f "backend/controllers/customerController.js" ] && echo "  ✓ customerController.js exists" || echo "  ✗ customerController.js missing"
+[ -f "backend/controllers/vendorController.js" ] && echo "  ✓ vendorController.js exists" || echo "  ✗ vendorController.js missing"
+[ -f "backend/controllers/categoryController.js" ] && echo "  ✓ categoryController.js exists" || echo "  ✗ categoryController.js missing"
+[ -f "backend/routes/products.js" ] && echo "  ✓ products.js routes exist" || echo "  ✗ products.js routes missing"
+[ -f "backend/routes/customers.js" ] && echo "  ✓ customers.js routes exist" || echo "  ✗ customers.js routes missing"
+[ -f "backend/routes/vendors.js" ] && echo "  ✓ vendors.js routes exist" || echo "  ✗ vendors.js routes missing"
+[ -f "backend/routes/categories.js" ] && echo "  ✓ categories.js routes exist" || echo "  ✗ categories.js routes missing"
+
+echo ""
+echo "✅ Frontend Files Verification"
+echo "------------------------------"
+[ -f "frontend/src/services/apiService.ts" ] && echo "  ✓ apiService.ts exists" || echo "  ✗ apiService.ts missing"
+[ -f "frontend/.env.local" ] && echo "  ✓ .env.local exists" || echo "  ✗ .env.local missing"
+[ -f "frontend/src/pages/Dashboard.tsx" ] && echo "  ✓ Dashboard.tsx updated" || echo "  ✗ Dashboard.tsx missing"
+[ -f "frontend/src/components/ImportModal.tsx" ] && echo "  ✓ ImportModal.tsx exists" || echo "  ✗ ImportModal.tsx missing"
+
+echo ""
+echo "📋 Quick Start Instructions"
+echo "============================"
+echo ""
+echo "1️⃣  Backend Setup:"
+echo "   cd backend"
+echo "   npm install"
+echo "   npm start"
+echo "   # Backend runs on http://localhost:5000"
+echo ""
+echo "2️⃣  Database Setup (one-time):"
+echo "   # Run database.sql on Railway PostgreSQL via dashboard query editor"
+echo "   # Or use: psql \$DATABASE_URL < database.sql"
+echo ""
+echo "3️⃣  Frontend Setup:"
+echo "   cd frontend"
+echo "   npm install"
+echo "   npm run dev"
+echo "   # Frontend runs on http://localhost:5173"
+echo ""
+echo "4️⃣  Test Integration:"
+echo "   curl http://localhost:5000/api/health"
+echo "   curl http://localhost:5000/api/products"
+echo ""
+echo "✨ Your ERP system is ready for testing!"
