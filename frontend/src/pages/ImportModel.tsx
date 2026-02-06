@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
 import { WAREHOUSES } from '../constants';
-import { Vendors } from '../types';
+import type { Vendor } from '../types';
 
 interface ImportModalProps {
   isOpen: boolean;

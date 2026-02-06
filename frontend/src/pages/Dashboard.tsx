@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
+import TopBar from "../components/TopBar";
 import StatCard from "../components/StatCard";
 import ProductsPage from "./Products";
 import AddProducts from "./AddProducts";
@@ -11,8 +12,13 @@ import CategoriesPage from "./Categories";
 import AddCategoryPage from "./AddCategory";
 import type { Product, Category, Vendor, Customer } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI } from "../services/apiService";
+import { getSession } from "../services/supabaseAuth";
 
-const Dashboard: React.FC = () => {
+interface DashboardProps {
+  onLogout: () => void;
+}
+
+const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -160,6 +166,11 @@ const Dashboard: React.FC = () => {
     return products.filter(p => p.stock <= p.reorderPoint).length;
   }, [products]);
 
+  const userLabel = useMemo(() => {
+    const session = getSession();
+    return session?.user?.email || "Admin";
+  }, []);
+
   return (
     <div className="min-h-screen flex bg-[#fcf8f2] dark:bg-[#020617]">
       <Sidebar
@@ -171,7 +182,15 @@ const Dashboard: React.FC = () => {
         onMobileClose={() => setIsMobileOpen(false)}
       />
 
-      <main className="flex-1 p-6 overflow-auto">
+      <main className="flex-1 overflow-auto">
+        <TopBar
+          onMenuClick={() => setIsMobileOpen(true)}
+          title={activeTab.replace("_", " ")}
+          userLabel={userLabel}
+          onLogout={onLogout}
+        />
+
+        <div className="p-6">
         {loading && (
           <div className="text-center py-12">
             <p className="text-slate-500 dark:text-slate-400">Loading data...</p>
@@ -377,6 +396,7 @@ const Dashboard: React.FC = () => {
             }}
           />
         )}
+        </div>
       </main>
     </div>
   );

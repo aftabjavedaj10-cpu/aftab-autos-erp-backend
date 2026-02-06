@@ -3,9 +3,11 @@ import React from "react";
 interface TopBarProps {
   onMenuClick: () => void;
   title?: string;
+  userLabel?: string;
+  onLogout?: () => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title }) => {
+const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title, userLabel, onLogout }) => {
   return (
     <header
       className="
@@ -66,13 +68,23 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title }) => {
         </button>
 
         {/* User */}
-        <div className="flex items-center gap-2 cursor-pointer">
-          <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-black text-sm">
-            A
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-black text-sm">
+              {(userLabel || "A").slice(0, 1).toUpperCase()}
+            </div>
+            <span className="hidden md:block text-sm font-bold text-slate-700">
+              {userLabel || "Admin"}
+            </span>
           </div>
-          <span className="hidden md:block text-sm font-bold text-slate-700">
-            Admin
-          </span>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="text-xs font-black uppercase tracking-widest text-slate-500 hover:text-orange-600 transition-colors"
+            >
+              Logout
+            </button>
+          )}
         </div>
       </div>
     </header>

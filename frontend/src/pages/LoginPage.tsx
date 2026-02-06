@@ -1,8 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
+import { signInWithPassword } from "../services/supabaseAuth";
 
 interface LoginPageProps {
-  onLogin: (credentials: { email: string }) => void;
+  onLogin: (email: string) => void;
   isDarkMode: boolean;
   onThemeToggle: () => void;
   companyLogo?: string | null;
@@ -15,18 +16,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
+    setErrorMessage("");
+
+    try {
+      await signInWithPassword(email, password);
+      onLogin(email);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Login failed";
+      setErrorMessage(message);
+    } finally {
       setIsLoading(false);
-      onLogin({ email });
-    }, 1500);
+    }
   };
 
   return (
@@ -137,6 +146,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                   </>
                 )}
               </button>
+              {errorMessage && (
+                <div className="text-xs font-bold text-red-600 dark:text-red-400">
+                  {errorMessage}
+                </div>
+              )}
             </form>
           </div>
         </div>

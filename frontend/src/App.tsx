@@ -1,11 +1,13 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useState, useEffect } from 'react';
-import LoginPage from './pages/LoginPage';
-import Dashboard from './pages/Dashboard';
+import { useEffect, useState } from "react";
+import LoginPage from "./pages/LoginPage";
+import Dashboard from "./pages/Dashboard";
+import { getSession, signOut } from "./services/supabaseAuth";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   // Apply dark mode to document
   useEffect(() => {
@@ -16,14 +18,29 @@ function App() {
     }
   }, [isDarkMode]);
 
-  const handleLogin = (credentials: { email: string }) => {
-    console.log('Logged in user:', credentials);
+  useEffect(() => {
+    const session = getSession();
+    setIsLoggedIn(!!session);
+    setIsAuthReady(true);
+  }, []);
+
+  const handleLogin = (email: string) => {
+    console.log("Logged in user:", email);
     setIsLoggedIn(true);
   };
 
   const handleThemeToggle = () => {
     setIsDarkMode(!isDarkMode);
   };
+
+  const handleLogout = async () => {
+    await signOut();
+    setIsLoggedIn(false);
+  };
+
+  if (!isAuthReady) {
+    return null;
+  }
 
   // Show login page if not logged in
   if (!isLoggedIn) {
@@ -39,9 +56,9 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/products" element={<Dashboard />} />
-        <Route path="/products/add" element={<Dashboard />} />
+        <Route path="/" element={<Dashboard onLogout={handleLogout} />} />
+        <Route path="/products" element={<Dashboard onLogout={handleLogout} />} />
+        <Route path="/products/add" element={<Dashboard onLogout={handleLogout} />} />
       </Routes>
     </BrowserRouter>
   );
