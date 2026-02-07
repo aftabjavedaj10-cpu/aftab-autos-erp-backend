@@ -197,6 +197,20 @@ const mapCategoryFromDb = (row: any) => ({ ...row });
 const mapCategoryToDb = (category: any) =>
   stripClientOnly({ ...category }, ["itemCount"]);
 
+const mapCompanyFromDb = (row: any) => ({
+  ...row,
+  logoUrl: row.logo_url ?? row.logoUrl,
+});
+
+const mapCompanyToDb = (company: any) =>
+  stripClientOnly(
+    {
+      ...company,
+      logo_url: company.logoUrl ?? company.logo_url,
+    },
+    ["logoUrl", "createdAt"]
+  );
+
 // ============ PRODUCTS ============
 export const productAPI = {
   getAll: () =>
@@ -305,8 +319,13 @@ export const categoryAPI = {
 // ============ COMPANIES & PROFILES ============
 export const companyAPI = {
   create: (name: string) =>
-    apiCall("/companies", "POST", { name }, true).then(firstRow),
-  getById: (id: string) => getFirst(`/companies?select=*&id=eq.${id}`),
+    apiCall("/companies", "POST", { name }, true).then(firstRow).then(mapCompanyFromDb),
+  getById: (id: string) =>
+    getFirst(`/companies?select=*&id=eq.${id}`).then(mapCompanyFromDb),
+  update: (id: string, payload: any) =>
+    apiCall(`/companies?id=eq.${id}`, "PATCH", mapCompanyToDb(payload), true)
+      .then(firstRow)
+      .then(mapCompanyFromDb),
   listMyCompanies: (userId: string) =>
     apiCall(
       `/company_members?select=*,companies(*)&user_id=eq.${userId}`

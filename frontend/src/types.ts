@@ -65,6 +65,11 @@ export type UserRole = "admin" | "manager" | "staff";
 export interface Company {
   id: string;
   name: string;
+  logoUrl?: string;
+  address?: string;
+  phone?: string;
+  ntn?: string;
+  branches?: string;
   ownerId?: string;
   createdAt?: string;
 }

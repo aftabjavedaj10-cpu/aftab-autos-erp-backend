@@ -22,6 +22,14 @@ const SettingsPage: React.FC = () => {
   const [activeCompanyId, setActiveCompanyIdState] = useState<string | null>(null);
   const [members, setMembers] = useState<CompanyMember[]>([]);
   const [companyName, setCompanyName] = useState("");
+  const [companyDraft, setCompanyDraft] = useState({
+    name: "",
+    logoUrl: "",
+    address: "",
+    phone: "",
+    ntn: "",
+    branches: "",
+  });
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<UserRole>("staff");
   const [companyUsers, setCompanyUsers] = useState<(Profile & { memberId?: string })[]>([]);
@@ -62,6 +70,11 @@ const SettingsPage: React.FC = () => {
           .map((c: any) => ({
             id: c.id,
             name: c.name,
+            logoUrl: c.logo_url ?? c.logoUrl,
+            address: c.address,
+            phone: c.phone,
+            ntn: c.ntn,
+            branches: c.branches,
             createdAt: c.created_at ?? c.createdAt,
           }));
         setCompanies(mappedCompanies);
@@ -136,6 +149,20 @@ const SettingsPage: React.FC = () => {
     refresh();
   }, []);
 
+  useEffect(() => {
+    const current = companies.find((c) => c.id === activeCompanyId);
+    if (current) {
+      setCompanyDraft({
+        name: current.name || "",
+        logoUrl: current.logoUrl || "",
+        address: current.address || "",
+        phone: current.phone || "",
+        ntn: current.ntn || "",
+        branches: current.branches || "",
+      });
+    }
+  }, [companies, activeCompanyId]);
+
   const handleCreateCompany = async () => {
     if (!companyName.trim()) {
       setError("Company name is required");
@@ -179,6 +206,47 @@ const SettingsPage: React.FC = () => {
       setSuccess("Role updated");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update role");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateCompany = async () => {
+    if (!activeCompanyId) return;
+    if (!companyDraft.name.trim()) {
+      setError("Company name is required");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const updated = await companyAPI.update(activeCompanyId, {
+        name: companyDraft.name.trim(),
+        logo_url: companyDraft.logoUrl || null,
+        address: companyDraft.address || null,
+        phone: companyDraft.phone || null,
+        ntn: companyDraft.ntn || null,
+        branches: companyDraft.branches || null,
+      });
+      setCompanies((prev) =>
+        prev.map((c) =>
+          c.id === activeCompanyId
+            ? {
+                ...c,
+                name: updated.name,
+                logoUrl: updated.logoUrl,
+                address: updated.address,
+                phone: updated.phone,
+                ntn: updated.ntn,
+                branches: updated.branches,
+              }
+            : c
+        )
+      );
+      setSuccess("Company details updated");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update company");
     } finally {
       setSaving(false);
     }
@@ -295,6 +363,75 @@ const SettingsPage: React.FC = () => {
             </div>
             <div className="text-xs font-black uppercase tracking-widest text-slate-400">
               Your role: {currentMemberRole || "staff"}
+            </div>
+          </div>
+
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
+              Company Details
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input
+                value={companyDraft.name}
+                onChange={(e) =>
+                  setCompanyDraft((prev) => ({ ...prev, name: e.target.value }))
+                }
+                placeholder="Company name"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+              />
+              <input
+                value={companyDraft.phone}
+                onChange={(e) =>
+                  setCompanyDraft((prev) => ({ ...prev, phone: e.target.value }))
+                }
+                placeholder="Phone"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+              />
+              <input
+                value={companyDraft.ntn}
+                onChange={(e) =>
+                  setCompanyDraft((prev) => ({ ...prev, ntn: e.target.value }))
+                }
+                placeholder="NTN / Tax ID"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+              />
+              <input
+                value={companyDraft.logoUrl}
+                onChange={(e) =>
+                  setCompanyDraft((prev) => ({ ...prev, logoUrl: e.target.value }))
+                }
+                placeholder="Logo URL"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+              />
+              <input
+                value={companyDraft.address}
+                onChange={(e) =>
+                  setCompanyDraft((prev) => ({ ...prev, address: e.target.value }))
+                }
+                placeholder="Address"
+                className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+              />
+              <textarea
+                value={companyDraft.branches}
+                onChange={(e) =>
+                  setCompanyDraft((prev) => ({ ...prev, branches: e.target.value }))
+                }
+                placeholder="Branches (one per line)"
+                rows={4}
+                className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+              />
+            </div>
+            <div className="flex items-center gap-3 mt-4">
+              <button
+                onClick={handleUpdateCompany}
+                disabled={saving || !isAdmin}
+                className="bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black px-6 py-3 rounded-2xl text-sm uppercase tracking-widest disabled:opacity-60"
+              >
+                Save Details
+              </button>
+              {!isAdmin && (
+                <p className="text-xs text-slate-400">Only admins can edit.</p>
+              )}
             </div>
           </div>
 
