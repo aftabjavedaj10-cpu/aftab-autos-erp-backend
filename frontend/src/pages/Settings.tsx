@@ -707,7 +707,10 @@ const SettingsPage: React.FC = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={async () => {
-                                if (!activeCompanyId) return;
+                                if (!activeCompanyId) {
+                                  setError("Select a company first.");
+                                  return;
+                                }
                                 setSaving(true);
                                 setError(null);
                                 setSuccess(null);
@@ -759,7 +762,10 @@ const SettingsPage: React.FC = () => {
                             </button>
                             <button
                               onClick={async () => {
-                                if (!activeCompanyId) return;
+                                if (!activeCompanyId) {
+                                  setError("Select a company first.");
+                                  return;
+                                }
                                 const confirmDelete = window.confirm(
                                   "Delete this user from Supabase Auth? This cannot be undone."
                                 );
