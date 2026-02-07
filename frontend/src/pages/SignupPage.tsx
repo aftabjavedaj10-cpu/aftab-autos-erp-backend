@@ -27,6 +27,10 @@ const SignupPage: React.FC<SignupPageProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 6) {
+      setErrorMessage("Password must be at least 6 characters.");
+      return;
+    }
     if (password !== confirm) {
       setErrorMessage("Passwords do not match");
       return;
