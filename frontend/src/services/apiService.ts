@@ -15,8 +15,10 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 }
 
 const REST_BASE_URL = `${SUPABASE_URL}/rest/v1`;
+const FUNCTIONS_BASE_URL = `${SUPABASE_URL}/functions/v1`;
 
 const buildUrl = (path: string) => `${REST_BASE_URL}${path}`;
+const buildFunctionUrl = (path: string) => `${FUNCTIONS_BASE_URL}${path}`;
 
 const apiCall = async (
   path: string,
@@ -65,6 +67,25 @@ const apiCall = async (
   }
 
   return response.json();
+};
+
+const functionCall = async (path: string, body: any) => {
+  const token = await getAccessToken();
+  const response = await fetch(buildFunctionUrl(path), {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_ANON_KEY || "",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.error || "Function call failed");
+  }
+  return data;
 };
 
 const getFirst = async (path: string) => {
@@ -321,6 +342,8 @@ export const companyMemberAPI = {
     ),
   removeMember: (memberId: string) =>
     apiCall(`/company_members?id=eq.${memberId}`, "DELETE"),
+  inviteMember: (companyId: string, email: string, role: string) =>
+    functionCall("invite-member", { company_id: companyId, email, role }),
 };
 
 export default {

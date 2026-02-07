@@ -288,12 +288,9 @@ const SettingsPage: React.FC = () => {
                   setError(null);
                   setSuccess(null);
                   try {
-                    const user = await profileAPI.findUserByEmail(
-                      newMemberEmail.trim()
-                    );
-                    await companyMemberAPI.addMember(
+                    await companyMemberAPI.inviteMember(
                       activeCompanyId,
-                      user.id,
+                      newMemberEmail.trim(),
                       newMemberRole
                     );
                     const companyMembers = await companyMemberAPI.listMembers(
