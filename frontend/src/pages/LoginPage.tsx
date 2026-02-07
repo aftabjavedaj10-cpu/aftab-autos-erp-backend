@@ -18,6 +18,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const [adminToast, setAdminToast] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -32,6 +33,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
       await signInWithPassword(email, password);
       try {
         await companyAdminAPI.bootstrapAdmin();
+        setAdminToast("Admin setup complete");
+        window.setTimeout(() => setAdminToast(""), 3000);
       } catch {
         // bootstrap is best-effort; ignore if it fails
       }
@@ -56,6 +59,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fcf8f2] dark:bg-[#020617] px-4 transition-colors duration-1000 relative overflow-hidden font-sans">
+      {adminToast && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-xs font-black uppercase tracking-widest px-6 py-3 rounded-2xl shadow-2xl">
+          {adminToast}
+        </div>
+      )}
       
       {/* Cinematic Background Elements */}
       <div className="absolute inset-0 pointer-events-none">
