@@ -113,7 +113,7 @@ const SettingsPage: React.FC = () => {
             companyInviteAPI.listInvites(defaultCompanyId),
           ]);
           const mappedProfiles = companyMembers.map((m: any) => ({
-            id: m.user_id ?? m.userId,
+            id: m.user_id ?? m.userId ?? m.profiles?.id,
             email: m.profiles?.email,
             role: m.role,
             companyId: m.company_id ?? m.companyId,
@@ -341,7 +341,7 @@ const SettingsPage: React.FC = () => {
                       companyInviteAPI.listInvites(nextId),
                     ]);
                     const mappedProfiles = companyMembers.map((m: any) => ({
-                      id: m.user_id ?? m.userId,
+                      id: m.user_id ?? m.userId ?? m.profiles?.id,
                       email: m.profiles?.email,
                       role: m.role,
                       companyId: m.company_id ?? m.companyId,
@@ -729,7 +729,7 @@ const SettingsPage: React.FC = () => {
                                     companyInviteAPI.listInvites(activeCompanyId),
                                   ]);
                                   const mappedProfiles = companyMembers.map((m: any) => ({
-                                    id: m.user_id ?? m.userId,
+                                    id: m.user_id ?? m.userId ?? m.profiles?.id,
                                     email: m.profiles?.email,
                                     role: m.role,
                                     companyId: m.company_id ?? m.companyId,
@@ -792,7 +792,7 @@ const SettingsPage: React.FC = () => {
                                     companyInviteAPI.listInvites(activeCompanyId),
                                   ]);
                                   const mappedProfiles = companyMembers.map((m: any) => ({
-                                    id: m.user_id ?? m.userId,
+                                    id: m.user_id ?? m.userId ?? m.profiles?.id,
                                     email: m.profiles?.email,
                                     role: m.role,
                                     companyId: m.company_id ?? m.companyId,
