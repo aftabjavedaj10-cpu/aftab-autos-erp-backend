@@ -404,26 +404,82 @@ const SettingsPage: React.FC = () => {
                       </p>
                     </div>
                     <div>
-                      {isAdmin ? (
-                        <select
-                          value={user.role}
-                          onChange={(e) =>
-                            handleRoleChange(user.id, e.target.value as UserRole)
-                          }
-                          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider"
-                          disabled={saving || user.id === profile?.id}
-                        >
-                          {ROLE_OPTIONS.map((role) => (
-                            <option key={role} value={role}>
-                              {role}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                          {user.role}
-                        </span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {isAdmin ? (
+                          <select
+                            value={user.role}
+                            onChange={(e) =>
+                              handleRoleChange(user.id, e.target.value as UserRole)
+                            }
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider"
+                            disabled={saving || user.id === profile?.id}
+                          >
+                            {ROLE_OPTIONS.map((role) => (
+                              <option key={role} value={role}>
+                                {role}
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                            {user.role}
+                          </span>
+                        )}
+                        {isAdmin && user.id !== profile?.id && (
+                          <button
+                            onClick={async () => {
+                              if (!activeCompanyId) return;
+                              setSaving(true);
+                              setError(null);
+                              setSuccess(null);
+                              try {
+                                await companyMemberAPI.removeMemberByUser(
+                                  activeCompanyId,
+                                  user.id,
+                                  false
+                                );
+                                const [companyMembers, inviteRows] = await Promise.all([
+                                  companyMemberAPI.listMembers(activeCompanyId),
+                                  companyInviteAPI.listInvites(activeCompanyId),
+                                ]);
+                                const mappedProfiles = companyMembers.map((m: any) => ({
+                                  id: m.user_id ?? m.userId,
+                                  email: m.profiles?.email,
+                                  role: m.role,
+                                  companyId: m.company_id ?? m.companyId,
+                                  memberId: m.id,
+                                }));
+                                setCompanyUsers(mappedProfiles);
+                                setInvites(
+                                  inviteRows.map((row: any) => ({
+                                    id: row.id,
+                                    companyId: row.company_id ?? row.companyId,
+                                    email: row.email,
+                                    role: row.role,
+                                    status: row.status,
+                                    invitedBy: row.invited_by ?? row.invitedBy,
+                                    createdAt: row.created_at ?? row.createdAt,
+                                    updatedAt: row.updated_at ?? row.updatedAt,
+                                    lastSentAt: row.last_sent_at ?? row.lastSentAt,
+                                  }))
+                                );
+                                setSuccess("User removed");
+                              } catch (err) {
+                                setError(
+                                  err instanceof Error
+                                    ? err.message
+                                    : "Failed to remove user"
+                                );
+                              } finally {
+                                setSaving(false);
+                              }
+                            }}
+                            className="text-[10px] font-black uppercase tracking-widest text-rose-600 hover:text-rose-700"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}

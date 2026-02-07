@@ -345,6 +345,12 @@ export const companyMemberAPI = {
     apiCall(`/company_members?id=eq.${memberId}`, "DELETE"),
   inviteMember: (companyId: string, email: string, role: string) =>
     functionCall("invite-member", { company_id: companyId, email, role }),
+  removeMemberByUser: (companyId: string, userId: string, deleteUser = false) =>
+    functionCall("remove-member", {
+      company_id: companyId,
+      user_id: userId,
+      delete_user: deleteUser,
+    }),
 };
 
 export const companyInviteAPI = {
