@@ -97,6 +97,20 @@ export const signOut = async () => {
 
 export const getSession = () => loadSession();
 
+export const getUserId = () => {
+  const session = loadSession();
+  if (session?.user?.id) return session.user.id;
+  if (!session?.access_token) return null;
+
+  try {
+    const payload = session.access_token.split(".")[1];
+    const decoded = JSON.parse(atob(payload));
+    return decoded?.sub || null;
+  } catch {
+    return null;
+  }
+};
+
 export const getAccessToken = async () => {
   const session = loadSession();
   if (!session) {

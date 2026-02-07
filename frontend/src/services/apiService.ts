@@ -3,7 +3,7 @@
  * Supabase REST (PostgREST) calls with Auth-required access
  */
 
-import { getAccessToken } from "./supabaseAuth";
+import { getAccessToken, getUserId } from "./supabaseAuth";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -88,6 +88,15 @@ const stripClientOnly = (row: any, keys: string[]) => {
   return copy;
 };
 
+const attachOwnerId = (record: any) => {
+  if (record && record.owner_id) return record;
+  const userId = getUserId();
+  if (!userId) {
+    throw new Error("Not authenticated");
+  }
+  return { ...record, owner_id: userId };
+};
+
 const mapProductFromDb = (row: any) => ({
   ...row,
   productCode: row.product_code ?? row.productCode,
@@ -164,7 +173,7 @@ export const productAPI = {
   getById: (id: string) =>
     getFirst(`/products?select=*&id=eq.${id}`).then(mapProductFromDb),
   create: (product: any) =>
-    apiCall("/products", "POST", mapProductToDb(product), true)
+    apiCall("/products", "POST", mapProductToDb(attachOwnerId(product)), true)
       .then(firstRow)
       .then(mapProductFromDb),
   update: (id: string, product: any) =>
@@ -178,7 +187,7 @@ export const productAPI = {
     apiCall(
       "/products",
       "POST",
-      products.map(mapProductToDb),
+      products.map(attachOwnerId).map(mapProductToDb),
       true
     ),
 };
@@ -192,7 +201,7 @@ export const customerAPI = {
   getById: (id: string) =>
     getFirst(`/customers?select=*&id=eq.${id}`).then(mapCustomerFromDb),
   create: (customer: any) =>
-    apiCall("/customers", "POST", mapCustomerToDb(customer), true)
+    apiCall("/customers", "POST", mapCustomerToDb(attachOwnerId(customer)), true)
       .then(firstRow)
       .then(mapCustomerFromDb),
   update: (id: string, customer: any) =>
@@ -206,7 +215,7 @@ export const customerAPI = {
     apiCall(
       "/customers",
       "POST",
-      customers.map(mapCustomerToDb),
+      customers.map(attachOwnerId).map(mapCustomerToDb),
       true
     ),
 };
@@ -220,7 +229,7 @@ export const vendorAPI = {
   getById: (id: string) =>
     getFirst(`/vendors?select=*&id=eq.${id}`).then(mapVendorFromDb),
   create: (vendor: any) =>
-    apiCall("/vendors", "POST", mapVendorToDb(vendor), true)
+    apiCall("/vendors", "POST", mapVendorToDb(attachOwnerId(vendor)), true)
       .then(firstRow)
       .then(mapVendorFromDb),
   update: (id: string, vendor: any) =>
@@ -234,7 +243,7 @@ export const vendorAPI = {
     apiCall(
       "/vendors",
       "POST",
-      vendors.map(mapVendorToDb),
+      vendors.map(attachOwnerId).map(mapVendorToDb),
       true
     ),
 };
@@ -248,7 +257,7 @@ export const categoryAPI = {
   getById: (id: string) =>
     getFirst(`/categories?select=*&id=eq.${id}`).then(mapCategoryFromDb),
   create: (category: any) =>
-    apiCall("/categories", "POST", mapCategoryToDb(category), true)
+    apiCall("/categories", "POST", mapCategoryToDb(attachOwnerId(category)), true)
       .then(firstRow)
       .then(mapCategoryFromDb),
   update: (id: string, category: any) =>
