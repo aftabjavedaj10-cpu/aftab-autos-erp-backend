@@ -67,8 +67,16 @@ Deno.serve(async (req) => {
     return jsonResponse(200, { ok: true, company_id: memberships[0].company_id });
   }
 
-  const { company_name } = await req.json().catch(() => ({}));
+  const { company_name, full_name, username, phone } = await req.json().catch(() => ({}));
   const name = (company_name as string) || normalizeCompanyName(email);
+
+  await supabase.from("profiles").upsert({
+    id: userId,
+    email,
+    full_name: full_name ?? null,
+    username: username ?? null,
+    phone: phone ?? null,
+  });
 
   // Create company and add admin membership
   const { data: companyRow, error: companyError } = await supabase

@@ -65,6 +65,11 @@ const authRequest = async (path: string, body: any) => {
   return data as SupabaseSession;
 };
 
+export const signUpWithPassword = async (email: string, password: string) => {
+  const session = await authRequest("/auth/v1/signup", { email, password });
+  return saveSession(session);
+};
+
 const refreshSession = async (refreshToken: string) => {
   const session = await authRequest("/auth/v1/token?grant_type=refresh_token", {
     refresh_token: refreshToken,

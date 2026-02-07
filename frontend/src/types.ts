@@ -100,6 +100,8 @@ export interface Profile {
   id: string;
   email?: string;
   fullName?: string;
+  username?: string;
+  phone?: string;
   role?: UserRole;
   companyId?: string | null;
   createdAt?: string;

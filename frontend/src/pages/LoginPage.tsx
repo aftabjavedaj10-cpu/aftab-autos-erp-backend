@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { setProfile, signInWithPassword } from "../services/supabaseAuth";
 import { companyAdminAPI, profileAPI } from "../services/apiService";
 
@@ -11,6 +12,7 @@ interface LoginPageProps {
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggle, companyLogo }) => {
+  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -175,6 +177,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                   {errorMessage}
                 </div>
               )}
+              <button
+                type="button"
+                onClick={() => navigate("/signup")}
+                className="w-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-orange-600 transition-colors"
+              >
+                First time here? Create Admin
+              </button>
             </form>
           </div>
         </div>

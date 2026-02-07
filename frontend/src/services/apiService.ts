@@ -385,6 +385,18 @@ export const profileAPI = {
     }
     return getFirst(`/profiles?select=*&id=eq.${userId}`);
   },
+  upsertMyProfile: (payload: { full_name?: string; username?: string; phone?: string }) => {
+    const userId = getUserId();
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    return apiCall(
+      `/profiles?on_conflict=id`,
+      "POST",
+      { id: userId, ...payload },
+      true
+    ).then(firstRow);
+  },
   findUserByEmail: (email: string) =>
     getFirst(`/profiles?select=*&email=eq.${encodeURIComponent(email)}`),
 };
@@ -445,8 +457,23 @@ export const storageAPI = {
 export const companyAdminAPI = {
   deleteCompany: (companyId: string) =>
     functionCall("delete-company", { company_id: companyId }),
-  bootstrapAdmin: (companyName?: string) =>
-    functionCall("bootstrap-admin", companyName ? { company_name: companyName } : {}),
+  bootstrapAdmin: (payload?: {
+    companyName?: string;
+    fullName?: string;
+    username?: string;
+    phone?: string;
+  }) =>
+    functionCall(
+      "bootstrap-admin",
+      payload
+        ? {
+            company_name: payload.companyName,
+            full_name: payload.fullName,
+            username: payload.username,
+            phone: payload.phone,
+          }
+        : {}
+    ),
 };
 
 export default {

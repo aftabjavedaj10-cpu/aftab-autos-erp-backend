@@ -1,6 +1,7 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import Dashboard from "./pages/Dashboard";
 import AcceptInvite from "./pages/AcceptInvite";
 import {
@@ -74,24 +75,42 @@ function App() {
     return null;
   }
 
-  // Show login page if not logged in
-  if (!isLoggedIn) {
-    return (
-      <LoginPage 
-        onLogin={handleLogin} 
-        isDarkMode={isDarkMode} 
-        onThemeToggle={handleThemeToggle}
-      />
-    );
-  }
-
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Dashboard onLogout={handleLogout} />} />
-        <Route path="/products" element={<Dashboard onLogout={handleLogout} />} />
-        <Route path="/products/add" element={<Dashboard onLogout={handleLogout} />} />
-        <Route path="/accept-invite" element={<AcceptInvite />} />
+        {!isLoggedIn ? (
+          <>
+            <Route
+              path="/login"
+              element={
+                <LoginPage
+                  onLogin={handleLogin}
+                  isDarkMode={isDarkMode}
+                  onThemeToggle={handleThemeToggle}
+                />
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <SignupPage
+                  isDarkMode={isDarkMode}
+                  onThemeToggle={handleThemeToggle}
+                />
+              }
+            />
+            <Route path="/accept-invite" element={<AcceptInvite />} />
+            <Route path="*" element={<Navigate to="/login" replace />} />
+          </>
+        ) : (
+          <>
+            <Route path="/" element={<Dashboard onLogout={handleLogout} />} />
+            <Route path="/products" element={<Dashboard onLogout={handleLogout} />} />
+            <Route path="/products/add" element={<Dashboard onLogout={handleLogout} />} />
+            <Route path="/accept-invite" element={<AcceptInvite />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </>
+        )}
       </Routes>
     </BrowserRouter>
   );
