@@ -52,7 +52,7 @@ const SettingsPage: React.FC = () => {
         const membershipRows = await companyAPI.listMyCompanies(userId);
         const mappedCompanies = membershipRows
           .map((row: any) => row.companies)
-          .filter(Boolean)
+          .filter((c: any) => Boolean(c))
           .map((c: any) => ({
             id: c.id,
             name: c.name,
