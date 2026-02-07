@@ -370,6 +370,7 @@ export const companyAPI = {
         }
         return mapCompanyFromDb(row);
       }),
+  remove: (id: string) => apiCall(`/companies?id=eq.${id}`, "DELETE"),
   listMyCompanies: (userId: string) =>
     apiCall(
       `/company_members?select=*,companies(*)&user_id=eq.${userId}`

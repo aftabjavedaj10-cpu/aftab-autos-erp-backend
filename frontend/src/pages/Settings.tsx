@@ -266,6 +266,63 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const handleDeleteCompany = async () => {
+    if (!activeCompanyId) {
+      setError("Select a company first.");
+      return;
+    }
+    const confirmDelete = window.confirm(
+      "Delete this company? This will remove all related data and members."
+    );
+    if (!confirmDelete) return;
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await companyAPI.remove(activeCompanyId);
+      const remaining = companies.filter((c) => c.id !== activeCompanyId);
+      setCompanies(remaining);
+      const nextId = remaining[0]?.id || null;
+      setActiveCompanyIdState(nextId);
+      if (nextId) {
+        setActiveCompanyId(nextId);
+        const [companyMembers, inviteRows] = await Promise.all([
+          companyMemberAPI.listMembers(nextId),
+          companyInviteAPI.listInvites(nextId),
+        ]);
+        const mappedProfiles = companyMembers.map((m: any) => ({
+          id: m.user_id ?? m.userId ?? m.profiles?.id,
+          email: m.profiles?.email,
+          role: m.role,
+          companyId: m.company_id ?? m.companyId,
+          memberId: m.id,
+        }));
+        setCompanyUsers(mappedProfiles);
+        setInvites(
+          inviteRows.map((row: any) => ({
+            id: row.id,
+            companyId: row.company_id ?? row.companyId,
+            email: row.email,
+            role: row.role,
+            status: row.status,
+            invitedBy: row.invited_by ?? row.invitedBy,
+            createdAt: row.created_at ?? row.createdAt,
+            updatedAt: row.updated_at ?? row.updatedAt,
+            lastSentAt: row.last_sent_at ?? row.lastSentAt,
+          }))
+        );
+      } else {
+        setCompanyUsers([]);
+        setInvites([]);
+      }
+      setSuccess("Company deleted");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete company");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
@@ -380,10 +437,10 @@ const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-        <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
-            Company Details
-          </h3>
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
+              Company Details
+            </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <input
                 value={companyDraft.name}
@@ -570,6 +627,15 @@ const SettingsPage: React.FC = () => {
               >
                 Save Details
               </button>
+              {isAdmin && (
+                <button
+                  onClick={handleDeleteCompany}
+                  disabled={saving}
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-black px-6 py-3 rounded-2xl text-sm uppercase tracking-widest disabled:opacity-60"
+                >
+                  Delete Company
+                </button>
+              )}
               {!isAdmin && (
                 <p className="text-xs text-slate-400">Only admins can edit.</p>
               )}
