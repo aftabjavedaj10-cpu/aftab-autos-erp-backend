@@ -306,7 +306,7 @@ export const profileAPI = {
 export const companyMemberAPI = {
   listMembers: (companyId: string) =>
     apiCall(
-      `/company_members?select=*,profiles(email)&company_id=eq.${companyId}`
+      `/company_members?select=*,profiles:profiles!company_members_user_id_fkey(email)&company_id=eq.${companyId}`
     ),
   addMember: (companyId: string, userId: string, role: string) =>
     apiCall(
