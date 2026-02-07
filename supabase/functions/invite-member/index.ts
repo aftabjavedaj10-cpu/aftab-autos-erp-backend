@@ -62,7 +62,9 @@ Deno.serve(async (req) => {
   let invitedUserId: string | null = null;
 
   const { data: inviteData, error: inviteError } = await supabase.auth.admin
-    .inviteUserByEmail(email);
+    .inviteUserByEmail(email, {
+      redirectTo: "https://aftab-autos-erp-frontend.vercel.app/accept-invite",
+    });
 
   if (inviteError) {
     const message = inviteError.message || "Invite failed";
