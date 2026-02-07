@@ -292,7 +292,13 @@ export const companyAPI = {
 };
 
 export const profileAPI = {
-  getMyProfile: () => getFirst("/profiles?select=*&id=eq.user_id()"),
+  getMyProfile: () => {
+    const userId = getUserId();
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    return getFirst(`/profiles?select=*&id=eq.${userId}`);
+  },
   findUserByEmail: (email: string) =>
     getFirst(`/profiles?select=*&email=eq.${encodeURIComponent(email)}`),
 };
