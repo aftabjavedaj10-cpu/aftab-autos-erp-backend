@@ -11,8 +11,25 @@ const parseHash = () => {
   };
 };
 
+const decodeEmailFromToken = (token: string) => {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return "";
+    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+    const json = atob(normalized);
+    const data = JSON.parse(json) as { email?: string };
+    return data.email || "";
+  } catch {
+    return "";
+  }
+};
+
 const AcceptInvite: React.FC = () => {
   const { accessToken, type } = useMemo(parseHash, []);
+  const inviteEmail = useMemo(
+    () => (accessToken ? decodeEmailFromToken(accessToken) : ""),
+    [accessToken]
+  );
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -93,8 +110,15 @@ const AcceptInvite: React.FC = () => {
 
         <div className="mt-6 space-y-4">
           <input
+            type="email"
+            value={inviteEmail}
+            readOnly
+            placeholder="Email (from invite)"
+            className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3 px-4 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none transition-all font-bold text-sm opacity-90"
+          />
+          <input
             type="password"
-            placeholder="New password"
+            placeholder="Set Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-sm"
