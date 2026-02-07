@@ -200,6 +200,11 @@ const mapCategoryToDb = (category: any) =>
 const mapCompanyFromDb = (row: any) => ({
   ...row,
   logoUrl: row.logo_url ?? row.logoUrl,
+  branches: Array.isArray(row.branches)
+    ? row.branches
+    : typeof row.branches === "string" && row.branches.trim()
+      ? row.branches.split(/\r?\n/).map((b: string) => b.trim()).filter(Boolean)
+      : [],
 });
 
 const mapCompanyToDb = (company: any) =>
@@ -207,6 +212,9 @@ const mapCompanyToDb = (company: any) =>
     {
       ...company,
       logo_url: company.logoUrl ?? company.logo_url,
+      branches: Array.isArray(company.branches)
+        ? company.branches
+        : undefined,
     },
     ["logoUrl", "createdAt"]
   );

@@ -28,8 +28,9 @@ const SettingsPage: React.FC = () => {
     address: "",
     phone: "",
     ntn: "",
-    branches: "",
+    branches: [] as string[],
   });
+  const [branchInput, setBranchInput] = useState("");
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<UserRole>("staff");
   const [companyUsers, setCompanyUsers] = useState<(Profile & { memberId?: string })[]>([]);
@@ -156,10 +157,11 @@ const SettingsPage: React.FC = () => {
         name: current.name || "",
         logoUrl: current.logoUrl || "",
         address: current.address || "",
-        phone: current.phone || "",
-        ntn: current.ntn || "",
-        branches: current.branches || "",
-      });
+            phone: current.phone || "",
+            ntn: current.ntn || "",
+            branches: current.branches || [],
+          });
+      setBranchInput("");
     }
   }, [companies, activeCompanyId]);
 
@@ -366,11 +368,11 @@ const SettingsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
-              Company Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
+            Company Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <input
                 value={companyDraft.name}
                 onChange={(e) =>
@@ -411,15 +413,61 @@ const SettingsPage: React.FC = () => {
                 placeholder="Address"
                 className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
               />
-              <textarea
-                value={companyDraft.branches}
-                onChange={(e) =>
-                  setCompanyDraft((prev) => ({ ...prev, branches: e.target.value }))
-                }
-                placeholder="Branches (one per line)"
-                rows={4}
-                className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
-              />
+              <div className="md:col-span-2 space-y-2">
+                <div className="flex flex-col md:flex-row gap-3">
+                  <input
+                    value={branchInput}
+                    onChange={(e) => setBranchInput(e.target.value)}
+                    placeholder="Add branch name"
+                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = branchInput.trim();
+                      if (!trimmed) return;
+                      setCompanyDraft((prev) => ({
+                        ...prev,
+                        branches: prev.branches.includes(trimmed)
+                          ? prev.branches
+                          : [...prev.branches, trimmed],
+                      }));
+                      setBranchInput("");
+                    }}
+                    className="bg-slate-900 dark:bg-orange-600 text-white font-black px-5 py-3 rounded-2xl text-sm uppercase tracking-widest"
+                  >
+                    Add Branch
+                  </button>
+                </div>
+                {companyDraft.branches.length === 0 ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    No branches added yet.
+                  </p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {companyDraft.branches.map((branch) => (
+                      <span
+                        key={branch}
+                        className="inline-flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-full"
+                      >
+                        {branch}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setCompanyDraft((prev) => ({
+                              ...prev,
+                              branches: prev.branches.filter((b) => b !== branch),
+                            }))
+                          }
+                          className="text-slate-400 hover:text-rose-600"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex items-center gap-3 mt-4">
               <button

@@ -69,7 +69,7 @@ export interface Company {
   address?: string;
   phone?: string;
   ntn?: string;
-  branches?: string;
+  branches?: string[];
   ownerId?: string;
   createdAt?: string;
 }
