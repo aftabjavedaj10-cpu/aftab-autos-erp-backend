@@ -14,6 +14,8 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 const STORAGE_KEY = "supabase.auth.session";
+const PROFILE_KEY = "supabase.auth.profile";
+const ACTIVE_COMPANY_KEY = "supabase.active_company_id";
 
 const nowInSeconds = () => Math.floor(Date.now() / 1000);
 
@@ -37,6 +39,8 @@ const loadSession = (): SupabaseSession | null => {
 
 const clearSession = () => {
   localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(PROFILE_KEY);
+  localStorage.removeItem(ACTIVE_COMPANY_KEY);
 };
 
 const authRequest = async (path: string, body: any) => {
@@ -96,6 +100,39 @@ export const signOut = async () => {
 };
 
 export const getSession = () => loadSession();
+
+export const setProfile = (profile: any) => {
+  if (!profile) return;
+  localStorage.setItem(PROFILE_KEY, JSON.stringify(profile));
+};
+
+export const getProfile = () => {
+  const raw = localStorage.getItem(PROFILE_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+export const getCompanyId = () => {
+  const profile = getProfile();
+  return profile?.companyId ?? profile?.company_id ?? null;
+};
+
+export const setActiveCompanyId = (companyId: string) => {
+  localStorage.setItem(ACTIVE_COMPANY_KEY, companyId);
+};
+
+export const getActiveCompanyId = () => {
+  return localStorage.getItem(ACTIVE_COMPANY_KEY);
+};
+
+export const getUserRole = () => {
+  const profile = getProfile();
+  return profile?.role ?? null;
+};
 
 export const getUserId = () => {
   const session = loadSession();

@@ -59,3 +59,32 @@ export interface Customer {
   notes?: string;
   image?: string;
 }
+
+export type UserRole = "admin" | "manager" | "staff";
+
+export interface Company {
+  id: string;
+  name: string;
+  ownerId?: string;
+  createdAt?: string;
+}
+
+export interface CompanyMember {
+  id: string;
+  userId: string;
+  companyId: string;
+  role: UserRole;
+  createdAt?: string;
+  company?: Company;
+  email?: string;
+}
+
+export interface Profile {
+  id: string;
+  email?: string;
+  fullName?: string;
+  role?: UserRole;
+  companyId?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}

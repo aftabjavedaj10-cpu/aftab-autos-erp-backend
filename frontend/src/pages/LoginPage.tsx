@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from "react";
-import { signInWithPassword } from "../services/supabaseAuth";
+import { setProfile, signInWithPassword } from "../services/supabaseAuth";
+import { profileAPI } from "../services/apiService";
 
 interface LoginPageProps {
   onLogin: (email: string) => void;
@@ -29,6 +30,16 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
 
     try {
       await signInWithPassword(email, password);
+      try {
+        const myProfile = await profileAPI.getMyProfile();
+        setProfile({
+          id: myProfile.id,
+          email: myProfile.email,
+          fullName: myProfile.full_name ?? myProfile.fullName,
+        });
+      } catch {
+        // profile may not exist yet
+      }
       onLogin(email);
     } catch (error) {
       const message = error instanceof Error ? error.message : "Login failed";

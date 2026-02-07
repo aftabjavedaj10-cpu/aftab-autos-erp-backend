@@ -2,7 +2,15 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
-import { getSession, signOut } from "./services/supabaseAuth";
+import {
+  getActiveCompanyId,
+  getSession,
+  getUserId,
+  setActiveCompanyId,
+  setProfile,
+  signOut,
+} from "./services/supabaseAuth";
+import { companyAPI, profileAPI } from "./services/apiService";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -19,9 +27,32 @@ function App() {
   }, [isDarkMode]);
 
   useEffect(() => {
-    const session = getSession();
-    setIsLoggedIn(!!session);
-    setIsAuthReady(true);
+    const init = async () => {
+      const session = getSession();
+      setIsLoggedIn(!!session);
+      if (session) {
+        try {
+          const myProfile = await profileAPI.getMyProfile();
+          setProfile({
+            id: myProfile.id,
+            email: myProfile.email,
+            fullName: myProfile.full_name ?? myProfile.fullName,
+          });
+          const userId = getUserId();
+          if (userId && !getActiveCompanyId()) {
+            const membershipRows = await companyAPI.listMyCompanies(userId);
+            const firstCompany = membershipRows?.[0]?.companies;
+            if (firstCompany?.id) {
+              setActiveCompanyId(firstCompany.id);
+            }
+          }
+        } catch (e) {
+          console.warn("Profile load failed");
+        }
+      }
+      setIsAuthReady(true);
+    };
+    init();
   }, []);
 
   const handleLogin = (email: string) => {

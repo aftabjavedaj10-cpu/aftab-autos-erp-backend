@@ -10,6 +10,7 @@ import VendorsPage from "./Vendors";
 import AddVendorPage from "./AddVendor";
 import CategoriesPage from "./Categories";
 import AddCategoryPage from "./AddCategory";
+import SettingsPage from "./Settings";
 import type { Product, Category, Vendor, Customer } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI } from "../services/apiService";
 import { getSession } from "../services/supabaseAuth";
@@ -395,6 +396,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
               });
             }}
           />
+        )}
+
+        {activeTab === "settings" && (
+          <SettingsPage />
         )}
         </div>
       </main>
