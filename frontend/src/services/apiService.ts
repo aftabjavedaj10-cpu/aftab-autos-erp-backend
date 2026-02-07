@@ -409,11 +409,16 @@ export const companyMemberAPI = {
   inviteMember: (companyId: string, email: string, role: string) =>
     functionCall("invite-member", { company_id: companyId, email, role }),
   removeMemberByUser: (companyId: string, userId: string, deleteUser = false) =>
-    functionCall("remove-member", {
-      company_id: companyId,
-      user_id: userId,
-      delete_user: deleteUser,
-    }),
+    {
+      if (!companyId || !userId) {
+        throw new Error("company_id and user_id required");
+      }
+      return functionCall("remove-member", {
+        company_id: companyId,
+        user_id: userId,
+        delete_user: deleteUser,
+      });
+    },
 };
 
 export const companyInviteAPI = {

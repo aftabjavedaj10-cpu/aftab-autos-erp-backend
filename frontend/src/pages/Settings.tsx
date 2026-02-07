@@ -711,6 +711,10 @@ const SettingsPage: React.FC = () => {
                                   setError("Select a company first.");
                                   return;
                                 }
+                                if (!user.id) {
+                                  setError("User id missing. Refresh the page.");
+                                  return;
+                                }
                                 setSaving(true);
                                 setError(null);
                                 setSuccess(null);
@@ -764,6 +768,10 @@ const SettingsPage: React.FC = () => {
                               onClick={async () => {
                                 if (!activeCompanyId) {
                                   setError("Select a company first.");
+                                  return;
+                                }
+                                if (!user.id) {
+                                  setError("User id missing. Refresh the page.");
                                   return;
                                 }
                                 const confirmDelete = window.confirm(
