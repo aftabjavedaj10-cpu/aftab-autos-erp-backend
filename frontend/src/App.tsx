@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect, useState } from "react";
 import LoginPage from "./pages/LoginPage";
 import Dashboard from "./pages/Dashboard";
+import AcceptInvite from "./pages/AcceptInvite";
 import {
   getActiveCompanyId,
   getSession,
@@ -90,6 +91,7 @@ function App() {
         <Route path="/" element={<Dashboard onLogout={handleLogout} />} />
         <Route path="/products" element={<Dashboard onLogout={handleLogout} />} />
         <Route path="/products/add" element={<Dashboard onLogout={handleLogout} />} />
+        <Route path="/accept-invite" element={<AcceptInvite />} />
       </Routes>
     </BrowserRouter>
   );
