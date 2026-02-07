@@ -4,6 +4,7 @@ import {
   companyAPI,
   companyInviteAPI,
   companyMemberAPI,
+  companyAdminAPI,
   profileAPI,
   storageAPI,
 } from "../services/apiService";
@@ -279,7 +280,7 @@ const SettingsPage: React.FC = () => {
     setError(null);
     setSuccess(null);
     try {
-      await companyAPI.remove(activeCompanyId);
+      await companyAdminAPI.deleteCompany(activeCompanyId);
       const remaining = companies.filter((c) => c.id !== activeCompanyId);
       setCompanies(remaining);
       const nextId = remaining[0]?.id || null;

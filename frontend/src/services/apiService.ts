@@ -442,6 +442,11 @@ export const storageAPI = {
   },
 };
 
+export const companyAdminAPI = {
+  deleteCompany: (companyId: string) =>
+    functionCall("delete-company", { company_id: companyId }),
+};
+
 export default {
   productAPI,
   customerAPI,
@@ -452,4 +457,5 @@ export default {
   companyMemberAPI,
   companyInviteAPI,
   storageAPI,
+  companyAdminAPI,
 };
