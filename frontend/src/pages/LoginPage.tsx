@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from "react";
 import { setProfile, signInWithPassword } from "../services/supabaseAuth";
-import { profileAPI } from "../services/apiService";
+import { companyAdminAPI, profileAPI } from "../services/apiService";
 
 interface LoginPageProps {
   onLogin: (email: string) => void;
@@ -30,6 +30,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
 
     try {
       await signInWithPassword(email, password);
+      try {
+        await companyAdminAPI.bootstrapAdmin();
+      } catch {
+        // bootstrap is best-effort; ignore if it fails
+      }
       try {
         const myProfile = await profileAPI.getMyProfile();
         setProfile({

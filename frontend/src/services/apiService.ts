@@ -445,6 +445,8 @@ export const storageAPI = {
 export const companyAdminAPI = {
   deleteCompany: (companyId: string) =>
     functionCall("delete-company", { company_id: companyId }),
+  bootstrapAdmin: (companyName?: string) =>
+    functionCall("bootstrap-admin", companyName ? { company_name: companyName } : {}),
 };
 
 export default {
