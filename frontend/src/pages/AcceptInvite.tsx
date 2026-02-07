@@ -89,12 +89,12 @@ const AcceptInvite: React.FC = () => {
     <div className="min-h-screen flex items-center justify-center bg-[#fcf8f2] dark:bg-[#020617] px-4">
       <div className="w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 rounded-[2rem] p-8">
         <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
-          Accept Invite
+          Activate Account
         </h1>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
           {type === "invite"
-            ? "Set your password to activate your account."
-            : "This link is not a valid invite. Please use the invite email link."}
+            ? "You’ve been invited to Aftab Autos ERP. Set a password to continue."
+            : "This link is not a valid invite. Please open the invite email again."}
         </p>
 
         {error && (
@@ -114,8 +114,11 @@ const AcceptInvite: React.FC = () => {
             value={inviteEmail}
             readOnly
             placeholder="Email (from invite)"
-            className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3 px-4 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none transition-all font-bold text-sm opacity-90"
+            className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3 px-4 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none transition-all font-bold text-sm opacity-95"
           />
+          <p className="text-xs text-slate-500 dark:text-slate-400 px-1">
+            Email is locked to the invited address.
+          </p>
           <input
             type="password"
             placeholder="Set Password"
