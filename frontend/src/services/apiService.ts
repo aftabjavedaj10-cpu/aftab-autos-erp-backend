@@ -89,6 +89,29 @@ const functionCall = async (path: string, body: any) => {
   return data;
 };
 
+const uploadToStorage = async (bucket: string, path: string, file: File) => {
+  const token = await getAccessToken();
+  const response = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`,
+    {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY || "",
+        Authorization: `Bearer ${token}`,
+        "Content-Type": file.type || "application/octet-stream",
+        "x-upsert": "true",
+      },
+      body: file,
+    }
+  );
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data?.message || data?.error || "Upload failed");
+  }
+  return data;
+};
+
 const getFirst = async (path: string) => {
   const rows = await apiCall(path, "GET");
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -387,6 +410,19 @@ export const companyInviteAPI = {
     ),
 };
 
+export const storageAPI = {
+  uploadCompanyLogo: async (companyId: string, file: File) => {
+    if (!SUPABASE_URL) throw new Error("Missing Supabase URL");
+    const extension = file.name.split(".").pop()?.toLowerCase() || "png";
+    const safeExt = ["png", "jpg", "jpeg", "webp"].includes(extension)
+      ? extension
+      : "png";
+    const path = `${companyId}/logo-${Date.now()}.${safeExt}`;
+    await uploadToStorage("company-logos", path, file);
+    return `${SUPABASE_URL}/storage/v1/object/public/company-logos/${path}`;
+  },
+};
+
 export default {
   productAPI,
   customerAPI,
@@ -396,4 +432,5 @@ export default {
   profileAPI,
   companyMemberAPI,
   companyInviteAPI,
+  storageAPI,
 };

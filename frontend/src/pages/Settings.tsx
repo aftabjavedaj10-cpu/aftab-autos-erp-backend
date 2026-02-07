@@ -5,6 +5,7 @@ import {
   companyInviteAPI,
   companyMemberAPI,
   profileAPI,
+  storageAPI,
 } from "../services/apiService";
 import {
   getActiveCompanyId,
@@ -31,6 +32,7 @@ const SettingsPage: React.FC = () => {
     branches: [] as string[],
   });
   const [branchInput, setBranchInput] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<UserRole>("staff");
   const [companyUsers, setCompanyUsers] = useState<(Profile & { memberId?: string })[]>([]);
@@ -397,14 +399,57 @@ const SettingsPage: React.FC = () => {
                 placeholder="NTN / Tax ID"
                 className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
               />
-              <input
-                value={companyDraft.logoUrl}
-                onChange={(e) =>
-                  setCompanyDraft((prev) => ({ ...prev, logoUrl: e.target.value }))
-                }
-                placeholder="Logo URL"
-                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
-              />
+              <div className="space-y-2">
+                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400">
+                  Company Logo (PNG/JPEG)
+                </label>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg"
+                  disabled={!isAdmin || logoUploading}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !activeCompanyId) return;
+                    setLogoUploading(true);
+                    setError(null);
+                    setSuccess(null);
+                    try {
+                      const url = await storageAPI.uploadCompanyLogo(
+                        activeCompanyId,
+                        file
+                      );
+                      setCompanyDraft((prev) => ({ ...prev, logoUrl: url }));
+                      setSuccess("Logo uploaded. Click Save Details to apply.");
+                    } catch (err) {
+                      setError(
+                        err instanceof Error ? err.message : "Failed to upload logo"
+                      );
+                    } finally {
+                      setLogoUploading(false);
+                      e.currentTarget.value = "";
+                    }
+                  }}
+                  className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white file:mr-4 file:rounded-xl file:border-0 file:bg-slate-900 file:px-4 file:py-2 file:text-xs file:font-black file:text-white file:uppercase"
+                />
+                {companyDraft.logoUrl && (
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={companyDraft.logoUrl}
+                      alt="Company logo preview"
+                      className="h-14 w-14 rounded-2xl object-cover border border-slate-200 dark:border-slate-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCompanyDraft((prev) => ({ ...prev, logoUrl: "" }))
+                      }
+                      className="text-xs font-black uppercase tracking-widest text-rose-600 hover:text-rose-700"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
+              </div>
               <input
                 value={companyDraft.address}
                 onChange={(e) =>
