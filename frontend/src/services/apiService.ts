@@ -18,7 +18,8 @@ const REST_BASE_URL = `${SUPABASE_URL}/rest/v1`;
 const FUNCTIONS_BASE_URL = `${SUPABASE_URL}/functions/v1`;
 
 const buildUrl = (path: string) => `${REST_BASE_URL}${path}`;
-const buildFunctionUrl = (path: string) => `${FUNCTIONS_BASE_URL}${path}`;
+const buildFunctionUrl = (path: string) =>
+  `${FUNCTIONS_BASE_URL}/${path.replace(/^\//, "")}`;
 
 const apiCall = async (
   path: string,
