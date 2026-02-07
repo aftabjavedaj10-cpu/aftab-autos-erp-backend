@@ -55,17 +55,38 @@ Deno.serve(async (req) => {
     return jsonResponse(400, { error: inviteError?.message || "Invite failed" });
   }
 
-  // Add member role
+  // Add member role (if already exists, ignore)
   const { error: memberError } = await supabase
     .from("company_members")
     .insert({
       user_id: inviteData.user.id,
       company_id,
       role,
-    });
+    })
+    .select()
+    .maybeSingle();
 
-  if (memberError) {
+  if (memberError && !memberError.message.includes("duplicate")) {
     return jsonResponse(400, { error: memberError.message });
+  }
+
+  // Track invite
+  const { error: inviteTrackError } = await supabase
+    .from("company_invites")
+    .upsert(
+      {
+        company_id,
+        email,
+        role,
+        invited_by: userData.user.id,
+        status: "sent",
+        last_sent_at: new Date().toISOString(),
+      },
+      { onConflict: "company_id,email" }
+    );
+
+  if (inviteTrackError) {
+    return jsonResponse(400, { error: inviteTrackError.message });
   }
 
   return jsonResponse(200, { ok: true, user_id: inviteData.user.id });

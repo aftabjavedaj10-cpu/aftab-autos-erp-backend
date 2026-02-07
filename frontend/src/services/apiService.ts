@@ -346,6 +346,13 @@ export const companyMemberAPI = {
     functionCall("invite-member", { company_id: companyId, email, role }),
 };
 
+export const companyInviteAPI = {
+  listInvites: (companyId: string) =>
+    apiCall(
+      `/company_invites?select=*&company_id=eq.${companyId}&order=created_at.desc`
+    ),
+};
+
 export default {
   productAPI,
   customerAPI,
@@ -354,4 +361,5 @@ export default {
   companyAPI,
   profileAPI,
   companyMemberAPI,
+  companyInviteAPI,
 };

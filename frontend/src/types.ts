@@ -79,6 +79,18 @@ export interface CompanyMember {
   email?: string;
 }
 
+export interface CompanyInvite {
+  id: string;
+  companyId: string;
+  email: string;
+  role: UserRole;
+  status: "sent" | "accepted" | "revoked";
+  invitedBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  lastSentAt?: string;
+}
+
 export interface Profile {
   id: string;
   email?: string;

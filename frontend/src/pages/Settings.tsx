@@ -1,6 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
-import type { Company, CompanyMember, Profile, UserRole } from "../types";
-import { companyAPI, companyMemberAPI, profileAPI } from "../services/apiService";
+import type { Company, CompanyInvite, CompanyMember, Profile, UserRole } from "../types";
+import {
+  companyAPI,
+  companyInviteAPI,
+  companyMemberAPI,
+  profileAPI,
+} from "../services/apiService";
 import {
   getActiveCompanyId,
   getProfile,
@@ -20,6 +25,7 @@ const SettingsPage: React.FC = () => {
   const [newMemberEmail, setNewMemberEmail] = useState("");
   const [newMemberRole, setNewMemberRole] = useState<UserRole>("staff");
   const [companyUsers, setCompanyUsers] = useState<(Profile & { memberId?: string })[]>([]);
+  const [invites, setInvites] = useState<CompanyInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +91,10 @@ const SettingsPage: React.FC = () => {
         if (defaultCompanyId) setActiveCompanyId(defaultCompanyId);
 
         if (defaultCompanyId) {
-          const companyMembers = await companyMemberAPI.listMembers(defaultCompanyId);
+          const [companyMembers, inviteRows] = await Promise.all([
+            companyMemberAPI.listMembers(defaultCompanyId),
+            companyInviteAPI.listInvites(defaultCompanyId),
+          ]);
           const mappedProfiles = companyMembers.map((m: any) => ({
             id: m.user_id ?? m.userId,
             email: m.profiles?.email,
@@ -94,8 +103,22 @@ const SettingsPage: React.FC = () => {
             memberId: m.id,
           }));
           setCompanyUsers(mappedProfiles);
+          setInvites(
+            inviteRows.map((row: any) => ({
+              id: row.id,
+              companyId: row.company_id ?? row.companyId,
+              email: row.email,
+              role: row.role,
+              status: row.status,
+              invitedBy: row.invited_by ?? row.invitedBy,
+              createdAt: row.created_at ?? row.createdAt,
+              updatedAt: row.updated_at ?? row.updatedAt,
+              lastSentAt: row.last_sent_at ?? row.lastSentAt,
+            }))
+          );
         } else {
           setCompanyUsers([]);
+          setInvites([]);
         }
       }
     } catch (err) {
@@ -231,7 +254,10 @@ const SettingsPage: React.FC = () => {
                     const nextId = e.target.value;
                     setActiveCompanyIdState(nextId);
                     setActiveCompanyId(nextId);
-                    const companyMembers = await companyMemberAPI.listMembers(nextId);
+                    const [companyMembers, inviteRows] = await Promise.all([
+                      companyMemberAPI.listMembers(nextId),
+                      companyInviteAPI.listInvites(nextId),
+                    ]);
                     const mappedProfiles = companyMembers.map((m: any) => ({
                       id: m.user_id ?? m.userId,
                       email: m.profiles?.email,
@@ -240,6 +266,19 @@ const SettingsPage: React.FC = () => {
                       memberId: m.id,
                     }));
                     setCompanyUsers(mappedProfiles);
+                    setInvites(
+                      inviteRows.map((row: any) => ({
+                        id: row.id,
+                        companyId: row.company_id ?? row.companyId,
+                        email: row.email,
+                        role: row.role,
+                        status: row.status,
+                        invitedBy: row.invited_by ?? row.invitedBy,
+                        createdAt: row.created_at ?? row.createdAt,
+                        updatedAt: row.updated_at ?? row.updatedAt,
+                        lastSentAt: row.last_sent_at ?? row.lastSentAt,
+                      }))
+                    );
                   }}
                   className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2 text-sm font-bold"
                 >
@@ -293,9 +332,10 @@ const SettingsPage: React.FC = () => {
                       newMemberEmail.trim(),
                       newMemberRole
                     );
-                    const companyMembers = await companyMemberAPI.listMembers(
-                      activeCompanyId
-                    );
+                    const [companyMembers, inviteRows] = await Promise.all([
+                      companyMemberAPI.listMembers(activeCompanyId),
+                      companyInviteAPI.listInvites(activeCompanyId),
+                    ]);
                     const mappedProfiles = companyMembers.map((m: any) => ({
                       id: m.user_id ?? m.userId,
                       email: m.profiles?.email,
@@ -304,8 +344,21 @@ const SettingsPage: React.FC = () => {
                       memberId: m.id,
                     }));
                     setCompanyUsers(mappedProfiles);
+                    setInvites(
+                      inviteRows.map((row: any) => ({
+                        id: row.id,
+                        companyId: row.company_id ?? row.companyId,
+                        email: row.email,
+                        role: row.role,
+                        status: row.status,
+                        invitedBy: row.invited_by ?? row.invitedBy,
+                        createdAt: row.created_at ?? row.createdAt,
+                        updatedAt: row.updated_at ?? row.updatedAt,
+                        lastSentAt: row.last_sent_at ?? row.lastSentAt,
+                      }))
+                    );
                     setNewMemberEmail("");
-                    setSuccess("Member added");
+                    setSuccess("Invite sent");
                   } catch (err) {
                     setError(
                       err instanceof Error ? err.message : "Failed to add member"
@@ -371,6 +424,81 @@ const SettingsPage: React.FC = () => {
                           {user.role}
                         </span>
                       )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
+              Pending Invites
+            </h3>
+            {invites.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                No pending invites.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {invites.map((invite) => (
+                  <div
+                    key={invite.id}
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-4 py-3"
+                  >
+                    <div>
+                      <p className="text-sm font-black text-slate-900 dark:text-white">
+                        {invite.email}
+                      </p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Role: {invite.role} • Status: {invite.status}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          if (!activeCompanyId) return;
+                          setSaving(true);
+                          setError(null);
+                          setSuccess(null);
+                          try {
+                            await companyMemberAPI.inviteMember(
+                              activeCompanyId,
+                              invite.email,
+                              invite.role
+                            );
+                            const inviteRows = await companyInviteAPI.listInvites(
+                              activeCompanyId
+                            );
+                            setInvites(
+                              inviteRows.map((row: any) => ({
+                                id: row.id,
+                                companyId: row.company_id ?? row.companyId,
+                                email: row.email,
+                                role: row.role,
+                                status: row.status,
+                                invitedBy: row.invited_by ?? row.invitedBy,
+                                createdAt: row.created_at ?? row.createdAt,
+                                updatedAt: row.updated_at ?? row.updatedAt,
+                                lastSentAt: row.last_sent_at ?? row.lastSentAt,
+                              }))
+                            );
+                            setSuccess("Invite sent");
+                          } catch (err) {
+                            setError(
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to resend invite"
+                            );
+                          } finally {
+                            setSaving(false);
+                          }
+                        }}
+                        disabled={!isAdmin || saving}
+                        className="bg-slate-900 dark:bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl disabled:opacity-60"
+                      >
+                        Resend
+                      </button>
                     </div>
                   </div>
                 ))}
