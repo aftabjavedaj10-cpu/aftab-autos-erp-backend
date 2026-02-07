@@ -220,15 +220,21 @@ const mapCategoryFromDb = (row: any) => ({ ...row });
 const mapCategoryToDb = (category: any) =>
   stripClientOnly({ ...category }, ["itemCount"]);
 
-const mapCompanyFromDb = (row: any) => ({
-  ...row,
-  logoUrl: row.logo_url ?? row.logoUrl,
-  branches: Array.isArray(row.branches)
-    ? row.branches
-    : typeof row.branches === "string" && row.branches.trim()
-      ? row.branches.split(/\r?\n/).map((b: string) => b.trim()).filter(Boolean)
-      : [],
-});
+const mapCompanyFromDb = (row: any) => {
+  if (!row) return row;
+  return {
+    ...row,
+    logoUrl: row.logo_url ?? row.logoUrl,
+    branches: Array.isArray(row.branches)
+      ? row.branches
+      : typeof row.branches === "string" && row.branches.trim()
+        ? row.branches
+            .split(/\r?\n/)
+            .map((b: string) => b.trim())
+            .filter(Boolean)
+        : [],
+  };
+};
 
 const mapCompanyToDb = (company: any) =>
   stripClientOnly(
@@ -355,8 +361,15 @@ export const companyAPI = {
     getFirst(`/companies?select=*&id=eq.${id}`).then(mapCompanyFromDb),
   update: (id: string, payload: any) =>
     apiCall(`/companies?id=eq.${id}`, "PATCH", mapCompanyToDb(payload), true)
-      .then(firstRow)
-      .then(mapCompanyFromDb),
+      .then((result) => {
+        const row = firstRow(result);
+        if (!row) {
+          throw new Error(
+            "Company update returned no data. Check SELECT policy on companies."
+          );
+        }
+        return mapCompanyFromDb(row);
+      }),
   listMyCompanies: (userId: string) =>
     apiCall(
       `/company_members?select=*,companies(*)&user_id=eq.${userId}`
