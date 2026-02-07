@@ -216,6 +216,11 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const normalizeLogoUrl = (url: string) =>
+    url.includes("/storage/v1/object/") && !url.includes("/object/public/")
+      ? url.replace("/storage/v1/object/", "/storage/v1/object/public/")
+      : url;
+
   const handleUpdateCompany = async () => {
     if (!activeCompanyId) return;
     if (!companyDraft.name.trim()) {
@@ -228,7 +233,9 @@ const SettingsPage: React.FC = () => {
     try {
       const updated = await companyAPI.update(activeCompanyId, {
         name: companyDraft.name.trim(),
-        logo_url: companyDraft.logoUrl || null,
+        logo_url: companyDraft.logoUrl
+          ? normalizeLogoUrl(companyDraft.logoUrl)
+          : null,
         address: companyDraft.address || null,
         phone: companyDraft.phone || null,
         ntn: companyDraft.ntn || null,
@@ -240,7 +247,9 @@ const SettingsPage: React.FC = () => {
             ? {
                 ...c,
                 name: updated.name,
-                logoUrl: updated.logoUrl,
+                logoUrl: updated.logoUrl
+                  ? normalizeLogoUrl(updated.logoUrl)
+                  : updated.logoUrl,
                 address: updated.address,
                 phone: updated.phone,
                 ntn: updated.ntn,
@@ -408,7 +417,7 @@ const SettingsPage: React.FC = () => {
                   {companyDraft.logoUrl ? (
                     <>
                       <img
-                        src={companyDraft.logoUrl}
+                        src={normalizeLogoUrl(companyDraft.logoUrl)}
                         alt="Company logo preview"
                         className="w-full h-full object-cover"
                       />
@@ -451,11 +460,12 @@ const SettingsPage: React.FC = () => {
                     accept="image/png,image/jpeg"
                     disabled={!isAdmin || logoUploading}
                     onChange={async (e) => {
-                      const file = e.target.files?.[0];
+                      const inputEl = e.currentTarget;
+                      const file = inputEl.files?.[0];
                       if (!file || !activeCompanyId) return;
                       if (file.size > 2 * 1024 * 1024) {
                         setError("Logo must be under 2MB.");
-                        e.currentTarget.value = "";
+                        inputEl.value = "";
                         return;
                       }
                       setLogoUploading(true);
@@ -474,7 +484,7 @@ const SettingsPage: React.FC = () => {
                         );
                       } finally {
                         setLogoUploading(false);
-                        e.currentTarget.value = "";
+                        inputEl.value = "";
                       }
                     }}
                   />
