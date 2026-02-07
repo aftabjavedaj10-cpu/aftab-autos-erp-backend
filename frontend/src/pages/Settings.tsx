@@ -426,58 +426,116 @@ const SettingsPage: React.FC = () => {
                           </span>
                         )}
                         {isAdmin && user.id !== profile?.id && (
-                          <button
-                            onClick={async () => {
-                              if (!activeCompanyId) return;
-                              setSaving(true);
-                              setError(null);
-                              setSuccess(null);
-                              try {
-                                await companyMemberAPI.removeMemberByUser(
-                                  activeCompanyId,
-                                  user.id,
-                                  false
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={async () => {
+                                if (!activeCompanyId) return;
+                                setSaving(true);
+                                setError(null);
+                                setSuccess(null);
+                                try {
+                                  await companyMemberAPI.removeMemberByUser(
+                                    activeCompanyId,
+                                    user.id,
+                                    false
+                                  );
+                                  const [companyMembers, inviteRows] = await Promise.all([
+                                    companyMemberAPI.listMembers(activeCompanyId),
+                                    companyInviteAPI.listInvites(activeCompanyId),
+                                  ]);
+                                  const mappedProfiles = companyMembers.map((m: any) => ({
+                                    id: m.user_id ?? m.userId,
+                                    email: m.profiles?.email,
+                                    role: m.role,
+                                    companyId: m.company_id ?? m.companyId,
+                                    memberId: m.id,
+                                  }));
+                                  setCompanyUsers(mappedProfiles);
+                                  setInvites(
+                                    inviteRows.map((row: any) => ({
+                                      id: row.id,
+                                      companyId: row.company_id ?? row.companyId,
+                                      email: row.email,
+                                      role: row.role,
+                                      status: row.status,
+                                      invitedBy: row.invited_by ?? row.invitedBy,
+                                      createdAt: row.created_at ?? row.createdAt,
+                                      updatedAt: row.updated_at ?? row.updatedAt,
+                                      lastSentAt: row.last_sent_at ?? row.lastSentAt,
+                                    }))
+                                  );
+                                  setSuccess("User removed from company");
+                                } catch (err) {
+                                  setError(
+                                    err instanceof Error
+                                      ? err.message
+                                      : "Failed to remove user"
+                                  );
+                                } finally {
+                                  setSaving(false);
+                                }
+                              }}
+                              className="text-[10px] font-black uppercase tracking-widest text-rose-600 hover:text-rose-700"
+                            >
+                              Remove
+                            </button>
+                            <button
+                              onClick={async () => {
+                                if (!activeCompanyId) return;
+                                const confirmDelete = window.confirm(
+                                  "Delete this user from Supabase Auth? This cannot be undone."
                                 );
-                                const [companyMembers, inviteRows] = await Promise.all([
-                                  companyMemberAPI.listMembers(activeCompanyId),
-                                  companyInviteAPI.listInvites(activeCompanyId),
-                                ]);
-                                const mappedProfiles = companyMembers.map((m: any) => ({
-                                  id: m.user_id ?? m.userId,
-                                  email: m.profiles?.email,
-                                  role: m.role,
-                                  companyId: m.company_id ?? m.companyId,
-                                  memberId: m.id,
-                                }));
-                                setCompanyUsers(mappedProfiles);
-                                setInvites(
-                                  inviteRows.map((row: any) => ({
-                                    id: row.id,
-                                    companyId: row.company_id ?? row.companyId,
-                                    email: row.email,
-                                    role: row.role,
-                                    status: row.status,
-                                    invitedBy: row.invited_by ?? row.invitedBy,
-                                    createdAt: row.created_at ?? row.createdAt,
-                                    updatedAt: row.updated_at ?? row.updatedAt,
-                                    lastSentAt: row.last_sent_at ?? row.lastSentAt,
-                                  }))
-                                );
-                                setSuccess("User removed");
-                              } catch (err) {
-                                setError(
-                                  err instanceof Error
-                                    ? err.message
-                                    : "Failed to remove user"
-                                );
-                              } finally {
-                                setSaving(false);
-                              }
-                            }}
-                            className="text-[10px] font-black uppercase tracking-widest text-rose-600 hover:text-rose-700"
-                          >
-                            Remove
-                          </button>
+                                if (!confirmDelete) return;
+                                setSaving(true);
+                                setError(null);
+                                setSuccess(null);
+                                try {
+                                  await companyMemberAPI.removeMemberByUser(
+                                    activeCompanyId,
+                                    user.id,
+                                    true
+                                  );
+                                  const [companyMembers, inviteRows] = await Promise.all([
+                                    companyMemberAPI.listMembers(activeCompanyId),
+                                    companyInviteAPI.listInvites(activeCompanyId),
+                                  ]);
+                                  const mappedProfiles = companyMembers.map((m: any) => ({
+                                    id: m.user_id ?? m.userId,
+                                    email: m.profiles?.email,
+                                    role: m.role,
+                                    companyId: m.company_id ?? m.companyId,
+                                    memberId: m.id,
+                                  }));
+                                  setCompanyUsers(mappedProfiles);
+                                  setInvites(
+                                    inviteRows.map((row: any) => ({
+                                      id: row.id,
+                                      companyId: row.company_id ?? row.companyId,
+                                      email: row.email,
+                                      role: row.role,
+                                      status: row.status,
+                                      invitedBy: row.invited_by ?? row.invitedBy,
+                                      createdAt: row.created_at ?? row.createdAt,
+                                      updatedAt: row.updated_at ?? row.updatedAt,
+                                      lastSentAt: row.last_sent_at ?? row.lastSentAt,
+                                    }))
+                                  );
+                                  setSuccess("User deleted from Auth");
+                                } catch (err) {
+                                  setError(
+                                    err instanceof Error
+                                      ? err.message
+                                      : "Failed to delete user"
+                                  );
+                                } finally {
+                                  setSaving(false);
+                                }
+                              }}
+                              className="text-[10px] font-black uppercase tracking-widest text-rose-700 hover:text-rose-800"
+                            >
+                              Delete
+                            </button>
+                          </div>
                         )}
                       </div>
                     </div>
