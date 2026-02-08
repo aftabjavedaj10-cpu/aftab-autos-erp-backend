@@ -40,14 +40,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
       await signInWithPassword(email, password);
       try {
         const pending = getPendingBootstrap();
-        const bootstrap = await companyAdminAPI.bootstrapAdmin(
-          pending || undefined
-        );
-        if (bootstrap?.company_id) {
-          clearPendingBootstrap();
+        if (pending) {
+          const bootstrap = await companyAdminAPI.bootstrapAdmin(pending);
+          if (bootstrap?.company_id) {
+            clearPendingBootstrap();
+          }
+          setAdminToast("Admin setup complete");
+          window.setTimeout(() => setAdminToast(""), 3000);
         }
-        setAdminToast("Admin setup complete");
-        window.setTimeout(() => setAdminToast(""), 3000);
       } catch {
         // bootstrap is best-effort; ignore if it fails
       }
