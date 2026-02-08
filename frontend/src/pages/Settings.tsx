@@ -22,6 +22,7 @@ import {
   getUserId,
   setActiveCompanyId,
   setProfile,
+  hasPermission,
 } from "../services/supabaseAuth";
 
 const ROLE_OPTIONS: UserRole[] = ["admin", "manager", "staff"];
@@ -85,6 +86,9 @@ const SettingsPage: React.FC = () => {
   const isAdmin = currentMemberRole === "admin";
   const isSystemRole = (roleName?: string) =>
     ["admin", "manager", "staff"].includes((roleName || "").toLowerCase());
+  const canManageCompany = isAdmin && hasPermission("settings.manage_company");
+  const canManageMembers = isAdmin && hasPermission("settings.manage_members");
+  const canViewSettings = hasPermission("settings.view");
   const roleOptions = useMemo<UserRole[]>(
     () => (roles.length > 0 ? roles.map((r) => r.name) : ROLE_OPTIONS),
     [roles]
@@ -478,6 +482,16 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  if (!canViewSettings) {
+    return (
+      <div className="p-5">
+        <p className="text-slate-500 dark:text-slate-400">
+          You do not have permission to view settings.
+        </p>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="p-5">
@@ -709,7 +723,7 @@ const SettingsPage: React.FC = () => {
                     ref={logoInputRef}
                     className="hidden"
                     accept="image/png,image/jpeg"
-                    disabled={!isAdmin || logoUploading}
+                    disabled={!canManageCompany || logoUploading}
                     onChange={async (e) => {
                       const inputEl = e.currentTarget;
                       const file = inputEl.files?.[0];
@@ -743,7 +757,7 @@ const SettingsPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => logoInputRef.current?.click()}
-                      disabled={!isAdmin || logoUploading}
+                    disabled={!canManageCompany || logoUploading}
                       className="absolute inset-0 w-full h-full cursor-pointer opacity-0"
                     />
                   )}
@@ -816,12 +830,12 @@ const SettingsPage: React.FC = () => {
             <div className="flex items-center gap-3 mt-4">
               <button
                 onClick={handleUpdateCompany}
-                disabled={saving || !isAdmin}
+                disabled={saving || !canManageCompany}
                 className="bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
               >
                 Save Details
               </button>
-              {isAdmin && (
+              {canManageCompany && (
                 <button
                   onClick={handleDeleteCompany}
                   disabled={saving}
@@ -830,7 +844,7 @@ const SettingsPage: React.FC = () => {
                   Delete Company
                 </button>
               )}
-              {!isAdmin && (
+              {!canManageCompany && (
                 <p className="text-[10px] text-slate-400">Only admins can edit.</p>
               )}
             </div>
@@ -843,12 +857,12 @@ const SettingsPage: React.FC = () => {
               <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
                 Roles & Permissions
               </h3>
-              {!isAdmin && (
+              {!canManageMembers && (
                 <p className="text-[10px] text-slate-400">
                   Only admins can manage roles and permissions.
                 </p>
               )}
-              {isAdmin && (
+              {canManageMembers && (
                 <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-4">
                   <div className="space-y-3">
                     <div className="space-y-2">
@@ -859,7 +873,7 @@ const SettingsPage: React.FC = () => {
                           </p>
                           <button
                             onClick={seedDefaultRoles}
-                            disabled={saving}
+                            disabled={saving || !canManageMembers}
                             className="mt-3 w-full bg-slate-900 dark:bg-orange-600 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
                           >
                             Seed Default Roles
@@ -891,7 +905,7 @@ const SettingsPage: React.FC = () => {
                       />
                       <button
                         onClick={handleCreateRole}
-                        disabled={saving}
+                        disabled={saving || !canManageMembers}
                         className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
                       >
                         Create Role
@@ -928,7 +942,7 @@ const SettingsPage: React.FC = () => {
                               </div>
                               <button
                                 onClick={() => handleDeleteRole(selectedRole.id)}
-                                disabled={saving || selectedRole.isSystem || isSystemRole(selectedRole.name)}
+                                disabled={saving || !canManageMembers || selectedRole.isSystem || isSystemRole(selectedRole.name)}
                                 className="text-[10px] font-black uppercase tracking-widest text-rose-600 hover:text-rose-700 disabled:opacity-50"
                               >
                                 Delete Role
@@ -948,6 +962,7 @@ const SettingsPage: React.FC = () => {
                                     onChange={() =>
                                       handleTogglePermission(selectedRole.id, perm.key)
                                     }
+                                    disabled={!canManageMembers}
                                   />
                                 </label>
                               ))}
@@ -1033,13 +1048,13 @@ const SettingsPage: React.FC = () => {
                     setSaving(false);
                   }
                 }}
-                disabled={saving || !isAdmin}
+                disabled={saving || !canManageMembers}
                 className="bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-2xl text-sm uppercase tracking-widest disabled:opacity-60"
               >
                 Add
               </button>
             </div>
-            {!isAdmin && (
+            {!canManageMembers && (
               <p className="text-[10px] text-slate-400 mt-2">
                 Only admins can add members.
               </p>
@@ -1071,7 +1086,7 @@ const SettingsPage: React.FC = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        {isAdmin ? (
+                        {canManageMembers ? (
                           <select
                             value={user.role}
                             onChange={(e) =>
@@ -1091,7 +1106,7 @@ const SettingsPage: React.FC = () => {
                             {user.role}
                           </span>
                         )}
-                        {isAdmin && user.id !== profile?.id && (
+                        {canManageMembers && user.id !== profile?.id && (
                           <div className="flex items-center gap-2">
                             <button
                               onClick={async () => {
@@ -1288,7 +1303,7 @@ const SettingsPage: React.FC = () => {
                             setSaving(false);
                           }
                         }}
-                        disabled={!isAdmin || saving}
+                        disabled={!canManageMembers || saving}
                         className="bg-slate-900 dark:bg-orange-600 text-white text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded-xl disabled:opacity-60"
                       >
                         Resend

@@ -12,8 +12,8 @@ import CategoriesPage from "./Categories";
 import AddCategoryPage from "./AddCategory";
 import SettingsPage from "./Settings";
 import type { Product, Category, Vendor, Customer } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI } from "../services/apiService";
-import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId } from "../services/supabaseAuth";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI } from "../services/apiService";
+import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
   onLogout: () => void;
@@ -64,11 +64,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           }
         }
         
+        const permissions = await permissionAPI.getMyPermissions();
+        if (permissions) {
+          setPermissions(permissions);
+        }
+
         const [productsData, customersData, vendorsData, categoriesData] = await Promise.all([
-          productAPI.getAll(),
-          customerAPI.getAll(),
-          vendorAPI.getAll(),
-          categoryAPI.getAll(),
+          productAPI.getAll().catch(() => []),
+          customerAPI.getAll().catch(() => []),
+          vendorAPI.getAll().catch(() => []),
+          categoryAPI.getAll().catch(() => []),
         ]);
 
         setProducts(Array.isArray(productsData) ? productsData : productsData.data || []);

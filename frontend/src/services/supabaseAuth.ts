@@ -17,6 +17,7 @@ const STORAGE_KEY = "supabase.auth.session";
 const PROFILE_KEY = "supabase.auth.profile";
 const ACTIVE_COMPANY_KEY = "supabase.active_company_id";
 const PENDING_BOOTSTRAP_KEY = "supabase.pending_bootstrap";
+const PERMISSIONS_KEY = "supabase.permissions";
 
 const nowInSeconds = () => Math.floor(Date.now() / 1000);
 
@@ -42,6 +43,7 @@ const clearSession = () => {
   localStorage.removeItem(STORAGE_KEY);
   localStorage.removeItem(PROFILE_KEY);
   localStorage.removeItem(ACTIVE_COMPANY_KEY);
+  localStorage.removeItem(PERMISSIONS_KEY);
 };
 
 const authRequest = async (path: string, body: any) => {
@@ -145,6 +147,28 @@ export const getActiveCompanyId = () => {
 export const getUserRole = () => {
   const profile = getProfile();
   return profile?.role ?? null;
+};
+
+export const setPermissions = (payload: { permissions: string[]; roleName?: string }) => {
+  localStorage.setItem(PERMISSIONS_KEY, JSON.stringify(payload));
+};
+
+export const getPermissions = () => {
+  const raw = localStorage.getItem(PERMISSIONS_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as { permissions: string[]; roleName?: string };
+  } catch {
+    return null;
+  }
+};
+
+export const hasPermission = (permission: string) => {
+  const stored = getPermissions();
+  if (!stored) return true;
+  const roleName = stored.roleName?.toLowerCase() || "";
+  if (roleName === "admin" && stored.permissions.length === 0) return true;
+  return stored.permissions.includes(permission);
 };
 
 export const getUserId = () => {

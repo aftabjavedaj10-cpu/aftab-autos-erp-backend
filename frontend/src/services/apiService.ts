@@ -3,7 +3,13 @@
  * Supabase REST (PostgREST) calls with Auth-required access
  */
 
-import { getAccessToken, getActiveCompanyId, getUserId } from "./supabaseAuth";
+import {
+  getAccessToken,
+  getActiveCompanyId,
+  getPermissions,
+  getUserId,
+  setPermissions,
+} from "./supabaseAuth";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
@@ -267,119 +273,192 @@ const mapRoleToDb = (role: any) =>
     ["companyId", "isSystem", "createdAt"]
   );
 
+const ensurePermission = async (permission: string) => {
+  const stored = getPermissions();
+  if (stored) {
+    const roleName = stored.roleName?.toLowerCase() || "";
+    if (roleName === "admin" && stored.permissions.length === 0) return;
+    if (stored.permissions.includes(permission)) return;
+    throw new Error("Permission denied");
+  }
+  const fetched = await permissionAPI.getMyPermissions();
+  if (fetched) {
+    setPermissions(fetched);
+    const roleName = fetched.roleName?.toLowerCase() || "";
+    if (roleName === "admin" && fetched.permissions.length === 0) return;
+    if (fetched.permissions.includes(permission)) return;
+  }
+  throw new Error("Permission denied");
+};
+
 // ============ PRODUCTS ============
 export const productAPI = {
-  getAll: () =>
-    apiCall("/products?select=*&order=id.desc").then((rows) =>
+  getAll: async () => {
+    await ensurePermission("products.read");
+    return apiCall("/products?select=*&order=id.desc").then((rows) =>
       Array.isArray(rows) ? rows.map(mapProductFromDb) : rows
-    ),
+    );
+  },
   getById: (id: string) =>
     getFirst(`/products?select=*&id=eq.${id}`).then(mapProductFromDb),
-  create: (product: any) =>
-    apiCall("/products", "POST", mapProductToDb(attachOwnership(product)), true)
+  create: async (product: any) => {
+    await ensurePermission("products.write");
+    return apiCall("/products", "POST", mapProductToDb(attachOwnership(product)), true)
       .then(firstRow)
-      .then(mapProductFromDb),
-  update: (id: string, product: any) =>
-    apiCall(`/products?id=eq.${id}`, "PATCH", mapProductToDb(product), true)
+      .then(mapProductFromDb);
+  },
+  update: async (id: string, product: any) => {
+    await ensurePermission("products.write");
+    return apiCall(`/products?id=eq.${id}`, "PATCH", mapProductToDb(product), true)
       .then(firstRow)
-      .then(mapProductFromDb),
-  delete: (id: string) => apiCall(`/products?id=eq.${id}`, "DELETE"),
-  bulkDelete: (ids: Array<string | number>) =>
-    apiCall(`/products?id=${buildInFilter(ids)}`, "DELETE"),
-  import: (products: any[]) =>
-    apiCall(
+      .then(mapProductFromDb);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("products.delete");
+    return apiCall(`/products?id=eq.${id}`, "DELETE");
+  },
+  bulkDelete: async (ids: Array<string | number>) => {
+    await ensurePermission("products.delete");
+    return apiCall(`/products?id=${buildInFilter(ids)}`, "DELETE");
+  },
+  import: async (products: any[]) => {
+    await ensurePermission("products.write");
+    return apiCall(
       "/products",
       "POST",
       products.map(attachOwnership).map(mapProductToDb),
       true
-    ),
+    );
+  },
 };
 
 // ============ CUSTOMERS ============
 export const customerAPI = {
-  getAll: () =>
-    apiCall("/customers?select=*&order=id.desc").then((rows) =>
+  getAll: async () => {
+    await ensurePermission("customers.read");
+    return apiCall("/customers?select=*&order=id.desc").then((rows) =>
       Array.isArray(rows) ? rows.map(mapCustomerFromDb) : rows
-    ),
+    );
+  },
   getById: (id: string) =>
     getFirst(`/customers?select=*&id=eq.${id}`).then(mapCustomerFromDb),
-  create: (customer: any) =>
-    apiCall("/customers", "POST", mapCustomerToDb(attachOwnership(customer)), true)
+  create: async (customer: any) => {
+    await ensurePermission("customers.write");
+    return apiCall("/customers", "POST", mapCustomerToDb(attachOwnership(customer)), true)
       .then(firstRow)
-      .then(mapCustomerFromDb),
-  update: (id: string, customer: any) =>
-    apiCall(`/customers?id=eq.${id}`, "PATCH", mapCustomerToDb(customer), true)
+      .then(mapCustomerFromDb);
+  },
+  update: async (id: string, customer: any) => {
+    await ensurePermission("customers.write");
+    return apiCall(`/customers?id=eq.${id}`, "PATCH", mapCustomerToDb(customer), true)
       .then(firstRow)
-      .then(mapCustomerFromDb),
-  delete: (id: string) => apiCall(`/customers?id=eq.${id}`, "DELETE"),
-  bulkDelete: (ids: Array<string | number>) =>
-    apiCall(`/customers?id=${buildInFilter(ids)}`, "DELETE"),
-  import: (customers: any[]) =>
-    apiCall(
+      .then(mapCustomerFromDb);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("customers.delete");
+    return apiCall(`/customers?id=eq.${id}`, "DELETE");
+  },
+  bulkDelete: async (ids: Array<string | number>) => {
+    await ensurePermission("customers.delete");
+    return apiCall(`/customers?id=${buildInFilter(ids)}`, "DELETE");
+  },
+  import: async (customers: any[]) => {
+    await ensurePermission("customers.write");
+    return apiCall(
       "/customers",
       "POST",
       customers.map(attachOwnership).map(mapCustomerToDb),
       true
-    ),
+    );
+  },
 };
 
 // ============ VENDORS ============
 export const vendorAPI = {
-  getAll: () =>
-    apiCall("/vendors?select=*&order=id.desc").then((rows) =>
+  getAll: async () => {
+    await ensurePermission("vendors.read");
+    return apiCall("/vendors?select=*&order=id.desc").then((rows) =>
       Array.isArray(rows) ? rows.map(mapVendorFromDb) : rows
-    ),
+    );
+  },
   getById: (id: string) =>
     getFirst(`/vendors?select=*&id=eq.${id}`).then(mapVendorFromDb),
-  create: (vendor: any) =>
-    apiCall("/vendors", "POST", mapVendorToDb(attachOwnership(vendor)), true)
+  create: async (vendor: any) => {
+    await ensurePermission("vendors.write");
+    return apiCall("/vendors", "POST", mapVendorToDb(attachOwnership(vendor)), true)
       .then(firstRow)
-      .then(mapVendorFromDb),
-  update: (id: string, vendor: any) =>
-    apiCall(`/vendors?id=eq.${id}`, "PATCH", mapVendorToDb(vendor), true)
+      .then(mapVendorFromDb);
+  },
+  update: async (id: string, vendor: any) => {
+    await ensurePermission("vendors.write");
+    return apiCall(`/vendors?id=eq.${id}`, "PATCH", mapVendorToDb(vendor), true)
       .then(firstRow)
-      .then(mapVendorFromDb),
-  delete: (id: string) => apiCall(`/vendors?id=eq.${id}`, "DELETE"),
-  bulkDelete: (ids: Array<string | number>) =>
-    apiCall(`/vendors?id=${buildInFilter(ids)}`, "DELETE"),
-  import: (vendors: any[]) =>
-    apiCall(
+      .then(mapVendorFromDb);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("vendors.delete");
+    return apiCall(`/vendors?id=eq.${id}`, "DELETE");
+  },
+  bulkDelete: async (ids: Array<string | number>) => {
+    await ensurePermission("vendors.delete");
+    return apiCall(`/vendors?id=${buildInFilter(ids)}`, "DELETE");
+  },
+  import: async (vendors: any[]) => {
+    await ensurePermission("vendors.write");
+    return apiCall(
       "/vendors",
       "POST",
       vendors.map(attachOwnership).map(mapVendorToDb),
       true
-    ),
+    );
+  },
 };
 
 // ============ CATEGORIES ============
 export const categoryAPI = {
-  getAll: () =>
-    apiCall("/categories?select=*&order=id.desc").then((rows) =>
+  getAll: async () => {
+    await ensurePermission("categories.read");
+    return apiCall("/categories?select=*&order=id.desc").then((rows) =>
       Array.isArray(rows) ? rows.map(mapCategoryFromDb) : rows
-    ),
+    );
+  },
   getById: (id: string) =>
     getFirst(`/categories?select=*&id=eq.${id}`).then(mapCategoryFromDb),
-  create: (category: any) =>
-    apiCall("/categories", "POST", mapCategoryToDb(attachOwnership(category)), true)
+  create: async (category: any) => {
+    await ensurePermission("categories.write");
+    return apiCall("/categories", "POST", mapCategoryToDb(attachOwnership(category)), true)
       .then(firstRow)
-      .then(mapCategoryFromDb),
-  update: (id: string, category: any) =>
-    apiCall(`/categories?id=eq.${id}`, "PATCH", mapCategoryToDb(category), true)
+      .then(mapCategoryFromDb);
+  },
+  update: async (id: string, category: any) => {
+    await ensurePermission("categories.write");
+    return apiCall(`/categories?id=eq.${id}`, "PATCH", mapCategoryToDb(category), true)
       .then(firstRow)
-      .then(mapCategoryFromDb),
-  delete: (id: string) => apiCall(`/categories?id=eq.${id}`, "DELETE"),
-  bulkDelete: (ids: Array<string | number>) =>
-    apiCall(`/categories?id=${buildInFilter(ids)}`, "DELETE"),
+      .then(mapCategoryFromDb);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("categories.delete");
+    return apiCall(`/categories?id=eq.${id}`, "DELETE");
+  },
+  bulkDelete: async (ids: Array<string | number>) => {
+    await ensurePermission("categories.delete");
+    return apiCall(`/categories?id=${buildInFilter(ids)}`, "DELETE");
+  },
 };
 
 // ============ COMPANIES & PROFILES ============
 export const companyAPI = {
-  create: (name: string) =>
-    apiCall("/companies", "POST", { name }, true).then(firstRow).then(mapCompanyFromDb),
+  create: async (name: string) => {
+    await ensurePermission("settings.manage_company");
+    return apiCall("/companies", "POST", { name }, true)
+      .then(firstRow)
+      .then(mapCompanyFromDb);
+  },
   getById: (id: string) =>
     getFirst(`/companies?select=*&id=eq.${id}`).then(mapCompanyFromDb),
-  update: (id: string, payload: any) =>
-    apiCall(`/companies?id=eq.${id}`, "PATCH", mapCompanyToDb(payload), true)
+  update: async (id: string, payload: any) => {
+    await ensurePermission("settings.manage_company");
+    return apiCall(`/companies?id=eq.${id}`, "PATCH", mapCompanyToDb(payload), true)
       .then((result) => {
         const row = firstRow(result);
         if (!row) {
@@ -388,8 +467,12 @@ export const companyAPI = {
           );
         }
         return mapCompanyFromDb(row);
-      }),
-  remove: (id: string) => apiCall(`/companies?id=eq.${id}`, "DELETE"),
+      });
+  },
+  remove: async (id: string) => {
+    await ensurePermission("settings.manage_company");
+    return apiCall(`/companies?id=eq.${id}`, "DELETE");
+  },
   listMyCompanies: (userId: string) =>
     apiCall(
       `/company_members?select=*,companies(*)&user_id=eq.${userId}`
@@ -439,17 +522,21 @@ export const companyMemberAPI = {
   removeMember: (memberId: string) =>
     apiCall(`/company_members?id=eq.${memberId}`, "DELETE"),
   inviteMember: (companyId: string, email: string, role: string) =>
-    functionCall("invite-member", { company_id: companyId, email, role }),
+    ensurePermission("settings.manage_members").then(() =>
+      functionCall("invite-member", { company_id: companyId, email, role })
+    ),
   removeMemberByUser: (companyId: string, userId: string, deleteUser = false) =>
     {
       if (!companyId || !userId) {
         throw new Error("company_id and user_id required");
       }
-      return functionCall("remove-member", {
-        company_id: companyId,
-        user_id: userId,
-        delete_user: deleteUser,
-      });
+      return ensurePermission("settings.manage_members").then(() =>
+        functionCall("remove-member", {
+          company_id: companyId,
+          user_id: userId,
+          delete_user: deleteUser,
+        })
+      );
     },
 };
 
@@ -475,7 +562,9 @@ export const storageAPI = {
 
 export const companyAdminAPI = {
   deleteCompany: (companyId: string) =>
-    functionCall("delete-company", { company_id: companyId }),
+    ensurePermission("settings.manage_company").then(() =>
+      functionCall("delete-company", { company_id: companyId })
+    ),
   bootstrapAdmin: (payload?: {
     companyName?: string;
     fullName?: string;
@@ -493,6 +582,29 @@ export const companyAdminAPI = {
           }
         : {}
     ),
+};
+
+export const permissionAPI = {
+  getMyPermissions: async () => {
+    const companyId = getActiveCompanyId();
+    const userId = getUserId();
+    if (!companyId || !userId) return null;
+    const membership = await getFirst(
+      `/company_members?select=role&company_id=eq.${companyId}&user_id=eq.${userId}`
+    );
+    const roleName = membership?.role || "";
+    if (!roleName) return { permissions: [], roleName };
+    const roles = await apiCall(
+      `/company_roles?select=permissions,name&company_id=eq.${companyId}&name=eq.${encodeURIComponent(
+        roleName
+      )}`
+    );
+    const row = Array.isArray(roles) ? roles[0] : roles;
+    return {
+      permissions: row?.permissions || [],
+      roleName: row?.name || roleName,
+    };
+  },
 };
 
 // ============ ROLES & PERMISSIONS ============
@@ -529,4 +641,5 @@ export default {
   storageAPI,
   companyAdminAPI,
   roleAPI,
+  permissionAPI,
 };
