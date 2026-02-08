@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Company, CompanyInvite, CompanyMember, Profile, UserRole } from "../types";
 import {
   companyAPI,
@@ -326,40 +326,40 @@ const SettingsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
+      <div className="p-5">
         <p className="text-slate-500 dark:text-slate-400">Loading settings...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-4 space-y-6">
       <div>
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
+        <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
           Settings
         </h1>
-        <p className="text-slate-500 dark:text-slate-400 font-medium">
+        <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
           Manage company access and user roles.
         </p>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-xl">
+        <div className="bg-red-100 border border-red-300 text-red-700 px-3 py-2 rounded-xl">
           {error}
         </div>
       )}
       {success && (
-        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 rounded-xl">
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 px-3 py-2 rounded-xl">
           {success}
         </div>
       )}
 
       {companies.length === 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6">
-          <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase mb-3">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-5">
+          <h2 className="text-base font-black text-slate-900 dark:text-white uppercase mb-3">
             Create Company
           </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-4">
             Create your company to start managing users and data.
           </p>
           <div className="flex flex-col md:flex-row gap-3">
@@ -367,12 +367,12 @@ const SettingsPage: React.FC = () => {
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="Company name"
-              className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+              className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
             />
             <button
               onClick={handleCreateCompany}
               disabled={saving}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-black px-6 py-3 rounded-2xl text-sm uppercase tracking-widest disabled:opacity-60"
+              className="bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
             >
               Create
             </button>
@@ -381,10 +381,10 @@ const SettingsPage: React.FC = () => {
       )}
 
       {companies.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-6 space-y-4">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-5 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase">
+              <h2 className="text-base font-black text-slate-900 dark:text-white uppercase">
                 Company
               </h2>
               <div className="flex flex-col md:flex-row gap-3 items-start md:items-center">
@@ -420,7 +420,7 @@ const SettingsPage: React.FC = () => {
                       }))
                     );
                   }}
-                  className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2 text-sm font-bold"
+                  className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
                 >
                   {companies.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -433,13 +433,13 @@ const SettingsPage: React.FC = () => {
                 </span>
               </div>
             </div>
-            <div className="text-xs font-black uppercase tracking-widest text-slate-400">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
               Your role: {currentMemberRole || "staff"}
             </div>
           </div>
 
           <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
+            <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Company Details
             </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -449,7 +449,7 @@ const SettingsPage: React.FC = () => {
                   setCompanyDraft((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder="Company name"
-                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
               />
               <input
                 value={companyDraft.phone}
@@ -457,7 +457,7 @@ const SettingsPage: React.FC = () => {
                   setCompanyDraft((prev) => ({ ...prev, phone: e.target.value }))
                 }
                 placeholder="Phone"
-                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
               />
               <input
                 value={companyDraft.ntn}
@@ -465,13 +465,13 @@ const SettingsPage: React.FC = () => {
                   setCompanyDraft((prev) => ({ ...prev, ntn: e.target.value }))
                 }
                 placeholder="NTN / Tax ID"
-                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
               />
               <div className="md:col-span-2">
-                <label className="block text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">
+                <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
                   Company Logo (PNG/JPEG)
                 </label>
-                <div className="relative group aspect-square max-w-xs rounded-[2rem] bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col items-center justify-center transition-all hover:border-orange-500/50">
+                <div className="relative group aspect-square max-w-[220px] rounded-[1.5rem] bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col items-center justify-center transition-all hover:border-orange-500/50">
                   {companyDraft.logoUrl ? (
                     <>
                       <img
@@ -499,11 +499,11 @@ const SettingsPage: React.FC = () => {
                       </div>
                     </>
                   ) : (
-                    <div className="text-center p-6 pointer-events-none">
-                      <div className="w-16 h-16 bg-orange-100 dark:bg-orange-950/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 text-orange-600">
-                        📷
+                    <div className="text-center p-5 pointer-events-none">
+                      <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 text-orange-600">
+                        ðŸ“·
                       </div>
-                      <p className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
+                      <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
                         Upload Logo
                       </p>
                       <p className="text-[10px] text-slate-400 mt-2 font-medium">
@@ -562,7 +562,7 @@ const SettingsPage: React.FC = () => {
                   setCompanyDraft((prev) => ({ ...prev, address: e.target.value }))
                 }
                 placeholder="Address"
-                className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+                className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
               />
               <div className="md:col-span-2 space-y-2">
                 <div className="flex flex-col md:flex-row gap-3">
@@ -570,7 +570,7 @@ const SettingsPage: React.FC = () => {
                     value={branchInput}
                     onChange={(e) => setBranchInput(e.target.value)}
                     placeholder="Add branch name"
-                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-bold text-slate-900 dark:text-white"
+                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
                   />
                   <button
                     type="button"
@@ -585,13 +585,13 @@ const SettingsPage: React.FC = () => {
                       }));
                       setBranchInput("");
                     }}
-                    className="bg-slate-900 dark:bg-orange-600 text-white font-black px-5 py-3 rounded-2xl text-sm uppercase tracking-widest"
+                    className="bg-slate-900 dark:bg-orange-600 text-white font-black px-5 py-2 rounded-2xl text-sm uppercase tracking-widest"
                   >
                     Add Branch
                   </button>
                 </div>
                 {companyDraft.branches.length === 0 ? (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">
                     No branches added yet.
                   </p>
                 ) : (
@@ -599,7 +599,7 @@ const SettingsPage: React.FC = () => {
                     {companyDraft.branches.map((branch) => (
                       <span
                         key={branch}
-                        className="inline-flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-2 rounded-full"
+                        className="inline-flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[10px] font-bold px-3 py-2 rounded-full"
                       >
                         {branch}
                         <button
@@ -612,7 +612,7 @@ const SettingsPage: React.FC = () => {
                           }
                           className="text-slate-400 hover:text-rose-600"
                         >
-                          ×
+                          Ã—
                         </button>
                       </span>
                     ))}
@@ -624,7 +624,7 @@ const SettingsPage: React.FC = () => {
               <button
                 onClick={handleUpdateCompany}
                 disabled={saving || !isAdmin}
-                className="bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black px-6 py-3 rounded-2xl text-sm uppercase tracking-widest disabled:opacity-60"
+                className="bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
               >
                 Save Details
               </button>
@@ -632,19 +632,19 @@ const SettingsPage: React.FC = () => {
                 <button
                   onClick={handleDeleteCompany}
                   disabled={saving}
-                  className="bg-rose-600 hover:bg-rose-700 text-white font-black px-6 py-3 rounded-2xl text-sm uppercase tracking-widest disabled:opacity-60"
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
                 >
                   Delete Company
                 </button>
               )}
               {!isAdmin && (
-                <p className="text-xs text-slate-400">Only admins can edit.</p>
+                <p className="text-[10px] text-slate-400">Only admins can edit.</p>
               )}
             </div>
           </div>
 
           <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
+            <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Add Member
             </h3>
             <div className="flex flex-col md:flex-row gap-3">
@@ -652,12 +652,12 @@ const SettingsPage: React.FC = () => {
                 value={newMemberEmail}
                 onChange={(e) => setNewMemberEmail(e.target.value)}
                 placeholder="User email"
-                className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2 text-sm font-bold"
+                className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
               />
               <select
                 value={newMemberRole}
                 onChange={(e) => setNewMemberRole(e.target.value as UserRole)}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 py-2 text-sm font-bold"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
               >
                 {ROLE_OPTIONS.map((role) => (
                   <option key={role} value={role}>
@@ -713,24 +713,24 @@ const SettingsPage: React.FC = () => {
                   }
                 }}
                 disabled={saving || !isAdmin}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-black px-5 py-2 rounded-2xl text-sm uppercase tracking-widest disabled:opacity-60"
+                className="bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-2xl text-sm uppercase tracking-widest disabled:opacity-60"
               >
                 Add
               </button>
             </div>
             {!isAdmin && (
-              <p className="text-xs text-slate-400 mt-2">
+              <p className="text-[10px] text-slate-400 mt-2">
                 Only admins can add members.
               </p>
             )}
           </div>
 
           <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
+            <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Team Members
             </h3>
             {companyUsers.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">
                 No users found.
               </p>
             ) : (
@@ -738,10 +738,10 @@ const SettingsPage: React.FC = () => {
                 {companyUsers.map((user) => (
                   <div
                     key={user.id}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-4 py-3"
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-3 py-2"
                   >
                     <div>
-                      <p className="text-sm font-black text-slate-900 dark:text-white">
+                      <p className="text-[10px] font-black text-slate-900 dark:text-white">
                         {user.email || user.fullName || user.id}
                       </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
@@ -756,7 +756,7 @@ const SettingsPage: React.FC = () => {
                             onChange={(e) =>
                               handleRoleChange(user.id, e.target.value as UserRole)
                             }
-                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-bold uppercase tracking-wider"
+                            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-wider"
                             disabled={saving || user.id === profile?.id}
                           >
                             {ROLE_OPTIONS.map((role) => (
@@ -766,7 +766,7 @@ const SettingsPage: React.FC = () => {
                             ))}
                           </select>
                         ) : (
-                          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                             {user.role}
                           </span>
                         )}
@@ -905,11 +905,11 @@ const SettingsPage: React.FC = () => {
           </div>
 
           <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase mb-3">
+            <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Pending Invites
             </h3>
             {invites.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400">
+              <p className="text-[10px] text-slate-500 dark:text-slate-400">
                 No pending invites.
               </p>
             ) : (
@@ -917,14 +917,14 @@ const SettingsPage: React.FC = () => {
                 {invites.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-4 py-3"
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-3 py-2"
                   >
                     <div>
-                      <p className="text-sm font-black text-slate-900 dark:text-white">
+                      <p className="text-[10px] font-black text-slate-900 dark:text-white">
                         {invite.email}
                       </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Role: {invite.role} • Status: {invite.status}
+                        Role: {invite.role} â€¢ Status: {invite.status}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -985,3 +985,5 @@ const SettingsPage: React.FC = () => {
 };
 
 export default SettingsPage;
+
+
