@@ -18,6 +18,7 @@ const SignupPage: React.FC<SignupPageProps> = ({
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
   const [phone, setPhone] = useState("");
+  const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -42,6 +43,7 @@ const SignupPage: React.FC<SignupPageProps> = ({
       await signUpWithPassword(email, password);
       try {
         await companyAdminAPI.bootstrapAdmin({
+          companyName: companyName.trim() || undefined,
           fullName: fullName.trim(),
           username: username.trim(),
           phone: phone.trim(),
@@ -145,6 +147,19 @@ const SignupPage: React.FC<SignupPageProps> = ({
                   className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] ml-1">
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Company name"
+                  className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
                 />
               </div>
               <div className="space-y-1">
