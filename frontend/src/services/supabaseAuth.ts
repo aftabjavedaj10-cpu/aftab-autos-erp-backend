@@ -82,6 +82,22 @@ export const signInWithPassword = async (email: string, password: string) => {
   return saveSession(session);
 };
 
+export const sendEmailOtp = async (email: string) => {
+  await authRequest("/auth/v1/otp", {
+    email,
+    create_user: true,
+  });
+};
+
+export const verifyEmailOtp = async (email: string, token: string) => {
+  const session = await authRequest("/auth/v1/verify", {
+    type: "email",
+    email,
+    token,
+  });
+  return saveSession(session);
+};
+
 export const signOut = async () => {
   const session = loadSession();
   if (!session || !SUPABASE_URL || !SUPABASE_ANON_KEY) {

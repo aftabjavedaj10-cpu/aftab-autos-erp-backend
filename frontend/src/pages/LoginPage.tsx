@@ -1,7 +1,12 @@
-
+﻿
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { setProfile, signInWithPassword } from "../services/supabaseAuth";
+import {
+  setProfile,
+  sendEmailOtp,
+  signInWithPassword,
+  verifyEmailOtp,
+} from "../services/supabaseAuth";
 import { companyAdminAPI, profileAPI } from "../services/apiService";
 
 interface LoginPageProps {
@@ -21,6 +26,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
   const [mounted, setMounted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [adminToast, setAdminToast] = useState("");
+  const [useOtp, setUseOtp] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -32,7 +40,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
     setErrorMessage("");
 
     try {
-      await signInWithPassword(email, password);
+      if (useOtp) {
+        if (!otpSent) {
+          await sendEmailOtp(email);
+          setOtpSent(true);
+          setErrorMessage("OTP sent to your email.");
+          return;
+        }
+        if (!otpCode.trim()) {
+          setErrorMessage("Enter the OTP code from your email.");
+          return;
+        }
+        await verifyEmailOtp(email, otpCode.trim());
+      } else {
+        await signInWithPassword(email, password);
+      }
       try {
         await companyAdminAPI.bootstrapAdmin();
         setAdminToast("Admin setup complete");
@@ -84,7 +106,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
           {isDarkMode ? 'Daylight' : 'Midnight'}
         </span>
         <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 shadow-inner flex items-center justify-center text-sm transform group-hover:rotate-12 transition-transform">
-          {isDarkMode ? '☀️' : '🌙'}
+          {isDarkMode ? 'â˜€ï¸' : 'ðŸŒ™'}
         </div>
       </button>
 
@@ -117,26 +139,44 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Password</label>
-                <div className="relative">
-                  <input 
-                    type={showPassword ? 'text' : 'password'} 
-                    required
-                    className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-5 px-6 pr-14 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-sm"
-                    placeholder="••••••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                  <button 
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500 transition-colors p-1"
-                  >
-                    {showPassword ? '👁️' : '🕶️'}
-                  </button>
+              {!useOtp ? (
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Password</label>
+                  <div className="relative">
+                    <input 
+                      type={showPassword ? 'text' : 'password'} 
+                      required
+                      className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-5 px-6 pr-14 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-sm"
+                      placeholder="••••••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button 
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500 transition-colors p-1"
+                    >
+                      {showPassword ? '👁️' : '🙈'}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  {otpSent && (
+                    <div className="space-y-2">
+                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">OTP Code</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="6-digit code"
+                        className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-5 px-6 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-sm tracking-[0.3em]"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
 
               <div className="flex items-center gap-3 px-1">
                 <label className="flex items-center cursor-pointer group">
@@ -148,7 +188,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                       onChange={() => setRememberMe(!rememberMe)}
                     />
                     <div className={`w-5 h-5 border-2 rounded-lg transition-all ${rememberMe ? 'bg-orange-600 border-orange-600' : 'border-slate-200 dark:border-slate-700'}`}>
-                      {rememberMe && <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">✓</span>}
+                      {rememberMe && <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">âœ“</span>}
                     </div>
                   </div>
                   <span className="ml-3 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest group-hover:text-orange-500 transition-colors">Remember ME</span>
@@ -167,8 +207,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                   </svg>
                 ) : (
                   <>
-                    <span>Login</span>
-                    <span className="text-xl leading-none">➜</span>
+                    <span>{useOtp ? (otpSent ? "Verify OTP" : "Send OTP") : "Login"}</span>
+                    <span className="text-xl leading-none">âžœ</span>
                   </>
                 )}
               </button>
@@ -177,6 +217,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                   {errorMessage}
                 </div>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  setUseOtp(!useOtp);
+                  setOtpSent(false);
+                  setOtpCode("");
+                  setErrorMessage("");
+                }}
+                className="w-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-orange-600 transition-colors"
+              >
+                {useOtp ? "Use Password Instead" : "Login with OTP"}
+              </button>
               <button
                 type="button"
                 onClick={() => navigate("/signup")}
@@ -190,7 +242,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
         
         <div className="mt-12 text-center opacity-40">
           <p className="text-slate-400 dark:text-slate-600 text-[10px] uppercase font-black tracking-[0.5em]">
-            © 2024 AUTOMOTIVE INTELLIGENCE SYSTEMS
+            Â© 2024 AUTOMOTIVE INTELLIGENCE SYSTEMS
           </p>
         </div>
       </div>
@@ -199,3 +251,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
 };
 
 export default LoginPage;
+
+
+
+
+
