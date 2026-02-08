@@ -97,6 +97,9 @@ Deno.serve(async (req) => {
 
   if (memberIds.length > 0) {
     await supabase.from("profiles").delete().in("id", memberIds);
+    for (const userId of memberIds) {
+      await supabase.auth.admin.deleteUser(userId);
+    }
   }
 
   // Delete company (cascade handles related rows)
