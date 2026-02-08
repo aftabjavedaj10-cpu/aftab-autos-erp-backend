@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
   // Create company and add admin membership
   const { data: companyRow, error: companyError } = await supabase
     .from("companies")
-    .insert({ name })
+    .insert({ name, owner_id: userId })
     .select()
     .maybeSingle();
 
