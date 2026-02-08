@@ -100,71 +100,101 @@ const SignupPage: React.FC<SignupPageProps> = ({
           <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase mb-1">
             Create Admin
           </h1>
-          <p className="text-slate-400 dark:text-slate-500 text-[8px] font-black uppercase tracking-[0.5em]">
-            First Setup
-          </p>
+              <p className="text-slate-500 dark:text-slate-400 text-[8px] font-black uppercase tracking-[0.5em]">
+                First Setup
+              </p>
         </div>
 
         <div className="bg-white/70 dark:bg-slate-900/70 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 rounded-[2.5rem] shadow-[0_28px_56px_-16px_rgba(0,0,0,0.1)] dark:shadow-none overflow-hidden">
           <div className="p-8 md:p-10">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="text"
-                required
-                placeholder="Full name"
-                className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-              />
-              <input
-                type="text"
-                required
-                placeholder="Username"
-                className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-              <input
-                type="tel"
-                required
-                placeholder="Phone"
-                className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-              <input
-                type="email"
-                required
-                placeholder="Email"
-                className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <div className="relative">
+              <div className="space-y-1">
+                <label className="block text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] ml-1">
+                  Full Name
+                </label>
                 <input
-                  type={showPassword ? "text" : "password"}
+                  type="text"
                   required
-                  placeholder="Password"
-                  className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 pr-10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Full name"
+                  className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500 transition-colors p-1 text-xs"
-                >
-                  {showPassword ? "👁️" : "🙈"}
-                </button>
               </div>
-              <input
-                type="password"
-                required
-                placeholder="Confirm password"
-                className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-              />
+              <div className="space-y-1">
+                <label className="block text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] ml-1">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Username"
+                  className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] ml-1">
+                  Phone
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="Phone"
+                  className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] ml-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="Email"
+                  className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] ml-1">
+                  Password
+                </label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="Password"
+                    className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 pr-10 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500 transition-colors p-1 text-xs"
+                  >
+                    {showPassword ? "👁️" : "🙈"}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="block text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] ml-1">
+                  Confirm Password
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Confirm password"
+                  className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-xs"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                />
+              </div>
 
               <button
                 type="submit"

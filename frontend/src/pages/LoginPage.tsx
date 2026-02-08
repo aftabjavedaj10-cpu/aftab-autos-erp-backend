@@ -106,7 +106,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
           <div className="p-8 md:p-10">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Email</label>
+                <label className="block text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] ml-1">Email</label>
                 <input 
                   type="email" 
                   required
@@ -118,7 +118,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
               </div>
 
               <div className="space-y-2">
-                <label className="block text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Password</label>
+                <label className="block text-[9px] font-black text-slate-600 dark:text-slate-300 uppercase tracking-[0.2em] ml-1">Password</label>
                 <div className="relative">
                   <input 
                     type={showPassword ? 'text' : 'password'} 
@@ -166,10 +166,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
                 ) : (
-                  <>
-                    <span>Sign In</span>
-                    <span className="text-lg leading-none">âžœ</span>
-                  </>
+                  <span>Sign In</span>
                 )}
               </button>
               {errorMessage && (
