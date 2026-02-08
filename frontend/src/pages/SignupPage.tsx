@@ -73,7 +73,10 @@ const SignupPage: React.FC<SignupPageProps> = ({
       navigate("/");
     } catch (error) {
       const message = error instanceof Error ? error.message : "Signup failed";
-      if (message.toLowerCase().includes("rate limit")) {
+      if (
+        message.toLowerCase().includes("rate limit") ||
+        message.toLowerCase().includes("over_email_send_rate_limit")
+      ) {
         setErrorMessage("Email rate limit exceeded. Try again in 10 mins.");
       } else {
         setErrorMessage(message);

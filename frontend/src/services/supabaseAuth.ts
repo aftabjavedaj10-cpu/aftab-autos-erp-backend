@@ -59,7 +59,14 @@ const authRequest = async (path: string, body: any) => {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data?.error_description || data?.message || "Auth failed");
+    const msg =
+      data?.msg ||
+      data?.error_description ||
+      data?.message ||
+      data?.error ||
+      "Auth failed";
+    const code = data?.error_code || data?.code || "";
+    throw new Error(code ? `${msg} (${code})` : msg);
   }
 
   return data as SupabaseSession;
