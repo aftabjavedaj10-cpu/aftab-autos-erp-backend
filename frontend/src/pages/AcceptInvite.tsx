@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
 const parseHash = () => {
   const hash = window.location.hash.replace(/^#/, "");
@@ -40,8 +41,8 @@ const AcceptInvite: React.FC = () => {
     setError(null);
     setSuccess(null);
 
-    if (!SUPABASE_URL) {
-      setError("Missing Supabase URL");
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      setError("Missing Supabase configuration");
       return;
     }
 
@@ -66,6 +67,7 @@ const AcceptInvite: React.FC = () => {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
           Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ password }),
