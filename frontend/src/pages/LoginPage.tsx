@@ -1,12 +1,7 @@
 ﻿
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  setProfile,
-  sendEmailOtp,
-  signInWithPassword,
-  verifyEmailOtp,
-} from "../services/supabaseAuth";
+import { setProfile, signInWithPassword } from "../services/supabaseAuth";
 import { companyAdminAPI, profileAPI } from "../services/apiService";
 
 interface LoginPageProps {
@@ -26,9 +21,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
   const [mounted, setMounted] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [adminToast, setAdminToast] = useState("");
-  const [useOtp, setUseOtp] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpCode, setOtpCode] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -40,21 +32,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
     setErrorMessage("");
 
     try {
-      if (useOtp) {
-        if (!otpSent) {
-          await sendEmailOtp(email);
-          setOtpSent(true);
-          setErrorMessage("OTP sent to your email.");
-          return;
-        }
-        if (!otpCode.trim()) {
-          setErrorMessage("Enter the OTP code from your email.");
-          return;
-        }
-        await verifyEmailOtp(email, otpCode.trim());
-      } else {
-        await signInWithPassword(email, password);
-      }
+      await signInWithPassword(email, password);
       try {
         await companyAdminAPI.bootstrapAdmin();
         setAdminToast("Admin setup complete");
@@ -139,44 +117,26 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                 />
               </div>
 
-              {!useOtp ? (
-                <div className="space-y-2">
-                  <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Password</label>
-                  <div className="relative">
-                    <input 
-                      type={showPassword ? 'text' : 'password'} 
-                      required
-                      className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-5 px-6 pr-14 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-sm"
-                      placeholder="••••••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button 
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500 transition-colors p-1"
-                    >
-                      {showPassword ? '👁️' : '🙈'}
-                    </button>
-                  </div>
+              <div className="space-y-2">
+                <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">Password</label>
+                <div className="relative">
+                  <input 
+                    type={showPassword ? 'text' : 'password'} 
+                    required
+                    className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-5 px-6 pr-14 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-sm"
+                    placeholder="••••••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500 transition-colors p-1"
+                  >
+                    {showPassword ? '👁️' : '🙈'}
+                  </button>
                 </div>
-              ) : (
-                <>
-                  {otpSent && (
-                    <div className="space-y-2">
-                      <label className="block text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] ml-1">OTP Code</label>
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="6-digit code"
-                        className="w-full bg-white dark:bg-slate-800/40 border border-slate-100 dark:border-slate-700/50 rounded-2xl py-5 px-6 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-orange-500 focus:border-orange-500 transition-all font-bold text-sm tracking-[0.3em]"
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value)}
-                      />
-                    </div>
-                  )}
-                </>
-              )}
+              </div>
 
               <div className="flex items-center gap-3 px-1">
                 <label className="flex items-center cursor-pointer group">
@@ -207,7 +167,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                   </svg>
                 ) : (
                   <>
-                    <span>{useOtp ? (otpSent ? "Verify OTP" : "Send OTP") : "Login"}</span>
+                    <span>Login</span>
                     <span className="text-xl leading-none">âžœ</span>
                   </>
                 )}
@@ -217,18 +177,6 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                   {errorMessage}
                 </div>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  setUseOtp(!useOtp);
-                  setOtpSent(false);
-                  setOtpCode("");
-                  setErrorMessage("");
-                }}
-                className="w-full text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-orange-600 transition-colors"
-              >
-                {useOtp ? "Use Password Instead" : "Login with OTP"}
-              </button>
               <button
                 type="button"
                 onClick={() => navigate("/signup")}
