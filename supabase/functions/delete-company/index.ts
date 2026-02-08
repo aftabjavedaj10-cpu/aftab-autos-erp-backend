@@ -58,20 +58,6 @@ Deno.serve(async (req) => {
     return jsonResponse(403, { error: "Not authorized" });
   }
 
-  // Collect all members for deletion
-  const { data: members, error: membersError } = await supabase
-    .from("company_members")
-    .select("user_id")
-    .eq("company_id", company_id);
-
-  if (membersError) {
-    return jsonResponse(400, { error: membersError.message });
-  }
-
-  const userIds = (members || [])
-    .map((m) => m.user_id)
-    .filter((id) => typeof id === "string");
-
   // Delete storage objects (logo bucket)
   const { data: listData, error: listError } = await supabase.storage
     .from("company-logos")
@@ -92,11 +78,5 @@ Deno.serve(async (req) => {
     return jsonResponse(400, { error: deleteCompanyError.message });
   }
 
-  // Delete auth users (permanent)
-  for (const userId of userIds) {
-    // Ignore failure for already deleted users
-    await supabase.auth.admin.deleteUser(userId);
-  }
-
-  return jsonResponse(200, { ok: true, deleted_users: userIds.length });
+  return jsonResponse(200, { ok: true });
 });
