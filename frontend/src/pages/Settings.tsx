@@ -679,7 +679,8 @@ const SettingsPage: React.FC = () => {
           </div>
 
           {activeSection === "members" && (
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <div className="space-y-4">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
             <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Add Member
             </h3>
@@ -759,9 +760,9 @@ const SettingsPage: React.FC = () => {
                 Only admins can add members.
               </p>
             )}
-            </div>
+              </div>
 
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
             <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Team Members
             </h3>
@@ -938,9 +939,9 @@ const SettingsPage: React.FC = () => {
                 ))}
               </div>
             )}
-            </div>
+              </div>
 
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
             <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Pending Invites
             </h3>
@@ -1013,6 +1014,7 @@ const SettingsPage: React.FC = () => {
                 ))}
               </div>
             )}
+              </div>
             </div>
           )}
         </div>
