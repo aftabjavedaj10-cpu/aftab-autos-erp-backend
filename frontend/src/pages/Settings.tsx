@@ -181,7 +181,14 @@ const SettingsPage: React.FC = () => {
       const created = await companyAPI.create(companyName.trim());
       const userId = getUserId();
       if (!userId) throw new Error("Not authenticated");
-      await companyMemberAPI.addMember(created.id, userId, "admin");
+      try {
+        await companyMemberAPI.addMember(created.id, userId, "admin");
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "";
+        if (!message.includes("duplicate") && !message.includes("23505")) {
+          throw err;
+        }
+      }
       setCompanies((prev) => [...prev, { id: created.id, name: created.name }]);
       setActiveCompanyIdState(created.id);
       setActiveCompanyId(created.id);
