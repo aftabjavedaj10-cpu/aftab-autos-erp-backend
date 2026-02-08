@@ -174,6 +174,10 @@ const SignupPage: React.FC<SignupPageProps> = ({
                 {isLoading ? "Creating..." : "Create Admin"}
               </button>
 
+              <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 text-center">
+                Check your email for the OTP link to confirm your account.
+              </p>
+
               {errorMessage && (
                 <div className="text-xs font-bold text-red-600 dark:text-red-400">
                   {errorMessage}
