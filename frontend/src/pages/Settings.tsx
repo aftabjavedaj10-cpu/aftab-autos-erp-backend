@@ -280,7 +280,7 @@ const SettingsPage: React.FC = () => {
       return;
     }
     const confirmDelete = window.confirm(
-      "Delete this company? This will remove all related data and members."
+      "Delete this company? This will remove all company data, delete member profiles, and delete manager/staff Auth users. This cannot be undone."
     );
     if (!confirmDelete) return;
     setSaving(true);
