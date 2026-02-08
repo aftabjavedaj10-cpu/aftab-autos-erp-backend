@@ -248,6 +248,25 @@ const mapCompanyToDb = (company: any) =>
     ["logoUrl", "createdAt"]
   );
 
+const mapRoleFromDb = (row: any) => ({
+  id: row.id,
+  companyId: row.company_id ?? row.companyId,
+  name: row.name,
+  permissions: row.permissions ?? [],
+  isSystem: row.is_system ?? row.isSystem,
+  createdAt: row.created_at ?? row.createdAt,
+});
+
+const mapRoleToDb = (role: any) =>
+  stripClientOnly(
+    {
+      ...role,
+      company_id: role.companyId ?? role.company_id,
+      is_system: role.isSystem ?? role.is_system,
+    },
+    ["companyId", "isSystem", "createdAt"]
+  );
+
 // ============ PRODUCTS ============
 export const productAPI = {
   getAll: () =>
@@ -476,6 +495,28 @@ export const companyAdminAPI = {
     ),
 };
 
+// ============ ROLES & PERMISSIONS ============
+export const roleAPI = {
+  list: (companyId: string) =>
+    apiCall(`/company_roles?select=*&company_id=eq.${companyId}&order=created_at.asc`).then(
+      (rows) => (Array.isArray(rows) ? rows.map(mapRoleFromDb) : rows)
+    ),
+  create: (companyId: string, name: string, permissions: string[] = [], isSystem = false) =>
+    apiCall(
+      "/company_roles",
+      "POST",
+      mapRoleToDb({ company_id: companyId, name, permissions, is_system: isSystem }),
+      true
+    )
+      .then(firstRow)
+      .then(mapRoleFromDb),
+  update: (roleId: string, payload: any) =>
+    apiCall(`/company_roles?id=eq.${roleId}`, "PATCH", mapRoleToDb(payload), true)
+      .then(firstRow)
+      .then(mapRoleFromDb),
+  remove: (roleId: string) => apiCall(`/company_roles?id=eq.${roleId}`, "DELETE"),
+};
+
 export default {
   productAPI,
   customerAPI,
@@ -487,4 +528,5 @@ export default {
   companyInviteAPI,
   storageAPI,
   companyAdminAPI,
+  roleAPI,
 };

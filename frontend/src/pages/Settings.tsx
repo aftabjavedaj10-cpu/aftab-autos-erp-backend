@@ -1,10 +1,18 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { Company, CompanyInvite, CompanyMember, Profile, UserRole } from "../types";
+import type {
+  Company,
+  CompanyInvite,
+  CompanyMember,
+  CompanyRole,
+  Profile,
+  UserRole,
+} from "../types";
 import {
   companyAPI,
   companyInviteAPI,
   companyMemberAPI,
   companyAdminAPI,
+  roleAPI,
   profileAPI,
   storageAPI,
 } from "../services/apiService";
@@ -17,6 +25,25 @@ import {
 } from "../services/supabaseAuth";
 
 const ROLE_OPTIONS: UserRole[] = ["admin", "manager", "staff"];
+
+const PERMISSION_CATALOG = [
+  { key: "dashboard.view", label: "Dashboard: View" },
+  { key: "products.read", label: "Products: View" },
+  { key: "products.write", label: "Products: Create & Edit" },
+  { key: "products.delete", label: "Products: Delete" },
+  { key: "customers.read", label: "Customers: View" },
+  { key: "customers.write", label: "Customers: Create & Edit" },
+  { key: "customers.delete", label: "Customers: Delete" },
+  { key: "vendors.read", label: "Vendors: View" },
+  { key: "vendors.write", label: "Vendors: Create & Edit" },
+  { key: "vendors.delete", label: "Vendors: Delete" },
+  { key: "categories.read", label: "Categories: View" },
+  { key: "categories.write", label: "Categories: Create & Edit" },
+  { key: "categories.delete", label: "Categories: Delete" },
+  { key: "settings.view", label: "Settings: View" },
+  { key: "settings.manage_company", label: "Settings: Manage Company" },
+  { key: "settings.manage_members", label: "Settings: Manage Members" },
+];
 
 const SettingsPage: React.FC = () => {
   const [profile, setProfileState] = useState<Profile | null>(null);
@@ -39,7 +66,12 @@ const SettingsPage: React.FC = () => {
   const [newMemberRole, setNewMemberRole] = useState<UserRole>("staff");
   const [companyUsers, setCompanyUsers] = useState<(Profile & { memberId?: string })[]>([]);
   const [invites, setInvites] = useState<CompanyInvite[]>([]);
-  const [activeSection, setActiveSection] = useState<"company" | "members">("company");
+  const [roles, setRoles] = useState<CompanyRole[]>([]);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+  const [newRoleName, setNewRoleName] = useState("");
+  const [activeSection, setActiveSection] = useState<"company" | "members" | "roles">(
+    "company"
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -51,6 +83,12 @@ const SettingsPage: React.FC = () => {
   }, [members, activeCompanyId]);
 
   const isAdmin = currentMemberRole === "admin";
+  const isSystemRole = (roleName?: string) =>
+    ["admin", "manager", "staff"].includes((roleName || "").toLowerCase());
+  const roleOptions = useMemo<UserRole[]>(
+    () => (roles.length > 0 ? roles.map((r) => r.name) : ROLE_OPTIONS),
+    [roles]
+  );
 
   const refresh = async () => {
     setLoading(true);
@@ -110,9 +148,10 @@ const SettingsPage: React.FC = () => {
         if (defaultCompanyId) setActiveCompanyId(defaultCompanyId);
 
         if (defaultCompanyId) {
-          const [companyMembers, inviteRows] = await Promise.all([
+          const [companyMembers, inviteRows, roleRows] = await Promise.all([
             companyMemberAPI.listMembers(defaultCompanyId),
             companyInviteAPI.listInvites(defaultCompanyId),
+            roleAPI.list(defaultCompanyId).catch(() => [] as CompanyRole[]),
           ]);
           const mappedProfiles = companyMembers.map((m: any) => ({
             id: m.user_id ?? m.userId ?? m.profiles?.id,
@@ -122,6 +161,9 @@ const SettingsPage: React.FC = () => {
             memberId: m.id,
           }));
           setCompanyUsers(mappedProfiles);
+          const mappedRoles = Array.isArray(roleRows) ? roleRows : [];
+          setRoles(mappedRoles);
+          setSelectedRoleId(mappedRoles[0]?.id || null);
           setInvites(
             inviteRows.map((row: any) => ({
               id: row.id,
@@ -138,6 +180,8 @@ const SettingsPage: React.FC = () => {
         } else {
           setCompanyUsers([]);
           setInvites([]);
+          setRoles([]);
+          setSelectedRoleId(null);
         }
       }
     } catch (err) {
@@ -169,6 +213,20 @@ const SettingsPage: React.FC = () => {
       setBranchInput("");
     }
   }, [companies, activeCompanyId]);
+
+  useEffect(() => {
+    if (!activeCompanyId) return;
+    roleAPI
+      .list(activeCompanyId)
+      .then((rows) => {
+        const mapped = Array.isArray(rows) ? rows : [];
+        setRoles(mapped);
+        setSelectedRoleId((prev) => prev || mapped[0]?.id || null);
+      })
+      .catch(() => {
+        // silent fail; roles UI will show empty state
+      });
+  }, [activeCompanyId]);
 
   const handleCreateCompany = async () => {
     if (!companyName.trim()) {
@@ -332,6 +390,94 @@ const SettingsPage: React.FC = () => {
     }
   };
 
+  const seedDefaultRoles = async () => {
+    if (!activeCompanyId) return;
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const allPerms = PERMISSION_CATALOG.map((p) => p.key);
+      const managerPerms = allPerms.filter(
+        (p) => !p.startsWith("settings.manage")
+      );
+      const staffPerms = allPerms.filter(
+        (p) => p.endsWith(".read") || p === "dashboard.view"
+      );
+      const created = await Promise.all([
+        roleAPI.create(activeCompanyId, "admin", allPerms, true),
+        roleAPI.create(activeCompanyId, "manager", managerPerms, true),
+        roleAPI.create(activeCompanyId, "staff", staffPerms, true),
+      ]);
+      setRoles(created);
+      setSelectedRoleId(created[0]?.id || null);
+      setSuccess("Default roles created");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create roles");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateRole = async () => {
+    if (!activeCompanyId) return;
+    const name = newRoleName.trim();
+    if (!name) {
+      setError("Role name is required");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const created = await roleAPI.create(activeCompanyId, name, []);
+      setRoles((prev) => [...prev, created]);
+      setSelectedRoleId(created.id);
+      setNewRoleName("");
+      setSuccess("Role created");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create role");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteRole = async (roleId: string) => {
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await roleAPI.remove(roleId);
+      setRoles((prev) => prev.filter((r) => r.id !== roleId));
+      setSelectedRoleId((prev) => (prev === roleId ? null : prev));
+      setSuccess("Role deleted");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete role");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTogglePermission = async (roleId: string, permission: string) => {
+    const role = roles.find((r) => r.id === roleId);
+    if (!role) return;
+    const current = role.permissions || [];
+    const next = current.includes(permission)
+      ? current.filter((p) => p !== permission)
+      : [...current, permission];
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const updated = await roleAPI.update(roleId, { permissions: next });
+      setRoles((prev) => prev.map((r) => (r.id === roleId ? updated : r)));
+      setSuccess("Permissions updated");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update permissions");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-5">
@@ -402,9 +548,10 @@ const SettingsPage: React.FC = () => {
                     const nextId = e.target.value;
                     setActiveCompanyIdState(nextId);
                     setActiveCompanyId(nextId);
-                    const [companyMembers, inviteRows] = await Promise.all([
+                    const [companyMembers, inviteRows, roleRows] = await Promise.all([
                       companyMemberAPI.listMembers(nextId),
                       companyInviteAPI.listInvites(nextId),
+                      roleAPI.list(nextId).catch(() => [] as CompanyRole[]),
                     ]);
                     const mappedProfiles = companyMembers.map((m: any) => ({
                       id: m.user_id ?? m.userId ?? m.profiles?.id,
@@ -414,6 +561,9 @@ const SettingsPage: React.FC = () => {
                       memberId: m.id,
                     }));
                     setCompanyUsers(mappedProfiles);
+                    const mappedRoles = Array.isArray(roleRows) ? roleRows : [];
+                    setRoles(mappedRoles);
+                    setSelectedRoleId(mappedRoles[0]?.id || null);
                     setInvites(
                       inviteRows.map((row: any) => ({
                         id: row.id,
@@ -467,6 +617,16 @@ const SettingsPage: React.FC = () => {
                 }`}
               >
                 Members & Invites
+              </button>
+              <button
+                onClick={() => setActiveSection("roles")}
+                className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                  activeSection === "roles"
+                    ? "bg-slate-900 text-white dark:bg-orange-600"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                Roles & Permissions
               </button>
             </div>
 
@@ -678,6 +838,130 @@ const SettingsPage: React.FC = () => {
             )}
           </div>
 
+          {activeSection === "roles" && (
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+              <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
+                Roles & Permissions
+              </h3>
+              {!isAdmin && (
+                <p className="text-[10px] text-slate-400">
+                  Only admins can manage roles and permissions.
+                </p>
+              )}
+              {isAdmin && (
+                <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] gap-4">
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      {roles.length === 0 ? (
+                        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3">
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                            No roles yet. Create a role or seed defaults.
+                          </p>
+                          <button
+                            onClick={seedDefaultRoles}
+                            disabled={saving}
+                            className="mt-3 w-full bg-slate-900 dark:bg-orange-600 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
+                          >
+                            Seed Default Roles
+                          </button>
+                        </div>
+                      ) : (
+                        roles.map((role) => (
+                          <button
+                            key={role.id}
+                            onClick={() => setSelectedRoleId(role.id)}
+                            className={`w-full text-left px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                              selectedRoleId === role.id
+                                ? "bg-slate-900 text-white dark:bg-orange-600"
+                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            }`}
+                          >
+                            {role.name}
+                          </button>
+                        ))
+                      )}
+                    </div>
+
+                    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 space-y-2">
+                      <input
+                        value={newRoleName}
+                        onChange={(e) => setNewRoleName(e.target.value)}
+                        placeholder="New role name"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
+                      />
+                      <button
+                        onClick={handleCreateRole}
+                        disabled={saving}
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
+                      >
+                        Create Role
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+                    {roles.length === 0 ? (
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                        Select a role to manage permissions.
+                      </p>
+                    ) : (
+                      (() => {
+                        const selectedRole = roles.find((r) => r.id === selectedRoleId) || roles[0];
+                        if (!selectedRole) {
+                          return (
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                              Select a role to manage permissions.
+                            </p>
+                          );
+                        }
+                        const selectedPermissions = selectedRole.permissions || [];
+                        return (
+                          <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-slate-900 dark:text-white">
+                                  {selectedRole.name}
+                                </p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                                  Toggle what this role can access.
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteRole(selectedRole.id)}
+                                disabled={saving || selectedRole.isSystem || isSystemRole(selectedRole.name)}
+                                className="text-[10px] font-black uppercase tracking-widest text-rose-600 hover:text-rose-700 disabled:opacity-50"
+                              >
+                                Delete Role
+                              </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              {PERMISSION_CATALOG.map((perm) => (
+                                <label
+                                  key={perm.key}
+                                  className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200"
+                                >
+                                  <span>{perm.label}</span>
+                                  <input
+                                    type="checkbox"
+                                    className="h-4 w-4"
+                                    checked={selectedPermissions.includes(perm.key)}
+                                    onChange={() =>
+                                      handleTogglePermission(selectedRole.id, perm.key)
+                                    }
+                                  />
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })()
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeSection === "members" && (
             <div className="space-y-4">
               <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
@@ -696,7 +980,7 @@ const SettingsPage: React.FC = () => {
                 onChange={(e) => setNewMemberRole(e.target.value as UserRole)}
                 className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
               >
-                {ROLE_OPTIONS.map((role) => (
+                {roleOptions.map((role) => (
                   <option key={role} value={role}>
                     {role}
                   </option>
@@ -796,7 +1080,7 @@ const SettingsPage: React.FC = () => {
                             className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-[10px] font-bold uppercase tracking-wider"
                             disabled={saving || user.id === profile?.id}
                           >
-                            {ROLE_OPTIONS.map((role) => (
+                            {roleOptions.map((role) => (
                               <option key={role} value={role}>
                                 {role}
                               </option>

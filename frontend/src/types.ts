@@ -60,7 +60,16 @@ export interface Customer {
   image?: string;
 }
 
-export type UserRole = "admin" | "manager" | "staff";
+export type UserRole = string;
+
+export interface CompanyRole {
+  id: string;
+  companyId: string;
+  name: string;
+  permissions?: string[];
+  isSystem?: boolean;
+  createdAt?: string;
+}
 
 export interface Company {
   id: string;
