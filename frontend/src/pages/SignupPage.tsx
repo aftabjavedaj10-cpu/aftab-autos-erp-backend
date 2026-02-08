@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { companyAdminAPI, profileAPI } from "../services/apiService";
-import { setActiveCompanyId, setProfile, signUpWithPassword } from "../services/supabaseAuth";
+import {
+  clearPendingBootstrap,
+  setActiveCompanyId,
+  setPendingBootstrap,
+  setProfile,
+  signUpWithPassword,
+} from "../services/supabaseAuth";
 
 interface SignupPageProps {
   isDarkMode: boolean;
@@ -41,6 +47,12 @@ const SignupPage: React.FC<SignupPageProps> = ({
 
     try {
       await signUpWithPassword(email, password);
+      setPendingBootstrap({
+        companyName: companyName.trim(),
+        fullName: fullName.trim(),
+        username: username.trim(),
+        phone: phone.trim(),
+      });
       try {
         const bootstrap = await companyAdminAPI.bootstrapAdmin({
           companyName: companyName.trim() || undefined,
@@ -50,6 +62,7 @@ const SignupPage: React.FC<SignupPageProps> = ({
         });
         if (bootstrap?.company_id) {
           setActiveCompanyId(bootstrap.company_id as string);
+          clearPendingBootstrap();
         }
       } catch {
         // ignore bootstrap failures

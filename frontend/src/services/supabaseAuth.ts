@@ -16,6 +16,7 @@ const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | und
 const STORAGE_KEY = "supabase.auth.session";
 const PROFILE_KEY = "supabase.auth.profile";
 const ACTIVE_COMPANY_KEY = "supabase.active_company_id";
+const PENDING_BOOTSTRAP_KEY = "supabase.pending_bootstrap";
 
 const nowInSeconds = () => Math.floor(Date.now() / 1000);
 
@@ -175,4 +176,32 @@ export const getAccessToken = async () => {
   }
 
   return session.access_token;
+};
+
+export const setPendingBootstrap = (payload: {
+  companyName?: string;
+  fullName?: string;
+  username?: string;
+  phone?: string;
+}) => {
+  localStorage.setItem(PENDING_BOOTSTRAP_KEY, JSON.stringify(payload));
+};
+
+export const getPendingBootstrap = () => {
+  const raw = localStorage.getItem(PENDING_BOOTSTRAP_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as {
+      companyName?: string;
+      fullName?: string;
+      username?: string;
+      phone?: string;
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const clearPendingBootstrap = () => {
+  localStorage.removeItem(PENDING_BOOTSTRAP_KEY);
 };

@@ -1,7 +1,12 @@
 ﻿
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { setProfile, signInWithPassword } from "../services/supabaseAuth";
+import {
+  clearPendingBootstrap,
+  getPendingBootstrap,
+  setProfile,
+  signInWithPassword,
+} from "../services/supabaseAuth";
 import { companyAdminAPI, profileAPI } from "../services/apiService";
 
 interface LoginPageProps {
@@ -34,7 +39,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
     try {
       await signInWithPassword(email, password);
       try {
-        await companyAdminAPI.bootstrapAdmin();
+        const pending = getPendingBootstrap();
+        const bootstrap = await companyAdminAPI.bootstrapAdmin(
+          pending || undefined
+        );
+        if (bootstrap?.company_id) {
+          clearPendingBootstrap();
+        }
         setAdminToast("Admin setup complete");
         window.setTimeout(() => setAdminToast(""), 3000);
       } catch {
