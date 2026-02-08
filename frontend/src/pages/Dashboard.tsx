@@ -12,8 +12,8 @@ import CategoriesPage from "./Categories";
 import AddCategoryPage from "./AddCategory";
 import SettingsPage from "./Settings";
 import type { Product, Category, Vendor, Customer } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI } from "../services/apiService";
-import { getSession } from "../services/supabaseAuth";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI } from "../services/apiService";
+import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId } from "../services/supabaseAuth";
 
 interface DashboardProps {
   onLogout: () => void;
@@ -25,6 +25,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [noCompany, setNoCompany] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -41,6 +42,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
       try {
         setLoading(true);
         setError(null);
+        setNoCompany(false);
+
+        const existingCompanyId = getActiveCompanyId();
+        if (!existingCompanyId) {
+          const userId = getUserId();
+          if (userId) {
+            const membershipRows = await companyAPI.listMyCompanies(userId);
+            const firstCompany = membershipRows?.[0]?.companies;
+            if (firstCompany?.id) {
+              setActiveCompanyId(firstCompany.id);
+            } else {
+              setNoCompany(true);
+              setLoading(false);
+              return;
+            }
+          } else {
+            setNoCompany(true);
+            setLoading(false);
+            return;
+          }
+        }
         
         const [productsData, customersData, vendorsData, categoriesData] = await Promise.all([
           productAPI.getAll(),
@@ -192,7 +214,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
         />
 
         <div className="p-6">
-        {loading && (
+        {noCompany && (
+          <div className="bg-amber-50 border border-amber-200 text-amber-700 px-4 py-3 rounded-2xl mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <p className="font-black uppercase text-xs tracking-widest">No Company Found</p>
+              <p className="text-sm">Create your company in Settings to start using the app.</p>
+            </div>
+            <button
+              onClick={() => setActiveTab("settings")}
+              className="bg-amber-600 hover:bg-amber-700 text-white font-black px-4 py-2 rounded-xl text-xs uppercase tracking-widest"
+            >
+              Go to Settings
+            </button>
+          </div>
+        )}
+
+        {loading && !noCompany && (
           <div className="text-center py-12">
             <p className="text-slate-500 dark:text-slate-400">Loading data...</p>
           </div>
