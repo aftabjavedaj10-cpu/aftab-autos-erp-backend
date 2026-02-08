@@ -68,6 +68,37 @@ Deno.serve(async (req) => {
     await supabase.storage.from("company-logos").remove(paths);
   }
 
+  // Load company owner
+  const { data: companyRow, error: companyError } = await supabase
+    .from("companies")
+    .select("id, owner_id")
+    .eq("id", company_id)
+    .maybeSingle();
+
+  if (companyError || !companyRow) {
+    return jsonResponse(400, { error: companyError?.message || "Company not found" });
+  }
+
+  const ownerId = companyRow.owner_id;
+
+  // Collect members to delete profiles (exclude owner)
+  const { data: members, error: membersError } = await supabase
+    .from("company_members")
+    .select("user_id")
+    .eq("company_id", company_id);
+
+  if (membersError) {
+    return jsonResponse(400, { error: membersError.message });
+  }
+
+  const memberIds = (members || [])
+    .map((m) => m.user_id)
+    .filter((id) => typeof id === "string" && id !== ownerId);
+
+  if (memberIds.length > 0) {
+    await supabase.from("profiles").delete().in("id", memberIds);
+  }
+
   // Delete company (cascade handles related rows)
   const { error: deleteCompanyError } = await supabase
     .from("companies")
