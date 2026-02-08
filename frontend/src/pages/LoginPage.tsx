@@ -62,7 +62,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#fcf8f2] dark:bg-[#020617] px-4 transition-colors duration-1000 relative overflow-hidden font-sans">
       {adminToast && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-[8px]s font-black uppercase tracking-widest px-6 py-3 rounded-2xl shadow-2xl">
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-[8px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl shadow-2xl">
           {adminToast}
         </div>
       )}
@@ -80,11 +80,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
         onClick={onThemeToggle}
         className="absolute top-6 right-6 z-50 flex items-center gap-2 px-3 py-1.5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 rounded-full shadow-2xl hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all group"
       >
-        <span className="text-[9px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
+        <span className="text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">
           {isDarkMode ? 'Daylight' : 'Midnight'}
         </span>
         <div className="w-7 h-7 rounded-full bg-white dark:bg-slate-800 shadow-inner flex items-center justify-center text-xs transform group-hover:rotate-12 transition-transform">
-          {isDarkMode ? 'â˜€ï¸' : 'ðŸŒ™'}
+          {isDarkMode ? '☀️' : '🌙'}
         </div>
       </button>
 
@@ -151,14 +151,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                       {rememberMe && <span className="absolute inset-0 flex items-center justify-center text-white text-[10px] font-bold">âœ“</span>}
                     </div>
                   </div>
-                  <span className="ml-3 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest group-hover:text-orange-500 transition-colors">Remember ME</span>
+                  <span className="ml-2 text-[9px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest group-hover:text-orange-500 transition-colors">Remember ME</span>
                 </label>
               </div>
 
               <button 
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black py-4 rounded-[1.2rem] shadow-2xl shadow-orange-600/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 text-[8px]s uppercase tracking-[0.4em]"
+                className="w-full bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black py-4 rounded-[1.2rem] shadow-2xl shadow-orange-600/30 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3 text-[10px] uppercase tracking-[0.35em]"
               >
                 {isLoading ? (
                   <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24">
@@ -167,13 +167,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                   </svg>
                 ) : (
                   <>
-                    <span>Login</span>
-                    <span className="text-[8px]l leading-none">âžœ</span>
+                    <span>Sign In</span>
+                    <span className="text-lg leading-none">âžœ</span>
                   </>
                 )}
               </button>
               {errorMessage && (
-                <div className="text-[8px]s font-bold text-red-600 dark:text-red-400">
+                <div className="text-[10px] font-bold text-red-600 dark:text-red-400">
                   {errorMessage}
                 </div>
               )}
@@ -199,6 +199,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
 };
 
 export default LoginPage;
+
 
 
 
