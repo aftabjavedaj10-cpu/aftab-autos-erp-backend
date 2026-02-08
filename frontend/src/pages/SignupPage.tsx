@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { companyAdminAPI, profileAPI } from "../services/apiService";
-import { setProfile, signUpWithPassword } from "../services/supabaseAuth";
+import { setActiveCompanyId, setProfile, signUpWithPassword } from "../services/supabaseAuth";
 
 interface SignupPageProps {
   isDarkMode: boolean;
@@ -42,12 +42,15 @@ const SignupPage: React.FC<SignupPageProps> = ({
     try {
       await signUpWithPassword(email, password);
       try {
-        await companyAdminAPI.bootstrapAdmin({
+        const bootstrap = await companyAdminAPI.bootstrapAdmin({
           companyName: companyName.trim() || undefined,
           fullName: fullName.trim(),
           username: username.trim(),
           phone: phone.trim(),
         });
+        if (bootstrap?.company_id) {
+          setActiveCompanyId(bootstrap.company_id as string);
+        }
       } catch {
         // ignore bootstrap failures
       }
