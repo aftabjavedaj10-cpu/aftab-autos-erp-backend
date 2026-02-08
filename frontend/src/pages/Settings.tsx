@@ -39,6 +39,7 @@ const SettingsPage: React.FC = () => {
   const [newMemberRole, setNewMemberRole] = useState<UserRole>("staff");
   const [companyUsers, setCompanyUsers] = useState<(Profile & { memberId?: string })[]>([]);
   const [invites, setInvites] = useState<CompanyInvite[]>([]);
+  const [activeSection, setActiveSection] = useState<"company" | "members">("company");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -446,6 +447,31 @@ const SettingsPage: React.FC = () => {
           </div>
 
           <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <button
+                onClick={() => setActiveSection("company")}
+                className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                  activeSection === "company"
+                    ? "bg-slate-900 text-white dark:bg-orange-600"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                Company Details
+              </button>
+              <button
+                onClick={() => setActiveSection("members")}
+                className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                  activeSection === "members"
+                    ? "bg-slate-900 text-white dark:bg-orange-600"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                Members & Invites
+              </button>
+            </div>
+
+            {activeSection === "company" && (
+              <>
             <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Company Details
             </h3>
@@ -648,9 +674,12 @@ const SettingsPage: React.FC = () => {
                 <p className="text-[10px] text-slate-400">Only admins can edit.</p>
               )}
             </div>
+              </>
+            )}
           </div>
 
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+          {activeSection === "members" && (
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
             <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Add Member
             </h3>
@@ -730,9 +759,9 @@ const SettingsPage: React.FC = () => {
                 Only admins can add members.
               </p>
             )}
-          </div>
+            </div>
 
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
             <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Team Members
             </h3>
@@ -909,9 +938,9 @@ const SettingsPage: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
+            </div>
 
-          <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
             <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
               Pending Invites
             </h3>
@@ -984,7 +1013,8 @@ const SettingsPage: React.FC = () => {
                 ))}
               </div>
             )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </div>
