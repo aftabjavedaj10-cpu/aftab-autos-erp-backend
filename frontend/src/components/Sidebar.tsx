@@ -1,8 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { hasPermission } from '../services/supabaseAuth';
+import {
+  FiBarChart2,
+  FiCpu,
+  FiSettings,
+  FiShoppingBag,
+  FiShoppingCart,
+  FiPackage,
+  FiHelpCircle,
+  FiClipboard,
+} from 'react-icons/fi';
 
 const SidebarItem: React.FC<{ 
-  icon: string; 
+  icon: React.ReactNode; 
   label: string; 
   active?: boolean; 
   isCollapsed: boolean;
@@ -23,7 +33,7 @@ const SidebarItem: React.FC<{
 );
 
 const SidebarDropdown: React.FC<{ 
-  icon: string; 
+  icon: React.ReactNode; 
   label: string; 
   items: { label: string; value: string }[]; 
   activeValue?: string;
@@ -149,7 +159,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         
         {permissionFlags.dashboard && (
           <SidebarItem 
-            icon="DB" 
+            icon={<FiBarChart2 />} 
             label="Dashboard" 
             isCollapsed={effectiveCollapsed}
             active={activeTab === 'dashboard'} 
@@ -158,7 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         <SidebarDropdown 
-          icon="POS" 
+          icon={<FiCpu />} 
           label="POS" 
           isCollapsed={effectiveCollapsed}
           isOpen={posOpen}
@@ -173,7 +183,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {setupItems.length > 0 && (
           <SidebarDropdown 
-            icon="SET" 
+            icon={<FiPackage />} 
             label="Setup" 
             isCollapsed={effectiveCollapsed}
             isOpen={setupOpen}
@@ -185,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
         
         <SidebarDropdown 
-          icon="SAL" 
+          icon={<FiShoppingCart />} 
           label="Sales" 
           isCollapsed={effectiveCollapsed}
           isOpen={salesOpen}
@@ -202,7 +212,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
         
         <SidebarDropdown 
-          icon="PUR" 
+          icon={<FiShoppingBag />} 
           label="Purchase" 
           isCollapsed={effectiveCollapsed}
           isOpen={purchaseOpen}
@@ -218,7 +228,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
 
         <SidebarItem 
-          icon="REP" 
+          icon={<FiClipboard />} 
           label="Reports" 
           isCollapsed={effectiveCollapsed}
           active={activeTab === 'reports'} 
@@ -228,14 +238,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-8 mb-4 px-4">Support</p>}
         {permissionFlags.settings && (
           <SidebarItem 
-            icon="SET" 
+            icon={<FiSettings />} 
             label="Settings" 
             isCollapsed={effectiveCollapsed} 
             active={activeTab === 'settings'}
             onClick={() => onTabChange('settings')}
           />
         )}
-        <SidebarItem icon="HELP" label="Help Center" isCollapsed={effectiveCollapsed} />
+        <SidebarItem icon={<FiHelpCircle />} label="Help Center" isCollapsed={effectiveCollapsed} />
       </nav>
     </div>
   );
