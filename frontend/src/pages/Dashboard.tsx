@@ -14,7 +14,7 @@ import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
 import type { Product, Category, Vendor, Customer, SalesInvoice } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI } from "../services/apiService";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, salesInvoiceAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -75,17 +75,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           setPermissions(permissions);
         }
 
-        const [productsData, customersData, vendorsData, categoriesData] = await Promise.all([
+        const [productsData, customersData, vendorsData, categoriesData, salesInvoicesData] = await Promise.all([
           productAPI.getAll().catch(() => []),
           customerAPI.getAll().catch(() => []),
           vendorAPI.getAll().catch(() => []),
           categoryAPI.getAll().catch(() => []),
+          salesInvoiceAPI.getAll().catch(() => []),
         ]);
 
         setProducts(Array.isArray(productsData) ? productsData : productsData.data || []);
         setCustomers(Array.isArray(customersData) ? customersData : customersData.data || []);
         setVendors(Array.isArray(vendorsData) ? vendorsData : vendorsData.data || []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
+        setSalesInvoices(
+          Array.isArray(salesInvoicesData) ? salesInvoicesData : salesInvoicesData.data || []
+        );
       } catch (err) {
         console.error("Failed to fetch data:", err);
         setError("Failed to load data from server. Please refresh the page.");
@@ -470,7 +474,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onAddClick={handleAddSalesInvoice}
             onEditClick={handleEditSalesInvoice}
             onDelete={(id) => {
-              setSalesInvoices((prev) => prev.filter((inv) => inv.id !== id));
+              salesInvoiceAPI.delete(id).then(() => {
+                setSalesInvoices((prev) => prev.filter((inv) => inv.id !== id));
+              });
             }}
           />
         )}
@@ -485,17 +491,27 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setActiveTab("sales_invoice");
             }}
             onSave={(invoiceData, stayOnPage) => {
-              setSalesInvoices((prev) => {
-                const exists = prev.find((inv) => inv.id === invoiceData.id);
-                if (exists) {
-                  return prev.map((inv) => (inv.id === invoiceData.id ? invoiceData : inv));
-                }
-                return [invoiceData, ...prev];
-              });
-              if (!stayOnPage) {
-                setEditingSalesInvoice(undefined);
-                setActiveTab("sales_invoice");
-              }
+              const action = editingSalesInvoice
+                ? salesInvoiceAPI.update(invoiceData.id, invoiceData)
+                : salesInvoiceAPI.create(invoiceData);
+
+              action
+                .then((saved) => {
+                  setSalesInvoices((prev) => {
+                    const exists = prev.find((inv) => inv.id === saved.id);
+                    if (exists) {
+                      return prev.map((inv) => (inv.id === saved.id ? saved : inv));
+                    }
+                    return [saved, ...prev];
+                  });
+                  if (!stayOnPage) {
+                    setEditingSalesInvoice(undefined);
+                    setActiveTab("sales_invoice");
+                  }
+                })
+                .catch((err) => {
+                  setError(err?.message || "Failed to save sales invoice");
+                });
             }}
           />
         )}

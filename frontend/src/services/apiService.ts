@@ -226,6 +226,67 @@ const mapCategoryFromDb = (row: any) => ({ ...row });
 const mapCategoryToDb = (category: any) =>
   stripClientOnly({ ...category }, ["itemCount"]);
 
+const mapSalesInvoiceFromDb = (row: any) => ({
+  id: row.id,
+  customerId: row.customer_id ?? row.customerId,
+  customerName: row.customer_name ?? row.customerName,
+  reference: row.reference,
+  vehicleNumber: row.vehicle_number ?? row.vehicleNumber,
+  date: row.date,
+  dueDate: row.due_date ?? row.dueDate,
+  status: row.status,
+  notes: row.notes,
+  overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
+  amountReceived: row.amount_received ?? row.amountReceived ?? 0,
+  totalAmount: row.total_amount ?? row.totalAmount ?? 0,
+  items: Array.isArray(row.items) ? row.items.map(mapSalesInvoiceItemFromDb) : [],
+});
+
+const mapSalesInvoiceItemFromDb = (row: any) => ({
+  id: row.id,
+  invoiceId: row.invoice_id ?? row.invoiceId,
+  productId: row.product_id ?? row.productId,
+  productCode: row.product_code ?? row.productCode,
+  productName: row.product_name ?? row.productName,
+  unit: row.unit,
+  quantity: Number(row.quantity ?? 0),
+  unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
+  discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
+  discountType: row.discount_type ?? row.discountType ?? "fixed",
+  tax: Number(row.tax ?? 0),
+  total: Number(row.total ?? 0),
+});
+
+const mapSalesInvoiceToDb = (invoice: any) =>
+  stripClientOnly(
+    {
+      ...invoice,
+      customer_id: invoice.customerId ?? invoice.customer_id,
+      customer_name: invoice.customerName ?? invoice.customer_name,
+      vehicle_number: invoice.vehicleNumber ?? invoice.vehicle_number,
+      due_date: invoice.dueDate ?? invoice.due_date,
+      overall_discount: invoice.overallDiscount ?? invoice.overall_discount ?? 0,
+      amount_received: invoice.amountReceived ?? invoice.amount_received ?? 0,
+      total_amount: invoice.totalAmount ?? invoice.total_amount ?? 0,
+    },
+    ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "overallDiscount", "amountReceived", "totalAmount"]
+  );
+
+const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) =>
+  stripClientOnly(
+    {
+      ...item,
+      invoice_id: invoiceId,
+      product_id: item.productId ?? item.product_id,
+      product_code: item.productCode ?? item.product_code,
+      product_name: item.productName ?? item.product_name,
+      unit_price: item.unitPrice ?? item.unit_price ?? 0,
+      discount_value: item.discountValue ?? item.discount_value ?? 0,
+      discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    },
+    ["productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
+  );
+
 const mapCompanyFromDb = (row: any) => {
   if (!row) return row;
   return {
@@ -446,6 +507,71 @@ export const categoryAPI = {
   },
 };
 
+// ============ SALES INVOICES ============
+export const salesInvoiceAPI = {
+  getAll: async () => {
+    await ensurePermission("sales_invoices.read");
+    const rows = await apiCall(
+      "/sales_invoices?select=*,items:sales_invoice_items(*)&order=created_at.desc"
+    );
+    return Array.isArray(rows) ? rows.map(mapSalesInvoiceFromDb) : rows;
+  },
+  getById: async (id: string) => {
+    await ensurePermission("sales_invoices.read");
+    const row = await getFirst(
+      `/sales_invoices?select=*,items:sales_invoice_items(*)&id=eq.${id}`
+    );
+    return mapSalesInvoiceFromDb(row);
+  },
+  create: async (invoice: any) => {
+    await ensurePermission("sales_invoices.write");
+    const withCompany = attachOwnership(invoice);
+    const header = await apiCall(
+      "/sales_invoices",
+      "POST",
+      mapSalesInvoiceToDb(withCompany),
+      true
+    ).then(firstRow);
+
+    const items = Array.isArray(invoice.items) ? invoice.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/sales_invoice_items",
+        "POST",
+        items.map((item: any) =>
+          attachCompanyId(mapSalesInvoiceItemToDb(item, header.id))
+        ),
+        true
+      );
+    }
+
+    return salesInvoiceAPI.getById(header.id);
+  },
+  update: async (id: string, invoice: any) => {
+    await ensurePermission("sales_invoices.write");
+    await apiCall(`/sales_invoices?id=eq.${id}`, "PATCH", mapSalesInvoiceToDb(invoice), true);
+
+    await apiCall(`/sales_invoice_items?invoice_id=eq.${id}`, "DELETE");
+    const items = Array.isArray(invoice.items) ? invoice.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/sales_invoice_items",
+        "POST",
+        items.map((item: any) =>
+          attachCompanyId(mapSalesInvoiceItemToDb(item, id))
+        ),
+        true
+      );
+    }
+
+    return salesInvoiceAPI.getById(id);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("sales_invoices.delete");
+    return apiCall(`/sales_invoices?id=eq.${id}`, "DELETE");
+  },
+};
+
 // ============ COMPANIES & PROFILES ============
 export const companyAPI = {
   create: async (name: string) => {
@@ -634,6 +760,7 @@ export default {
   customerAPI,
   vendorAPI,
   categoryAPI,
+  salesInvoiceAPI,
   companyAPI,
   profileAPI,
   companyMemberAPI,
