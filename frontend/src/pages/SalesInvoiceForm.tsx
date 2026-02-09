@@ -640,7 +640,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       />
 
                       {isSearching && searchTerm && (
-                        <div className="absolute top-full left-0 right-0 mt-2 w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[500] overflow-hidden">
+                        <div className="absolute top-full left-0 right-0 mt-2 w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[9999] overflow-hidden">
                           <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                             <div>
                               <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Products</div>
