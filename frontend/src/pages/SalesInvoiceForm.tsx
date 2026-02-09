@@ -142,9 +142,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       return sum + (gross - discount);
     }, 0);
 
+    const totalQty = formData.items.reduce((sum, item) => sum + item.quantity, 0);
     const netTotal = itemsSubtotal - (formData.overallDiscount || 0);
     const balanceDue = netTotal - (formData.amountReceived || 0);
-    return { itemsSubtotal, netTotal, balanceDue };
+    return { itemsSubtotal, netTotal, balanceDue, totalQty };
   }, [formData.items, formData.overallDiscount, formData.amountReceived]);
 
   const handleAddItem = (product: Product) => {
@@ -586,12 +587,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${
                         draggingId === item.productId ? "bg-orange-50/60 dark:bg-orange-950/20" : ""
                       }`}
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggingId(item.productId);
-                        e.dataTransfer.setData("text/plain", item.productId);
-                        e.dataTransfer.effectAllowed = "move";
-                      }}
                       onDragOver={(e) => {
                         e.preventDefault();
                         e.dataTransfer.dropEffect = "move";
@@ -675,9 +670,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       </td>
                       <td className="px-3 py-2 text-center">
                         <div
-                          className="w-7 h-7 mx-auto flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-md text-slate-400 cursor-grab active:cursor-grabbing"
+                          className="w-7 h-7 mx-auto flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-md text-slate-400 cursor-grab active:cursor-grabbing select-none"
                           title="Drag to reorder"
-                          onMouseDown={() => setDraggingId(item.productId)}
+                          draggable
+                          onDragStart={(e) => {
+                            setDraggingId(item.productId);
+                            e.dataTransfer.setData("text/plain", item.productId);
+                            e.dataTransfer.effectAllowed = "move";
+                          }}
                         >
                           ⋮⋮
                         </div>
@@ -795,6 +795,13 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-0">
           <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+              <div>
+                <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Quantity</div>
+                <div className="text-[9px] text-slate-400 mt-0.5">All items combined</div>
+              </div>
+              <div className="text-2xl font-black text-orange-600">{totals.totalQty}</div>
+            </div>
             <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-3">
                 Internal Memo & Ledger Remarks
