@@ -42,6 +42,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [customerSelectedIndex, setCustomerSelectedIndex] = useState(0);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
+  const [draggingId, setDraggingId] = useState<string | null>(null);
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -241,14 +242,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     });
   };
 
-  const moveItem = (id: string, direction: "up" | "down") => {
-    const index = formData.items.findIndex((i) => i.productId === id);
-    if (index === -1) return;
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= formData.items.length) return;
+  const reorderItem = (dragId: string, dropId: string) => {
+    if (dragId === dropId) return;
+    const fromIndex = formData.items.findIndex((i) => i.productId === dragId);
+    const toIndex = formData.items.findIndex((i) => i.productId === dropId);
+    if (fromIndex === -1 || toIndex === -1) return;
     const nextItems = [...formData.items];
-    const [moved] = nextItems.splice(index, 1);
-    nextItems.splice(targetIndex, 0, moved);
+    const [moved] = nextItems.splice(fromIndex, 1);
+    nextItems.splice(toIndex, 0, moved);
     setFormData({ ...formData, items: nextItems });
   };
 
@@ -558,14 +559,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       )}
                     </button>
                   </th>
-                  <th className="px-3 py-3 w-10 text-center">#</th>
-                  <th className="px-3 py-3 w-24">Code</th>
+                  <th className="px-3 py-3 w-8 text-center">#</th>
+                  <th className="px-3 py-3 w-20">Code</th>
                   <th className="px-3 py-3">Product</th>
-                  <th className="px-3 py-3 w-20 text-center">Qty</th>
-                  <th className="px-3 py-3 w-28 text-right">Unit Price</th>
+                  <th className="px-3 py-3 w-16 text-center">Qty</th>
+                  <th className="px-3 py-3 w-24 text-right">Unit Price</th>
                   <th className="px-3 py-3 w-32 text-right">Discount</th>
                   <th className="px-3 py-3 w-28 text-right">Net</th>
-                  <th className="px-3 py-3 w-16 text-center">Move</th>
+                  <th className="px-3 py-3 w-12 text-center">Move</th>
                   <th className="px-3 py-3 w-14 text-center">Remove</th>
                 </tr>
               </thead>
@@ -580,7 +581,29 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   }
                   const netAmount = grossAmount - discountAmt;
                   return (
-                    <tr key={item.productId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                    <tr
+                      key={item.productId}
+                      className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${
+                        draggingId === item.productId ? "bg-orange-50/60 dark:bg-orange-950/20" : ""
+                      }`}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingId(item.productId);
+                        e.dataTransfer.setData("text/plain", item.productId);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const dragId = e.dataTransfer.getData("text/plain");
+                        reorderItem(dragId, item.productId);
+                        setDraggingId(null);
+                      }}
+                      onDragEnd={() => setDraggingId(null)}
+                    >
                       <td className="px-4 py-2 text-center">
                         <button
                           onClick={() => toggleSelectItem(item.productId)}
@@ -609,7 +632,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                         <input
                           id={`qty-${item.productId}`}
                           type="number"
-                          className="w-14 bg-slate-50 dark:bg-slate-800/50 rounded-md text-center font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
+                          className="w-12 bg-slate-50 dark:bg-slate-800/50 rounded-md text-center font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
                           value={item.quantity}
                           onChange={(e) =>
                             updateItemField(item.productId, "quantity", Math.max(0, parseInt(e.target.value) || 0))
@@ -620,7 +643,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                         <input
                           id={`price-${item.productId}`}
                           type="number"
-                          className="w-20 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
+                          className="w-16 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
                           value={item.unitPrice}
                           onChange={(e) =>
                             updateItemField(item.productId, "unitPrice", Math.max(0, parseFloat(e.target.value) || 0))
@@ -651,21 +674,12 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                         Rs. {netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
                       <td className="px-3 py-2 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => moveItem(item.productId, "up")}
-                            className="w-6 h-6 flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-md text-slate-400 hover:text-orange-600"
-                            title="Move up"
-                          >
-                            ↑
-                          </button>
-                          <button
-                            onClick={() => moveItem(item.productId, "down")}
-                            className="w-6 h-6 flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-md text-slate-400 hover:text-orange-600"
-                            title="Move down"
-                          >
-                            ↓
-                          </button>
+                        <div
+                          className="w-7 h-7 mx-auto flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-md text-slate-400 cursor-grab active:cursor-grabbing"
+                          title="Drag to reorder"
+                          onMouseDown={() => setDraggingId(item.productId)}
+                        >
+                          ⋮⋮
                         </div>
                       </td>
                       <td className="px-3 py-2 text-center">
