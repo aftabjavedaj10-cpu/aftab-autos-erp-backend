@@ -11,7 +11,8 @@ import AddVendorPage from "./AddVendor";
 import CategoriesPage from "./Categories";
 import AddCategoryPage from "./AddCategory";
 import SettingsPage from "./Settings";
-import type { Product, Category, Vendor, Customer } from "../types";
+import SalesInvoicePage from "./SalesInvoice";
+import type { Product, Category, Vendor, Customer, SalesInvoice } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
@@ -32,6 +33,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [categories, setCategories] = useState<Category[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
 
   const [editingCustomer, setEditingCustomer] = useState<Customer | undefined>(undefined);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
@@ -190,6 +192,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const handleAddCategoryToState = (category: Category) => {
     // Add category to state - in real app, this would go to backend
     setCategories([...categories, category]);
+  };
+
+  const handleAddSalesInvoice = () => {
+    setError("Sales invoice form is coming soon.");
+    setTimeout(() => setError(null), 4000);
+  };
+
+  const handleEditSalesInvoice = (invoice: SalesInvoice) => {
+    console.log("Edit sales invoice", invoice);
+    setError("Sales invoice edit is coming soon.");
+    setTimeout(() => setError(null), 4000);
   };
 
   const lowStockCount = useMemo(() => {
@@ -448,6 +461,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
         {activeTab === "settings" && (
           <SettingsPage />
+        )}
+
+        {activeTab === "sales_invoice" && (
+          <SalesInvoicePage
+            invoices={salesInvoices}
+            onAddClick={handleAddSalesInvoice}
+            onEditClick={handleEditSalesInvoice}
+            onDelete={(id) => {
+              setSalesInvoices((prev) => prev.filter((inv) => inv.id !== id));
+            }}
+          />
         )}
         </div>
       </main>

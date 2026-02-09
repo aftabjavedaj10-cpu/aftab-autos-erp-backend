@@ -60,6 +60,23 @@ export interface Customer {
   image?: string;
 }
 
+export interface SalesInvoiceItem {
+  productName: string;
+  productCode?: string;
+  quantity?: number;
+  price?: number;
+}
+
+export interface SalesInvoice {
+  id: string;
+  customerName: string;
+  reference?: string;
+  date: string;
+  status: "Paid" | "Unpaid" | "Partial" | "Overdue" | string;
+  items: SalesInvoiceItem[];
+  totalAmount: number;
+}
+
 export type UserRole = string;
 
 export interface CompanyRole {
