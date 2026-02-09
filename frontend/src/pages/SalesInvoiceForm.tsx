@@ -563,6 +563,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   <th className="px-3 py-3 w-8 text-center">#</th>
                   <th className="px-3 py-3 w-20">Code</th>
                   <th className="px-3 py-3">Product</th>
+                  <th className="px-3 py-3 w-16 text-center">Unit</th>
                   <th className="px-3 py-3 w-16 text-center">Qty</th>
                   <th className="px-3 py-3 w-24 text-right">Unit Price</th>
                   <th className="px-3 py-3 w-32 text-right">Discount</th>
@@ -587,6 +588,12 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${
                         draggingId === item.productId ? "bg-orange-50/60 dark:bg-orange-950/20" : ""
                       }`}
+                      draggable
+                      onDragStart={(e) => {
+                        setDraggingId(item.productId);
+                        e.dataTransfer.setData("text/plain", item.productId);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
                       onDragOver={(e) => {
                         e.preventDefault();
                         e.dataTransfer.dropEffect = "move";
@@ -624,15 +631,25 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                         <div className="text-[8px] text-slate-400">{item.productCode || ""}</div>
                       </td>
                       <td className="px-3 py-2 text-center">
-                        <input
-                          id={`qty-${item.productId}`}
-                          type="number"
-                          className="w-12 bg-slate-50 dark:bg-slate-800/50 rounded-md text-center font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
-                          value={item.quantity}
-                          onChange={(e) =>
-                            updateItemField(item.productId, "quantity", Math.max(0, parseInt(e.target.value) || 0))
-                          }
-                        />
+                        <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase">
+                          {item.unit || "PC"}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <input
+                            id={`qty-${item.productId}`}
+                            type="number"
+                            className="w-12 bg-slate-50 dark:bg-slate-800/50 rounded-md text-center font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
+                            value={item.quantity}
+                            onChange={(e) =>
+                              updateItemField(item.productId, "quantity", Math.max(0, parseInt(e.target.value) || 0))
+                            }
+                          />
+                          <span className="text-[9px] font-black text-slate-400 uppercase">
+                            {item.unit || "PC"}
+                          </span>
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-right">
                         <input
@@ -695,7 +712,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 })}
                 <tr className="bg-orange-50/10 dark:bg-orange-950/10 border-t border-slate-200 dark:border-slate-700">
                   <td className="px-4 py-3 text-center">+</td>
-                  <td colSpan={9} className="px-3 py-3">
+                  <td colSpan={10} className="px-3 py-3">
                     <div className="relative z-[120]" ref={searchContainerRef}>
                       <input
                         ref={searchInputRef}
