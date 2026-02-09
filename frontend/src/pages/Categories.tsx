@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Category } from '../types';
+import { hasPermission } from '../services/supabaseAuth';
 
 interface CategoriesPageProps {
   categories: Category[];
