@@ -9,6 +9,10 @@ import {
   FiPackage,
   FiHelpCircle,
   FiClipboard,
+  FiChevronDown,
+  FiChevronLeft,
+  FiChevronRight,
+  FiX,
 } from 'react-icons/fi';
 
 const SidebarItem: React.FC<{ 
@@ -57,7 +61,7 @@ const SidebarDropdown: React.FC<{
         <>
           <span className="font-bold flex-1 truncate">{label}</span>
           <span className={`text-[10px] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-            ?
+            <FiChevronDown />
           </span>
         </>
       )}
@@ -143,14 +147,14 @@ const Sidebar: React.FC<SidebarProps> = ({
           className="hidden lg:block p-1.5 rounded-lg bg-orange-100/50 dark:bg-slate-900 text-orange-700 dark:text-slate-400 hover:bg-orange-200 dark:hover:text-white transition-colors"
           title={effectiveCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
-          {effectiveCollapsed ? '?' : '?'}
+          {effectiveCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
         </button>
 
         <button 
           onClick={onMobileClose}
           className="lg:hidden p-1.5 rounded-lg bg-orange-100/50 dark:bg-slate-900 text-orange-700 dark:text-slate-400 hover:bg-orange-200 dark:hover:text-white transition-colors"
         >
-          X
+          <FiX />
         </button>
       </div>
 

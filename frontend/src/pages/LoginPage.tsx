@@ -9,6 +9,7 @@ import {
   signInWithPassword,
 } from "../services/supabaseAuth";
 import { companyAdminAPI, permissionAPI, profileAPI } from "../services/apiService";
+import { FiMoon, FiSun, FiEye, FiEyeOff } from "react-icons/fi";
 
 interface LoginPageProps {
   onLogin: (email: string) => void;
@@ -104,7 +105,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
           {isDarkMode ? 'Daylight' : 'Midnight'}
         </span>
         <div className="w-7 h-7 rounded-full bg-white dark:bg-slate-800 shadow-inner flex items-center justify-center text-xs transform group-hover:rotate-12 transition-transform">
-          {isDarkMode ? '☀️' : '🌙'}
+          {isDarkMode ? <FiSun /> : <FiMoon />}
         </div>
       </button>
 
@@ -153,7 +154,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-orange-500 transition-colors p-1"
                   >
-                    {showPassword ? '👁️' : '🙈'}
+                    {showPassword ? <FiEye /> : <FiEyeOff />}
                   </button>
                 </div>
               </div>
