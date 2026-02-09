@@ -61,18 +61,30 @@ export interface Customer {
 }
 
 export interface SalesInvoiceItem {
+  productId: string;
   productName: string;
   productCode?: string;
-  quantity?: number;
-  price?: number;
+  unit?: string;
+  quantity: number;
+  unitPrice: number;
+  tax?: number;
+  discountValue?: number;
+  discountType?: "fixed" | "percent" | string;
+  total?: number;
 }
 
 export interface SalesInvoice {
   id: string;
+  customerId?: string;
   customerName: string;
   reference?: string;
+  vehicleNumber?: string;
   date: string;
-  status: "Paid" | "Unpaid" | "Partial" | "Overdue" | string;
+  dueDate?: string;
+  status: "Paid" | "Unpaid" | "Partial" | "Overdue" | "Pending" | "Draft" | string;
+  notes?: string;
+  overallDiscount?: number;
+  amountReceived?: number;
   items: SalesInvoiceItem[];
   totalAmount: number;
 }

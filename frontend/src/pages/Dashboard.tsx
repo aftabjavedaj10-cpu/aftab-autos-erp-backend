@@ -12,6 +12,7 @@ import CategoriesPage from "./Categories";
 import AddCategoryPage from "./AddCategory";
 import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
+import SalesInvoiceFormPage from "./SalesInvoiceForm";
 import type { Product, Category, Vendor, Customer, SalesInvoice } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
@@ -34,6 +35,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
+  const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
 
   const [editingCustomer, setEditingCustomer] = useState<Customer | undefined>(undefined);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
@@ -195,14 +197,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   };
 
   const handleAddSalesInvoice = () => {
-    setError("Sales invoice form is coming soon.");
-    setTimeout(() => setError(null), 4000);
+    setEditingSalesInvoice(undefined);
+    setActiveTab("add_sales_invoice");
   };
 
   const handleEditSalesInvoice = (invoice: SalesInvoice) => {
-    console.log("Edit sales invoice", invoice);
-    setError("Sales invoice edit is coming soon.");
-    setTimeout(() => setError(null), 4000);
+    setEditingSalesInvoice(invoice);
+    setActiveTab("add_sales_invoice");
   };
 
   const lowStockCount = useMemo(() => {
@@ -470,6 +471,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onEditClick={handleEditSalesInvoice}
             onDelete={(id) => {
               setSalesInvoices((prev) => prev.filter((inv) => inv.id !== id));
+            }}
+          />
+        )}
+
+        {activeTab === "add_sales_invoice" && (
+          <SalesInvoiceFormPage
+            invoice={editingSalesInvoice}
+            products={products}
+            customers={customers}
+            onBack={() => {
+              setEditingSalesInvoice(undefined);
+              setActiveTab("sales_invoice");
+            }}
+            onSave={(invoiceData, stayOnPage) => {
+              setSalesInvoices((prev) => {
+                const exists = prev.find((inv) => inv.id === invoiceData.id);
+                if (exists) {
+                  return prev.map((inv) => (inv.id === invoiceData.id ? invoiceData : inv));
+                }
+                return [invoiceData, ...prev];
+              });
+              if (!stayOnPage) {
+                setEditingSalesInvoice(undefined);
+                setActiveTab("sales_invoice");
+              }
             }}
           />
         )}
