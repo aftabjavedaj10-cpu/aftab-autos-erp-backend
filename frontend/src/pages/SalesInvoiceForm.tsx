@@ -530,35 +530,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
         </div>
 
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-10 overflow-visible">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-              Line Items
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handlePrintSelected}
-                disabled={selectedItemIds.size === 0}
-                className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest border transition-all ${
-                  selectedItemIds.size === 0
-                    ? "bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-800 dark:border-slate-700"
-                    : "bg-white text-slate-700 border-slate-200 hover:text-orange-600 dark:bg-slate-900 dark:text-slate-300"
-                }`}
-              >
-                Print Selected
-              </button>
-              <button
-                onClick={handleDeleteSelected}
-                disabled={selectedItemIds.size === 0}
-                className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest border transition-all ${
-                  selectedItemIds.size === 0
-                    ? "bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-800 dark:border-slate-700"
-                    : "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
-                }`}
-              >
-                Delete Selected
-              </button>
-            </div>
-          </div>
           <div className="overflow-x-auto overflow-y-visible relative z-[90]">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
