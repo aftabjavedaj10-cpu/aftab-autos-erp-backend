@@ -669,7 +669,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       />
 
                       {isSearching && searchTerm && (
-                        <div className="absolute top-full left-0 right-0 mt-2 w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[200] overflow-hidden">
+                        <div className="absolute top-full left-0 right-0 mt-2 w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[500] overflow-hidden">
                           <div ref={productListContainerRef} className="p-1.5 space-y-1">
                             {availableProducts.length > 0 ? (
                               availableProducts.map((p, idx) => (
