@@ -669,8 +669,19 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       />
 
                       {isSearching && searchTerm && (
-                        <div className="absolute top-full left-0 right-0 mt-2 w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[500] overflow-hidden">
-                          <div ref={productListContainerRef} className="p-1.5 space-y-1">
+                        <div className="absolute top-full left-0 right-0 mt-2 w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[500] overflow-hidden">
+                          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                            <div>
+                              <div className="text-[10px] font-black uppercase tracking-widest text-slate-500">Products</div>
+                              <div className="text-[9px] text-slate-400">
+                                {availableProducts.length} result{availableProducts.length === 1 ? "" : "s"}
+                              </div>
+                            </div>
+                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                              Enter to add
+                            </div>
+                          </div>
+                          <div ref={productListContainerRef} className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                             {availableProducts.length > 0 ? (
                               availableProducts.map((p, idx) => (
                                 <button
@@ -680,19 +691,54 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                   }}
                                   onClick={() => handleAddItem(p)}
                                   onMouseEnter={() => setSelectedIndex(idx)}
-                                  className={`w-full text-left py-2 px-3 rounded-xl flex justify-between items-center transition-all duration-75 ${
+                                  className={`w-full text-left px-4 py-3 flex items-center justify-between transition-all ${
                                     selectedIndex === idx ? "bg-orange-600 text-white" : "hover:bg-slate-50 dark:hover:bg-slate-800"
                                   }`}
                                 >
-                                  <div>
-                                    <p className="text-[10px] font-black uppercase">{p.name}</p>
-                                    <p className="text-[8px] text-slate-400">SKU: {p.productCode || p.id}</p>
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black ${
+                                      selectedIndex === idx ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
+                                    }`}>
+                                      {p.image ? (
+                                        <img src={p.image} alt={p.name} className="w-full h-full object-cover rounded-lg" />
+                                      ) : (
+                                        "PR"
+                                      )}
+                                    </div>
+                                    <div>
+                                      <div className={`text-[11px] font-black uppercase tracking-tight ${
+                                        selectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"
+                                      }`}>{p.name}</div>
+                                      <div className={`text-[9px] ${
+                                        selectedIndex === idx ? "text-orange-100" : "text-slate-400"
+                                      }`}>
+                                        SKU: {p.productCode || p.id} • {p.category || "General"}
+                                      </div>
+                                    </div>
                                   </div>
-                                  <div className="text-[10px] font-black">{p.price}</div>
+                                  <div className="text-right">
+                                    <div className={`text-[10px] font-black ${
+                                      selectedIndex === idx ? "text-white" : "text-orange-600"
+                                    }`}>
+                                      {p.price}
+                                    </div>
+                                    <div className={`text-[9px] ${
+                                      selectedIndex === idx ? "text-orange-100" : "text-slate-400"
+                                    }`}>
+                                      Stock: {p.stock} {p.unit}
+                                    </div>
+                                  </div>
                                 </button>
                               ))
                             ) : (
-                              <div className="p-5 text-center text-[9px] font-black text-slate-400">No matching parts</div>
+                              <div className="px-6 py-8 text-center">
+                                <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                  No matching products
+                                </div>
+                                <div className="text-[9px] text-slate-400 mt-1">
+                                  Try another keyword or SKU.
+                                </div>
+                              </div>
                             )}
                           </div>
                         </div>
