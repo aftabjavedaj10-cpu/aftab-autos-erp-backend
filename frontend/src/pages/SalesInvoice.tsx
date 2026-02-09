@@ -110,9 +110,9 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
 
   return (
     <div className="animate-in fade-in duration-500 relative">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 mb-4">
         <div>
-          <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase leading-none mb-2">
+          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight uppercase leading-none mb-1">
             Sales Invoices
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px]">
@@ -122,13 +122,13 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={resetFilters}
-            className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-orange-600 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95"
+            className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-400 hover:text-orange-600 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all active:scale-95"
           >
             Reset Filters
           </button>
           <button
             onClick={onAddClick}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-black py-3 px-8 rounded-2xl shadow-xl shadow-orange-600/20 transition-all active:scale-95 flex items-center gap-2 text-[10px] uppercase tracking-widest"
+            className="bg-orange-600 hover:bg-orange-700 text-white font-black py-2 px-4 rounded-xl shadow-lg shadow-orange-600/20 transition-all active:scale-95 flex items-center gap-2 text-[9px] uppercase tracking-widest"
           >
             <span>➕</span> Issue New Invoice
           </button>
@@ -144,8 +144,8 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm mb-6 relative">
-        <div className="p-8 border-b border-slate-50 dark:border-slate-800 space-y-6">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm mb-4 relative">
+        <div className="p-4 border-b border-slate-50 dark:border-slate-800 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-3 relative">
               <span className="absolute inset-y-0 left-4 flex items-center text-slate-400 text-xs">
@@ -154,7 +154,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               <input
                 type="text"
                 placeholder="Invoice # or Customer..."
-                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-sm dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-11 pr-3 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-[11px] dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -166,7 +166,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               <input
                 type="text"
                 placeholder="Search Reference / PO..."
-                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-sm dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-11 pr-3 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-[11px] dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
                 value={refSearch}
                 onChange={(e) => setRefSearch(e.target.value)}
               />
@@ -178,7 +178,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               <input
                 type="text"
                 placeholder="Filter by specific product..."
-                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-sm dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-11 pr-3 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-[11px] dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
               />
@@ -187,7 +187,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3 px-6 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-sm font-bold dark:text-white appearance-none"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-4 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-[11px] font-bold dark:text-white appearance-none"
               >
                 {STATUS_FILTERS.map((status) => (
                   <option key={status} value={status}>
@@ -197,7 +197,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               </select>
             </div>
           </div>
-          <div className="flex flex-col md:flex-row items-center gap-6 pt-4 border-t border-slate-50 dark:border-slate-800/50">
+          <div className="flex flex-col md:flex-row items-center gap-4 pt-3 border-t border-slate-50 dark:border-slate-800/50">
             <div className="flex items-center gap-4 w-full md:w-auto">
               <div className="shrink-0 text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
                 Date Period
@@ -205,14 +205,14 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               <div className="flex items-center gap-2 flex-1 md:flex-none">
                 <input
                   type="date"
-                  className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-[10px] font-bold dark:text-white outline-none"
+                  className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg py-1.5 px-2 text-[10px] font-bold dark:text-white outline-none"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                 />
                 <span className="text-slate-300 font-bold">to</span>
                 <input
                   type="date"
-                  className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-[10px] font-bold dark:text-white outline-none"
+                  className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg py-1.5 px-2 text-[10px] font-bold dark:text-white outline-none"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                 />
@@ -224,19 +224,19 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
-                <th className="px-6 py-5 w-10">
+              <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[9px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
+                <th className="px-4 py-3 w-10">
                   <div className="flex items-center gap-3">
                     <button
                       onClick={toggleSelectAll}
-                      className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${
+                      className={`w-4 h-4 rounded-md border-2 transition-all flex items-center justify-center ${
                         selectedIds.size === paginatedInvoices.length && paginatedInvoices.length > 0
                           ? "bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30"
                           : "border-slate-300 dark:border-slate-700"
                       }`}
                     >
                       {selectedIds.size === paginatedInvoices.length && paginatedInvoices.length > 0 && (
-                        <span className="text-white text-[10px]">✓</span>
+                        <span className="text-white text-[9px]">✓</span>
                       )}
                     </button>
                     {selectedIds.size > 0 && (
@@ -249,14 +249,14 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                     )}
                   </div>
                 </th>
-                <th className="px-8 py-5">Document #</th>
-                <th className="px-8 py-5">Customer Entity</th>
-                <th className="px-8 py-5">Reference / PO</th>
-                <th className="px-8 py-5">Date / Due</th>
-                <th className="px-8 py-5">Items Sum</th>
-                <th className="px-8 py-5">Total Valuation</th>
-                <th className="px-8 py-5">Status</th>
-                <th className="px-8 py-5 text-right">Actions</th>
+                <th className="px-4 py-3">Document #</th>
+                <th className="px-4 py-3">Customer Entity</th>
+                <th className="px-4 py-3">Reference / PO</th>
+                <th className="px-4 py-3">Date / Due</th>
+                <th className="px-4 py-3">Items Sum</th>
+                <th className="px-4 py-3">Total Valuation</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
@@ -269,7 +269,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                       : "hover:bg-slate-50/50 dark:hover:bg-slate-800/30"
                   }`}
                 >
-                  <td className="px-6 py-5">
+                  <td className="px-4 py-3">
                     <div className="flex items-center justify-center">
                       <div
                         className={`absolute left-0 top-0 bottom-0 w-1 bg-orange-600 transition-opacity duration-300 ${
@@ -278,47 +278,47 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                       ></div>
                       <button
                         onClick={() => toggleSelectRow(inv.id)}
-                        className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${
+                        className={`w-4 h-4 rounded-md border-2 transition-all flex items-center justify-center ${
                           selectedIds.has(inv.id)
                             ? "bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20"
                             : "border-slate-200 dark:border-slate-700"
                         }`}
                       >
-                        {selectedIds.has(inv.id) && <span className="text-white text-[10px]">✓</span>}
+                        {selectedIds.has(inv.id) && <span className="text-white text-[9px]">✓</span>}
                       </button>
                     </div>
                   </td>
-                  <td className="px-8 py-5">
-                    <p className="font-black text-orange-600 dark:text-orange-500 text-[11px] mb-1">
+                  <td className="px-4 py-3">
+                    <p className="font-black text-orange-600 dark:text-orange-500 text-[10px] mb-0.5">
                       {inv.id}
                     </p>
                   </td>
-                  <td className="px-8 py-5">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white leading-tight uppercase tracking-tight">
+                  <td className="px-4 py-3">
+                    <p className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight uppercase tracking-tight">
                       {inv.customerName}
                     </p>
                   </td>
-                  <td className="px-8 py-5">
+                  <td className="px-4 py-3">
                     <span className="text-[9px] font-black uppercase bg-slate-50 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded border border-slate-100 dark:border-slate-700">
                       {inv.reference || "No Ref"}
                     </span>
                   </td>
-                  <td className="px-8 py-5">
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 font-bold">
+                  <td className="px-4 py-3">
+                    <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">
                       {inv.date}
                     </p>
                   </td>
-                  <td className="px-8 py-5 text-[11px] font-black text-slate-500 dark:text-slate-400">
+                  <td className="px-4 py-3 text-[10px] font-black text-slate-500 dark:text-slate-400">
                     {inv.items.length}
                   </td>
-                  <td className="px-8 py-5">
-                    <p className="font-black text-slate-900 dark:text-white text-[11px]">
+                  <td className="px-4 py-3">
+                    <p className="font-black text-slate-900 dark:text-white text-[10px]">
                       Rs. {inv.totalAmount.toLocaleString()}
                     </p>
                   </td>
-                  <td className="px-8 py-5">
+                  <td className="px-4 py-3">
                     <span
-                      className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-tighter border ${
+                      className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
                         inv.status === "Paid"
                           ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20"
                           : "bg-slate-100 text-slate-600"
@@ -327,7 +327,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                       {inv.status}
                     </span>
                   </td>
-                  <td className="px-8 py-5 text-right">
+                  <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => onEditClick(inv)}

@@ -41,6 +41,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [isCustomerSearching, setIsCustomerSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [customerSelectedIndex, setCustomerSelectedIndex] = useState(0);
+  const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -240,11 +241,48 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     });
   };
 
+  const toggleSelectItem = (id: string) => {
+    const next = new Set(selectedItemIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setSelectedItemIds(next);
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItemIds.size === formData.items.length && formData.items.length > 0) {
+      setSelectedItemIds(new Set());
+    } else {
+      setSelectedItemIds(new Set(formData.items.map((i) => i.productId)));
+    }
+  };
+
   const handleRemoveItem = (id: string) => {
     setFormData({
       ...formData,
       items: formData.items.filter((i) => i.productId !== id),
     });
+    if (selectedItemIds.has(id)) {
+      const next = new Set(selectedItemIds);
+      next.delete(id);
+      setSelectedItemIds(next);
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedItemIds.size === 0) return;
+    setFormData({
+      ...formData,
+      items: formData.items.filter((i) => !selectedItemIds.has(i.productId)),
+    });
+    setSelectedItemIds(new Set());
+  };
+
+  const handlePrintSelected = () => {
+    if (selectedItemIds.size === 0) return;
+    window.print();
   };
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
@@ -300,20 +338,20 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto animate-in fade-in duration-300 pb-20 relative">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-        <div className="flex items-center gap-4">
+    <div className="max-w-7xl mx-auto animate-in fade-in duration-300 pb-12 relative">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+        <div className="flex items-center gap-3">
           <button
             onClick={onBack}
-            className="w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-orange-600 shadow-sm transition-all active:scale-95"
+            className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-400 hover:text-orange-600 shadow-sm transition-all active:scale-95"
           >
-            <span className="text-xl">←</span>
+            <span className="text-lg">←</span>
           </button>
           <div>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter italic">
+            <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
               {isEdit ? "Edit Invoice" : "New Sales Invoice"}
             </h1>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">
+            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mt-1">
               Operational Module v4.0
             </p>
           </div>
@@ -321,32 +359,32 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       </div>
 
       <div className="space-y-4">
-        <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            <div className="md:col-span-3 border-r border-slate-200 dark:border-slate-800 pr-6">
-              <label className="block text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2.5">
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div className="md:col-span-3 border-r border-slate-200 dark:border-slate-800 pr-4">
+              <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                 Invoice Number
               </label>
               <input
                 type="text"
                 value={formData.id}
                 onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                className="w-full bg-transparent text-lg font-black text-slate-900 dark:text-white outline-none focus:text-orange-600 transition-colors"
+                className="w-full bg-transparent text-base font-black text-slate-900 dark:text-white outline-none focus:text-orange-600 transition-colors"
                 placeholder="INV-XXXXXX"
                 onKeyDown={(e) => onEnterMoveTo(e, customerInputRef)}
               />
-              <span className="text-[9px] font-bold uppercase text-emerald-500 mt-1 block">Auto-ID</span>
+              <span className="text-[8px] font-bold uppercase text-emerald-500 mt-1 block">Auto-ID</span>
             </div>
 
             <div className="md:col-span-5 relative" ref={customerSearchContainerRef}>
-              <label className="block text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2.5">
+              <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                 Customer Account
               </label>
               <div className="relative group">
                 <input
                   ref={customerInputRef}
                   type="text"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 text-[12px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-slate-400"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-slate-400"
                   placeholder="Search name, phone, or code..."
                   value={customerSearchTerm}
                   onChange={(e) => {
@@ -362,7 +400,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       setFormData({ ...formData, customerId: "" });
                       setCustomerSearchTerm("");
                     }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 p-1"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 p-1"
                   >
                     ✕
                   </button>
@@ -371,17 +409,17 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
               {formData.customerId && currentCustomer && (
                 <div className="mt-2 flex items-center gap-2">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                  <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                     Account Ledger Balance:
                   </span>
-                  <span className="text-[11px] font-black px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                     {currentCustomer.balance || "Rs. 0.00"}
                   </span>
                 </div>
               )}
 
               {isCustomerSearching && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-[60] overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[60] overflow-hidden">
                   <div className="max-h-[250px] overflow-y-auto">
                     {availableCustomers.length > 0 ? (
                       availableCustomers.map((c, idx) => (
@@ -396,29 +434,29 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                             setTimeout(() => dateInputRef.current?.focus(), 10);
                           }}
                           onMouseEnter={() => setCustomerSelectedIndex(idx)}
-                          className={`w-full text-left p-3.5 flex justify-between items-center transition-colors border-b last:border-0 dark:border-slate-800 ${
+                          className={`w-full text-left p-2.5 flex justify-between items-center transition-colors border-b last:border-0 dark:border-slate-800 ${
                             customerSelectedIndex === idx
                               ? "bg-orange-600 text-white"
                               : "hover:bg-orange-50 dark:hover:bg-slate-800"
                           }`}
                         >
                           <div>
-                            <p className={`text-[11px] font-black ${customerSelectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"}`}>{c.name}</p>
+                            <p className={`text-[10px] font-black ${customerSelectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"}`}>{c.name}</p>
                             <div className="flex gap-2 mt-0.5">
-                              <span className={`text-[8px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
+                              <span className={`text-[7px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
                                 Code: {c.customerCode || "N/A"}
                               </span>
-                              <span className={`text-[8px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
+                              <span className={`text-[7px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
                                 • {c.category || "General"}
                               </span>
                             </div>
                           </div>
-                          <span className={`text-[9px] font-bold ${customerSelectedIndex === idx ? "text-orange-200" : "text-slate-400"}`}>{c.phone || ""}</span>
+                          <span className={`text-[8px] font-bold ${customerSelectedIndex === idx ? "text-orange-200" : "text-slate-400"}`}>{c.phone || ""}</span>
                         </button>
                       ))
                     ) : (
                       <div className="p-5 text-center">
-                        <p className="text-[11px] font-bold text-slate-400">No customers found</p>
+                        <p className="text-[10px] font-bold text-slate-400">No customers found</p>
                       </div>
                     )}
                   </div>
@@ -428,26 +466,26 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
             <div className="md:col-span-4 grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2.5">
+                <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                   Posting Date
                 </label>
                 <input
                   ref={dateInputRef}
                   type="date"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 text-[12px] font-bold dark:text-white outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none"
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   onKeyDown={(e) => onEnterMoveTo(e, dueDateInputRef)}
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2.5">
+                <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                   Due Date
                 </label>
                 <input
                   ref={dueDateInputRef}
                   type="date"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 text-[12px] font-bold dark:text-white outline-none"
+                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   onKeyDown={(e) => onEnterMoveTo(e, vehicleInputRef)}
@@ -458,16 +496,16 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
           <div className="h-px bg-slate-100 dark:bg-slate-800 w-full"></div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             <div className="md:col-span-6">
-              <label className="block text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2.5">
+              <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                 Vehicle Number
               </label>
               <input
                 ref={vehicleInputRef}
                 type="text"
                 placeholder="REG-1234 (Optional)..."
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 text-[12px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all uppercase"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all uppercase"
                 value={formData.vehicleNumber}
                 onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value.toUpperCase() })}
                 onKeyDown={(e) => onEnterMoveTo(e, refInputRef)}
@@ -475,14 +513,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </div>
 
             <div className="md:col-span-6">
-              <label className="block text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2.5">
+              <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                 Reference / PO Number
               </label>
               <input
                 ref={refInputRef}
                 type="text"
                 placeholder="Customer Reference or PO ID..."
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 text-[12px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all"
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all"
                 value={formData.reference}
                 onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
                 onKeyDown={(e) => onEnterMoveTo(e, searchInputRef)}
@@ -491,17 +529,59 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-10 overflow-visible">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-10 overflow-visible">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+              Line Items
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePrintSelected}
+                disabled={selectedItemIds.size === 0}
+                className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest border transition-all ${
+                  selectedItemIds.size === 0
+                    ? "bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-800 dark:border-slate-700"
+                    : "bg-white text-slate-700 border-slate-200 hover:text-orange-600 dark:bg-slate-900 dark:text-slate-300"
+                }`}
+              >
+                Print Selected
+              </button>
+              <button
+                onClick={handleDeleteSelected}
+                disabled={selectedItemIds.size === 0}
+                className={`px-3 py-1.5 rounded-md text-[9px] font-black uppercase tracking-widest border transition-all ${
+                  selectedItemIds.size === 0
+                    ? "bg-slate-100 text-slate-400 border-slate-200 dark:bg-slate-800 dark:border-slate-700"
+                    : "bg-rose-600 text-white border-rose-600 hover:bg-rose-700"
+                }`}
+              >
+                Delete Selected
+              </button>
+            </div>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800 text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-tight border-b border-slate-200 dark:border-slate-700">
-                  <th className="px-6 py-4 w-10 text-center">#</th>
-                  <th className="px-4 py-4">Product</th>
-                  <th className="px-4 py-4 w-20 text-center">Qty</th>
-                  <th className="px-4 py-4 w-32 text-right">Unit Price</th>
-                  <th className="px-4 py-4 w-32 text-right">Net</th>
-                  <th className="px-4 py-4 w-16 text-center">Remove</th>
+                <tr className="bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight border-b border-slate-200 dark:border-slate-700">
+                  <th className="px-4 py-3 w-10 text-center">
+                    <button
+                      onClick={toggleSelectAll}
+                      className={`w-4 h-4 rounded border flex items-center justify-center mx-auto ${
+                        selectedItemIds.size === formData.items.length && formData.items.length > 0
+                          ? "bg-orange-600 border-orange-600"
+                          : "border-slate-300 dark:border-slate-600"
+                      }`}
+                    >
+                      {selectedItemIds.size === formData.items.length && formData.items.length > 0 && (
+                        <span className="text-white text-[8px]">✓</span>
+                      )}
+                    </button>
+                  </th>
+                  <th className="px-3 py-3">Product</th>
+                  <th className="px-3 py-3 w-20 text-center">Qty</th>
+                  <th className="px-3 py-3 w-28 text-right">Unit Price</th>
+                  <th className="px-3 py-3 w-28 text-right">Net</th>
+                  <th className="px-3 py-3 w-14 text-center">Remove</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -516,40 +596,53 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   const netAmount = grossAmount - discountAmt;
                   return (
                     <tr key={item.productId} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                      <td className="px-6 py-3 text-center text-[11px] font-bold text-slate-500">{index + 1}</td>
-                      <td className="px-4 py-3">
-                        <div className="text-[11px] font-black text-slate-900 dark:text-white">{item.productName}</div>
-                        <div className="text-[9px] text-slate-400">{item.productCode || ""}</div>
+                      <td className="px-4 py-2 text-center">
+                        <button
+                          onClick={() => toggleSelectItem(item.productId)}
+                          className={`w-4 h-4 rounded border flex items-center justify-center mx-auto ${
+                            selectedItemIds.has(item.productId)
+                              ? "bg-orange-600 border-orange-600"
+                              : "border-slate-300 dark:border-slate-600"
+                          }`}
+                        >
+                          {selectedItemIds.has(item.productId) && (
+                            <span className="text-white text-[8px]">✓</span>
+                          )}
+                        </button>
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 py-2">
+                        <div className="text-[10px] font-black text-slate-900 dark:text-white">{item.productName}</div>
+                        <div className="text-[8px] text-slate-400">{item.productCode || ""}</div>
+                      </td>
+                      <td className="px-3 py-2 text-center">
                         <input
                           id={`qty-${item.productId}`}
                           type="number"
-                          className="w-16 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-center font-black text-[11px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1.5 transition-all"
+                          className="w-14 bg-slate-50 dark:bg-slate-800/50 rounded-md text-center font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
                           value={item.quantity}
                           onChange={(e) =>
                             updateItemField(item.productId, "quantity", Math.max(0, parseInt(e.target.value) || 0))
                           }
                         />
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-3 py-2 text-right">
                         <input
                           id={`price-${item.productId}`}
                           type="number"
-                          className="w-24 bg-slate-50 dark:bg-slate-800/50 rounded-lg text-right font-black text-[11px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1.5 transition-all"
+                          className="w-20 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
                           value={item.unitPrice}
                           onChange={(e) =>
                             updateItemField(item.productId, "unitPrice", Math.max(0, parseFloat(e.target.value) || 0))
                           }
                         />
                       </td>
-                      <td className="px-4 py-3 text-right text-[11px] font-black text-slate-900 dark:text-white">
+                      <td className="px-3 py-2 text-right text-[10px] font-black text-slate-900 dark:text-white">
                         Rs. {netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 py-2 text-center">
                         <button
                           onClick={() => handleRemoveItem(item.productId)}
-                          className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
+                          className="p-1 text-slate-300 hover:text-rose-500 transition-colors"
                         >
                           ✕
                         </button>
@@ -558,14 +651,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   );
                 })}
                 <tr className="bg-orange-50/10 dark:bg-orange-950/10 border-t border-slate-200 dark:border-slate-700">
-                  <td className="px-6 py-4 text-center">+</td>
-                  <td colSpan={5} className="px-4 py-4">
-                    <div className="relative" ref={searchContainerRef}>
+                  <td className="px-4 py-3 text-center">+</td>
+                  <td colSpan={5} className="px-3 py-3">
+                    <div className="relative z-[120]" ref={searchContainerRef}>
                       <input
                         ref={searchInputRef}
                         type="text"
                         placeholder="Search SKU or product name..."
-                        className="w-full bg-transparent outline-none text-[12px] font-black text-slate-900 dark:text-white placeholder:text-slate-400 tracking-tight"
+                        className="w-full bg-transparent outline-none text-[11px] font-black text-slate-900 dark:text-white placeholder:text-slate-400 tracking-tight"
                         value={searchTerm}
                         onChange={(e) => {
                           setSearchTerm(e.target.value);
@@ -576,8 +669,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       />
 
                       {isSearching && searchTerm && (
-                        <div className="absolute top-full left-0 right-0 mt-3 w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl z-[100] overflow-hidden">
-                          <div ref={productListContainerRef} className="max-h-[400px] overflow-y-auto p-2 space-y-1">
+                        <div className="absolute top-full left-0 right-0 mt-2 w-full max-w-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-[200] overflow-hidden">
+                          <div ref={productListContainerRef} className="max-h-[320px] overflow-y-auto p-1.5 space-y-1">
                             {availableProducts.length > 0 ? (
                               availableProducts.map((p, idx) => (
                                 <button
@@ -587,19 +680,19 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                   }}
                                   onClick={() => handleAddItem(p)}
                                   onMouseEnter={() => setSelectedIndex(idx)}
-                                  className={`w-full text-left py-2 px-3.5 rounded-xl flex justify-between items-center transition-all duration-75 ${
+                                  className={`w-full text-left py-2 px-3 rounded-xl flex justify-between items-center transition-all duration-75 ${
                                     selectedIndex === idx ? "bg-orange-600 text-white" : "hover:bg-slate-50 dark:hover:bg-slate-800"
                                   }`}
                                 >
                                   <div>
-                                    <p className="text-[11px] font-black uppercase">{p.name}</p>
-                                    <p className="text-[9px] text-slate-400">SKU: {p.productCode || p.id}</p>
+                                    <p className="text-[10px] font-black uppercase">{p.name}</p>
+                                    <p className="text-[8px] text-slate-400">SKU: {p.productCode || p.id}</p>
                                   </div>
-                                  <div className="text-xs font-black">{p.price}</div>
+                                  <div className="text-[10px] font-black">{p.price}</div>
                                 </button>
                               ))
                             ) : (
-                              <div className="p-6 text-center text-[10px] font-black text-slate-400">No matching parts</div>
+                              <div className="p-5 text-center text-[9px] font-black text-slate-400">No matching parts</div>
                             )}
                           </div>
                         </div>
@@ -612,15 +705,15 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-0">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-              <label className="block text-[11px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-0">
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-3">
                 Internal Memo & Ledger Remarks
               </label>
               <textarea
-                rows={4}
-                className="w-full bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700 rounded-xl p-5 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/5 focus:border-orange-500/20 placeholder:text-slate-400 resize-none transition-all"
+                rows={3}
+                className="w-full bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700 rounded-lg p-3 text-[10px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/5 focus:border-orange-500/20 placeholder:text-slate-400 resize-none transition-all"
                 placeholder="Record terms, warranty data, or logistics notes..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -628,22 +721,22 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </div>
           </div>
 
-          <div className="lg:col-span-1 bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
+          <div className="lg:col-span-1 bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
             <div className="flex justify-between items-center px-1">
-              <span className="text-[11px] font-black text-slate-900 dark:text-slate-100">Items Subtotal</span>
-              <span className="text-[11px] font-black text-slate-700 dark:text-slate-300">
+              <span className="text-[10px] font-black text-slate-900 dark:text-slate-100">Items Subtotal</span>
+              <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">
                 Rs. {totals.itemsSubtotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
             </div>
 
-            <div className="flex justify-between items-center px-1 py-3 border-y border-slate-100 dark:border-slate-800">
-              <span className="text-[11px] font-black text-slate-900 dark:text-slate-100">Overall Discount</span>
+            <div className="flex justify-between items-center px-1 py-2 border-y border-slate-100 dark:border-slate-800">
+              <span className="text-[10px] font-black text-slate-900 dark:text-slate-100">Overall Discount</span>
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-400 font-bold">Rs.</span>
+                <span className="text-[10px] text-slate-400 font-bold">Rs.</span>
                 <input
                   ref={overallDiscRef}
                   type="number"
-                  className="w-24 bg-transparent text-right font-black text-[12px] outline-none text-rose-500 focus:border-b focus:border-rose-500"
+                  className="w-20 bg-transparent text-right font-black text-[11px] outline-none text-rose-500 focus:border-b focus:border-rose-500"
                   value={formData.overallDiscount}
                   onChange={(e) =>
                     setFormData({ ...formData, overallDiscount: parseFloat(e.target.value) || 0 })
@@ -653,23 +746,23 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </div>
 
             <div className="flex justify-between items-center px-1 pt-2">
-              <span className="text-[12px] font-black text-slate-900 dark:text-white uppercase tracking-tight">(Total)</span>
-              <span className="text-2xl font-black text-slate-900 dark:text-white tracking-tighter">
+              <span className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-tight">(Total)</span>
+              <span className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
                 Rs. {totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
             </div>
 
-            <div className="bg-orange-50 dark:bg-orange-500/5 p-4 rounded-xl border border-orange-100 dark:border-orange-500/10 mt-6">
+            <div className="bg-orange-50 dark:bg-orange-500/5 p-3 rounded-lg border border-orange-100 dark:border-orange-500/10 mt-4">
               <div className="flex justify-between items-center">
-                <span className="text-[11px] font-black text-orange-700 dark:text-orange-400 uppercase tracking-tight">
+                <span className="text-[10px] font-black text-orange-700 dark:text-orange-400 uppercase tracking-tight">
                   Cash Received
                 </span>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-orange-600 font-black">Rs.</span>
+                  <span className="text-[10px] text-orange-600 font-black">Rs.</span>
                   <input
                     ref={amountReceivedRef}
                     type="number"
-                    className="w-24 bg-transparent text-right font-black text-[13px] outline-none text-orange-700 dark:text-orange-400 focus:border-b focus:border-orange-500"
+                    className="w-20 bg-transparent text-right font-black text-[11px] outline-none text-orange-700 dark:text-orange-400 focus:border-b focus:border-orange-500"
                     value={formData.amountReceived}
                     onChange={(e) =>
                       setFormData({ ...formData, amountReceived: parseFloat(e.target.value) || 0 })
@@ -680,7 +773,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </div>
 
             <div
-              className={`p-4 rounded-xl border mt-2 transition-colors ${
+              className={`p-3 rounded-lg border mt-2 transition-colors ${
                 totals.balanceDue > 0
                   ? "bg-rose-50 dark:bg-rose-500/5 border-rose-100 dark:border-rose-500/10"
                   : "bg-emerald-50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-800"
@@ -688,14 +781,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             >
               <div className="flex justify-between items-center">
                 <span
-                  className={`text-[11px] font-black uppercase tracking-tight ${
+                  className={`text-[10px] font-black uppercase tracking-tight ${
                     totals.balanceDue > 0 ? "text-rose-700" : "text-emerald-700"
                   }`}
                 >
                   Balance Due
                 </span>
                 <span
-                  className={`text-[16px] font-black tracking-tight ${
+                  className={`text-[14px] font-black tracking-tight ${
                     totals.balanceDue > 0 ? "text-rose-700" : "text-emerald-700"
                   }`}
                 >
@@ -706,10 +799,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-6 pt-10">
+        <div className="flex items-center justify-end gap-4 pt-6">
           <button
             onClick={onBack}
-            className="text-[11px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 transition-colors"
+            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 transition-colors"
           >
             Discard
           </button>
@@ -717,19 +810,55 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           <div className="flex items-center gap-3">
             <button
               onClick={() => handleSubmit("Draft", true)}
-              className="flex items-center gap-3 pl-6 pr-4 bg-orange-600 border border-orange-500 rounded-2xl text-white font-black text-[11px] uppercase tracking-widest hover:bg-orange-700 transition-all active:scale-95 shadow-lg"
+              className="flex items-center gap-2 px-4 py-2 bg-orange-600 border border-orange-500 rounded-lg text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all active:scale-95 shadow-sm"
             >
               Save & Edit
             </button>
             <button
               onClick={() => handleSubmit("Paid", false)}
-              className="flex items-center gap-3 px-5 bg-slate-900 border border-slate-900 rounded-2xl text-white font-black text-[11px] uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-lg"
+              className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-900 rounded-lg text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
             >
               Save & Approve
             </button>
           </div>
         </div>
       </div>
+
+      {selectedItemIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200]">
+          <div className="bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl border border-white/10 flex items-center gap-6">
+            <div className="flex items-center gap-3 border-r border-white/10 pr-6">
+              <div className="w-8 h-8 bg-orange-600 rounded-full flex items-center justify-center text-[11px] font-black">
+                {selectedItemIds.size}
+              </div>
+              <div>
+                <p className="text-[9px] font-black uppercase tracking-widest leading-none">Items Selected</p>
+                <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Bulk Actions Ready</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handlePrintSelected}
+                className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
+              >
+                Print Selected
+              </button>
+              <button
+                onClick={handleDeleteSelected}
+                className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
+              >
+                Delete Selected
+              </button>
+              <button
+                onClick={() => setSelectedItemIds(new Set())}
+                className="text-slate-300 hover:text-white font-black text-[9px] uppercase tracking-widest transition-colors"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
