@@ -220,6 +220,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           onLogout={onLogout}
           isDarkMode={isDarkMode}
           onThemeToggle={onThemeToggle}
+          onOpenSettings={() => setActiveTab("settings")}
+          onOpenProfile={() => setActiveTab("settings")}
         />
 
         <div className="p-6">

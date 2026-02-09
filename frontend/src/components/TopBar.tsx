@@ -7,6 +7,7 @@ import {
   FiMail,
   FiMoon,
   FiSearch,
+  FiSettings,
   FiSun,
   FiUser,
 } from "react-icons/fi";
@@ -18,6 +19,8 @@ interface TopBarProps {
   onLogout?: () => void;
   isDarkMode?: boolean;
   onThemeToggle?: () => void;
+  onOpenSettings?: () => void;
+  onOpenProfile?: () => void;
 }
 
 const TopBar: React.FC<TopBarProps> = ({
@@ -27,6 +30,8 @@ const TopBar: React.FC<TopBarProps> = ({
   onLogout,
   isDarkMode,
   onThemeToggle,
+  onOpenSettings,
+  onOpenProfile,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -124,11 +129,31 @@ const TopBar: React.FC<TopBarProps> = ({
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 mt-3 w-52 bg-white border border-slate-100 rounded-2xl shadow-xl p-2 z-50">
+            <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-100 rounded-2xl shadow-2xl p-2 z-[60]">
               <div className="px-3 py-2 text-xs text-slate-500 flex items-center gap-2 border-b border-slate-100">
                 <FiUser />
                 <span className="truncate">{userLabel || "Admin"}</span>
               </div>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onOpenProfile?.();
+                }}
+                className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+              >
+                <FiUser />
+                Profile
+              </button>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  onOpenSettings?.();
+                }}
+                className="w-full mt-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+              >
+                <FiSettings />
+                Settings
+              </button>
               {onLogout && (
                 <button
                   onClick={() => {
