@@ -1,4 +1,12 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  FiBell,
+  FiChevronDown,
+  FiLogOut,
+  FiMenu,
+  FiSearch,
+  FiUser,
+} from "react-icons/fi";
 
 interface TopBarProps {
   onMenuClick: () => void;
@@ -8,6 +16,19 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title, userLabel, onLogout }) => {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   return (
     <header
       className="
@@ -20,9 +41,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title, userLabel, onLogout
         shadow-sm
       "
     >
-      {/* Left side */}
       <div className="flex items-center gap-3">
-        {/* Mobile menu button */}
         <button
           onClick={onMenuClick}
           className="
@@ -35,7 +54,7 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title, userLabel, onLogout
             transition-all
           "
         >
-          ☰
+          <FiMenu />
         </button>
 
         <h1 className="font-black text-sm uppercase text-slate-800 tracking-wide">
@@ -43,10 +62,9 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title, userLabel, onLogout
         </h1>
       </div>
 
-      {/* Right side */}
       <div className="flex items-center gap-4">
-        {/* Search (optional) */}
-        <div className="hidden md:flex items-center bg-slate-100 rounded-lg px-3 py-1">
+        <div className="hidden md:flex items-center bg-slate-100 rounded-lg px-3 py-1 gap-2">
+          <FiSearch className="text-slate-400" />
           <input
             type="text"
             placeholder="Search..."
@@ -54,7 +72,6 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title, userLabel, onLogout
           />
         </div>
 
-        {/* Notifications */}
         <button
           className="
             w-9 h-9 rounded-lg
@@ -64,26 +81,42 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title, userLabel, onLogout
             transition-all
           "
         >
-          🔔
+          <FiBell />
         </button>
 
-        {/* User */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((prev) => !prev)}
+            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 rounded-full px-2.5 py-1 transition-all"
+          >
             <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-black text-sm">
               {(userLabel || "A").slice(0, 1).toUpperCase()}
             </div>
             <span className="hidden md:block text-sm font-bold text-slate-700">
               {userLabel || "Admin"}
             </span>
-          </div>
-          {onLogout && (
-            <button
-              onClick={onLogout}
-              className="text-xs font-black uppercase tracking-widest text-slate-500 hover:text-orange-600 transition-colors"
-            >
-              Logout
-            </button>
+            <FiChevronDown className="text-slate-500" />
+          </button>
+
+          {menuOpen && (
+            <div className="absolute right-0 mt-3 w-52 bg-white border border-slate-100 rounded-2xl shadow-xl p-2 z-50">
+              <div className="px-3 py-2 text-xs text-slate-500 flex items-center gap-2 border-b border-slate-100">
+                <FiUser />
+                <span className="truncate">{userLabel || "Admin"}</span>
+              </div>
+              {onLogout && (
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    onLogout();
+                  }}
+                  className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                >
+                  <FiLogOut />
+                  Logout
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
