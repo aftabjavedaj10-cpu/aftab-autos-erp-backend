@@ -11,6 +11,9 @@ interface CategoriesPageProps {
 const CATEGORY_TYPES = ['All Types', 'product', 'customer', 'vendor'];
 
 const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick, onEditClick, onDelete }) => {
+  const canRead = hasPermission('categories.read');
+  const canWrite = hasPermission('categories.write');
+  const canDelete = hasPermission('categories.delete');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('All Types');
   const [successMsg, setSuccessMsg] = useState('');
@@ -67,6 +70,11 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
 
   return (
     <div className="animate-in fade-in duration-500 relative">
+      {!canRead && (
+        <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300 rounded-2xl font-bold text-sm">
+          You do not have permission to view categories.
+        </div>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Categories</h1>
@@ -122,7 +130,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
               <thead>
                 <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
                   <th className="px-6 py-5 w-20">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
                       <button 
                         onClick={toggleSelectAll}
                         className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
@@ -171,7 +179,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                   </td>
                   <td className="px-8 py-5 text-[11px] font-black text-slate-600 dark:text-slate-400">{category.itemCount || 0}</td>
                   <td className="px-8 py-5 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ display: (canWrite || canDelete) ? 'flex' : 'none' }}>
                       <button 
                         onClick={() => onEditClick(category)}
                         className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-orange-600 transition-all shadow-sm"
@@ -286,3 +294,6 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
 };
 
 export default CategoriesPage;
+
+
+

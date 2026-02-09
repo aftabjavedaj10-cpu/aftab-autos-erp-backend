@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import type { Product, Category, Vendor } from '../types';
 import ImportModal from '../components/ImportModal';
 import Pagination from '../components/Pagination';
+import { hasPermission } from '../services/supabaseAuth';
 
 interface ProductsPageProps {
   products: Product[];
@@ -21,6 +22,9 @@ const STOCK_STATUSES = [
 ];
 
 const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendors, onAddClick, onEditClick, onDelete, onImportComplete }) => {
+  const canRead = hasPermission('products.read');
+  const canWrite = hasPermission('products.write');
+  const canDelete = hasPermission('products.delete');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedVendor, setSelectedVendor] = useState('All Vendors');
@@ -114,12 +118,17 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
 
   return (
     <div className="animate-in fade-in duration-500 relative">
+      {!canRead && (
+        <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300 rounded-2xl font-bold text-sm">
+          You do not have permission to view products.
+        </div>
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Product List</h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium">Manage your car parts and inventory stock.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
           <button 
             onClick={() => setIsImportModalOpen(true)}
             className="min-w-[170px] h-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-3 px-6 rounded-2xl transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
@@ -183,7 +192,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
                 <th className="px-6 py-5 w-10">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
                     <button 
                       onClick={toggleSelectAll}
                       className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedProducts.length && paginatedProducts.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
@@ -192,7 +201,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                         <span className="text-white text-[10px]">✓</span>
                       )}
                     </button>
-                    {selectedIds.size > 0 && (
+                    {canDelete && selectedIds.size > 0 && (
                       <button onClick={() => setSelectedIds(new Set())} className="text-[8px] text-orange-600 hover:underline">DESELECT</button>
                     )}
                   </div>
@@ -266,7 +275,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                     </div>
                   </td>
                   <td className="px-8 py-5 text-right">
-                    <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ display: (canWrite || canDelete) ? 'flex' : 'none' }}>
                       <button onClick={() => onEditClick(product)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-orange-600 transition-all shadow-sm text-xs" title="Edit">✏️</button>
                       <button onClick={() => { setSelectedIds(new Set([product.id])); setIsConfirmModalOpen(true); }} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-rose-600 transition-all shadow-sm text-xs" title="Delete">
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
@@ -289,7 +298,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
       </div>
 
       {/* Simplified Floating Bulk Action Bar */}
-      {selectedIds.size > 0 && (
+      {canDelete && selectedIds.size > 0 && (
         <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[50] animate-in slide-in-from-bottom-12 fade-in duration-500">
           <div className="bg-slate-900/95 dark:bg-slate-800/95 text-white px-8 py-4 rounded-[2.5rem] shadow-2xl flex items-center gap-8 border border-white/10 backdrop-blur-xl">
              <div className="flex items-center gap-4 border-r border-white/10 pr-8">
@@ -318,7 +327,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
       )}
 
       {/* Simplified Confirmation Modal */}
-      {isConfirmModalOpen && (
+      {canDelete && isConfirmModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-300" onClick={() => setIsConfirmModalOpen(false)}></div>
           <div className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
@@ -364,3 +373,6 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
 };
 
 export default ProductsPage;
+
+
+

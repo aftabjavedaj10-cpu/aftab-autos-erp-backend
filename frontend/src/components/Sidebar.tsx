@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { hasPermission } from '../services/supabaseAuth';
 
 const SidebarItem: React.FC<{ 
   icon: string; 
@@ -46,7 +47,7 @@ const SidebarDropdown: React.FC<{
         <>
           <span className="font-bold flex-1 truncate">{label}</span>
           <span className={`text-[10px] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>
-            ▼
+            ?
           </span>
         </>
       )}
@@ -92,6 +93,23 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [purchaseOpen, setPurchaseOpen] = useState(false);
 
   const effectiveCollapsed = isMobileOpen ? false : isCollapsed;
+  const permissionFlags = useMemo(() => ({
+    dashboard: hasPermission('dashboard.view'),
+    products: hasPermission('products.read'),
+    customers: hasPermission('customers.read'),
+    vendors: hasPermission('vendors.read'),
+    categories: hasPermission('categories.read'),
+    settings: hasPermission('settings.view'),
+  }), []);
+
+  const setupItems = useMemo(() => {
+    const items: { label: string; value: string }[] = [];
+    if (permissionFlags.products) items.push({ label: "Products", value: "products" });
+    if (permissionFlags.customers) items.push({ label: "Customers", value: "customers" });
+    if (permissionFlags.vendors) items.push({ label: "Vendors", value: "vendors" });
+    if (permissionFlags.categories) items.push({ label: "Categories", value: "categories" });
+    return items;
+  }, [permissionFlags]);
 
   return (
     <div className={`
@@ -115,30 +133,32 @@ const Sidebar: React.FC<SidebarProps> = ({
           className="hidden lg:block p-1.5 rounded-lg bg-orange-100/50 dark:bg-slate-900 text-orange-700 dark:text-slate-400 hover:bg-orange-200 dark:hover:text-white transition-colors"
           title={effectiveCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
         >
-          {effectiveCollapsed ? '▶' : '◀'}
+          {effectiveCollapsed ? '?' : '?'}
         </button>
 
         <button 
           onClick={onMobileClose}
           className="lg:hidden p-1.5 rounded-lg bg-orange-100/50 dark:bg-slate-900 text-orange-700 dark:text-slate-400 hover:bg-orange-200 dark:hover:text-white transition-colors"
         >
-          ✕
+          ?
         </button>
       </div>
 
       <nav className="flex-1 space-y-2">
         {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 px-4">Main Menu</p>}
         
-        <SidebarItem 
-          icon="📊" 
-          label="Dashboard" 
-          isCollapsed={effectiveCollapsed}
-          active={activeTab === 'dashboard'} 
-          onClick={() => onTabChange('dashboard')} 
-        />
+        {permissionFlags.dashboard && (
+          <SidebarItem 
+            icon="??" 
+            label="Dashboard" 
+            isCollapsed={effectiveCollapsed}
+            active={activeTab === 'dashboard'} 
+            onClick={() => onTabChange('dashboard')} 
+          />
+        )}
 
         <SidebarDropdown 
-          icon="🖥️" 
+          icon="???" 
           label="POS" 
           isCollapsed={effectiveCollapsed}
           isOpen={posOpen}
@@ -151,24 +171,21 @@ const Sidebar: React.FC<SidebarProps> = ({
           ]}
         />
 
-        <SidebarDropdown 
-          icon="🛠️" 
-          label="Setup" 
-          isCollapsed={effectiveCollapsed}
-          isOpen={setupOpen}
-          toggle={() => setSetupOpen(!setupOpen)}
-          activeValue={activeTab}
-          onItemClick={(val) => onTabChange(val)}
-          items={[
-            { label: "Products", value: "products" },
-            { label: "Customers", value: "customers" },
-            { label: "Vendors", value: "vendors" },
-            { label: "Categories", value: "categories" }
-          ]}
-        />
+        {setupItems.length > 0 && (
+          <SidebarDropdown 
+            icon="???" 
+            label="Setup" 
+            isCollapsed={effectiveCollapsed}
+            isOpen={setupOpen}
+            toggle={() => setSetupOpen(!setupOpen)}
+            activeValue={activeTab}
+            onItemClick={(val) => onTabChange(val)}
+            items={setupItems}
+          />
+        )}
         
         <SidebarDropdown 
-          icon="📈" 
+          icon="??" 
           label="Sales" 
           isCollapsed={effectiveCollapsed}
           isOpen={salesOpen}
@@ -185,7 +202,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
         
         <SidebarDropdown 
-          icon="🛒" 
+          icon="??" 
           label="Purchase" 
           isCollapsed={effectiveCollapsed}
           isOpen={purchaseOpen}
@@ -201,7 +218,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
 
         <SidebarItem 
-          icon="📋" 
+          icon="??" 
           label="Reports" 
           isCollapsed={effectiveCollapsed}
           active={activeTab === 'reports'} 
@@ -209,14 +226,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
         
         {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-8 mb-4 px-4">Support</p>}
-        <SidebarItem 
-          icon="⚙️" 
-          label="Settings" 
-          isCollapsed={effectiveCollapsed} 
-          active={activeTab === 'settings'}
-          onClick={() => onTabChange('settings')}
-        />
-        <SidebarItem icon="❓" label="Help Center" isCollapsed={effectiveCollapsed} />
+        {permissionFlags.settings && (
+          <SidebarItem 
+            icon="??" 
+            label="Settings" 
+            isCollapsed={effectiveCollapsed} 
+            active={activeTab === 'settings'}
+            onClick={() => onTabChange('settings')}
+          />
+        )}
+        <SidebarItem icon="?" label="Help Center" isCollapsed={effectiveCollapsed} />
       </nav>
     </div>
   );

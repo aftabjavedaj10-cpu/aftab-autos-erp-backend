@@ -93,6 +93,8 @@ const SettingsPage: React.FC = () => {
     () => (roles.length > 0 ? roles.map((r) => r.name) : ROLE_OPTIONS),
     [roles]
   );
+  const getRolePermissions = (roleName?: string) =>
+    roles.find((r) => r.name === roleName)?.permissions || [];
 
   const refresh = async () => {
     setLoading(true);
@@ -1086,6 +1088,9 @@ const SettingsPage: React.FC = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
+                        <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                          Perms: {getRolePermissions(user.role).length}
+                        </span>
                         {canManageMembers ? (
                           <select
                             value={user.role}

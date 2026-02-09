@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import {
   clearPendingBootstrap,
   getPendingBootstrap,
+  setPermissions,
   setProfile,
   signInWithPassword,
 } from "../services/supabaseAuth";
-import { companyAdminAPI, profileAPI } from "../services/apiService";
+import { companyAdminAPI, permissionAPI, profileAPI } from "../services/apiService";
 
 interface LoginPageProps {
   onLogin: (email: string) => void;
@@ -60,6 +61,14 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
         });
       } catch {
         // profile may not exist yet
+      }
+      try {
+        const permissions = await permissionAPI.getMyPermissions();
+        if (permissions) {
+          setPermissions(permissions);
+        }
+      } catch {
+        // ignore permission refresh errors
       }
       onLogin(email);
     } catch (error) {
