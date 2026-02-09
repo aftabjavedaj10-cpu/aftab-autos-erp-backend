@@ -585,7 +585,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {formData.items.map((item, index) => {
+                {formData.items.map((item) => {
                   const grossAmount = item.unitPrice * item.quantity;
                   let discountAmt = 0;
                   if (item.discountType === "percent") {
