@@ -143,9 +143,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     }, 0);
 
     const totalQty = formData.items.reduce((sum, item) => sum + item.quantity, 0);
+    const unitBreakdown = formData.items.reduce((acc, item) => {
+      const unit = (item.unit || "PC").toUpperCase();
+      acc[unit] = (acc[unit] || 0) + item.quantity;
+      return acc;
+    }, {} as Record<string, number>);
     const netTotal = itemsSubtotal - (formData.overallDiscount || 0);
     const balanceDue = netTotal - (formData.amountReceived || 0);
-    return { itemsSubtotal, netTotal, balanceDue, totalQty };
+    return { itemsSubtotal, netTotal, balanceDue, totalQty, unitBreakdown };
   }, [formData.items, formData.overallDiscount, formData.amountReceived]);
 
   const handleAddItem = (product: Product) => {
@@ -585,15 +590,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   return (
                     <tr
                       key={item.productId}
+                      data-row-id={item.productId}
                       className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${
                         draggingId === item.productId ? "bg-orange-50/60 dark:bg-orange-950/20" : ""
                       }`}
-                      draggable
-                      onDragStart={(e) => {
-                        setDraggingId(item.productId);
-                        e.dataTransfer.setData("text/plain", item.productId);
-                        e.dataTransfer.effectAllowed = "move";
-                      }}
                       onDragOver={(e) => {
                         e.preventDefault();
                         e.dataTransfer.dropEffect = "move";
@@ -695,6 +695,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                             e.dataTransfer.setData("text/plain", item.productId);
                             e.dataTransfer.effectAllowed = "move";
                           }}
+                          onDragEnd={() => setDraggingId(null)}
                         >
                           ⋮⋮
                         </div>
@@ -812,12 +813,23 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-0">
           <div className="lg:col-span-2 space-y-4">
-            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-6">
               <div>
                 <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Total Quantity</div>
-                <div className="text-[9px] text-slate-400 mt-0.5">All items combined</div>
+                <div className="text-[9px] text-slate-400 mt-0.5">By unit</div>
               </div>
-              <div className="text-2xl font-black text-orange-600">{totals.totalQty}</div>
+              <div className="flex items-center gap-4 flex-wrap justify-end">
+                {Object.keys(totals.unitBreakdown).length > 0 ? (
+                  Object.entries(totals.unitBreakdown).map(([unit, qty]) => (
+                    <div key={unit} className="text-right">
+                      <div className="text-2xl font-black text-orange-600 leading-none">{qty}</div>
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">{unit}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-2xl font-black text-orange-600">{totals.totalQty}</div>
+                )}
+              </div>
             </div>
             <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-3">
