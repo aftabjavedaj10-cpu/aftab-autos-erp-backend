@@ -241,6 +241,17 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     });
   };
 
+  const moveItem = (id: string, direction: "up" | "down") => {
+    const index = formData.items.findIndex((i) => i.productId === id);
+    if (index === -1) return;
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= formData.items.length) return;
+    const nextItems = [...formData.items];
+    const [moved] = nextItems.splice(index, 1);
+    nextItems.splice(targetIndex, 0, moved);
+    setFormData({ ...formData, items: nextItems });
+  };
+
   const toggleSelectItem = (id: string) => {
     const next = new Set(selectedItemIds);
     if (next.has(id)) {
@@ -547,15 +558,19 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       )}
                     </button>
                   </th>
+                  <th className="px-3 py-3 w-10 text-center">#</th>
+                  <th className="px-3 py-3 w-24">Code</th>
                   <th className="px-3 py-3">Product</th>
                   <th className="px-3 py-3 w-20 text-center">Qty</th>
                   <th className="px-3 py-3 w-28 text-right">Unit Price</th>
+                  <th className="px-3 py-3 w-32 text-right">Discount</th>
                   <th className="px-3 py-3 w-28 text-right">Net</th>
+                  <th className="px-3 py-3 w-16 text-center">Move</th>
                   <th className="px-3 py-3 w-14 text-center">Remove</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {formData.items.map((item) => {
+                {formData.items.map((item, index) => {
                   const grossAmount = item.unitPrice * item.quantity;
                   let discountAmt = 0;
                   if (item.discountType === "percent") {
@@ -579,6 +594,12 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                             <span className="text-white text-[8px]">✓</span>
                           )}
                         </button>
+                      </td>
+                      <td className="px-3 py-2 text-center text-[10px] font-black text-slate-500">{index + 1}</td>
+                      <td className="px-3 py-2">
+                        <div className="text-[9px] font-black uppercase text-slate-600 dark:text-slate-300">
+                          {item.productCode || "N/A"}
+                        </div>
                       </td>
                       <td className="px-3 py-2">
                         <div className="text-[10px] font-black text-slate-900 dark:text-white">{item.productName}</div>
@@ -606,8 +627,46 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                           }
                         />
                       </td>
+                      <td className="px-3 py-2 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <input
+                            type="number"
+                            className="w-12 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
+                            value={item.discountValue || 0}
+                            onChange={(e) =>
+                              updateItemField(item.productId, "discountValue", Math.max(0, parseFloat(e.target.value) || 0))
+                            }
+                          />
+                          <select
+                            className="bg-transparent text-[9px] font-black text-slate-400"
+                            value={item.discountType}
+                            onChange={(e) => updateItemField(item.productId, "discountType", e.target.value as any)}
+                          >
+                            <option value="fixed">Rs</option>
+                            <option value="percent">%</option>
+                          </select>
+                        </div>
+                      </td>
                       <td className="px-3 py-2 text-right text-[10px] font-black text-slate-900 dark:text-white">
                         Rs. {netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => moveItem(item.productId, "up")}
+                            className="w-6 h-6 flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-md text-slate-400 hover:text-orange-600"
+                            title="Move up"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            onClick={() => moveItem(item.productId, "down")}
+                            className="w-6 h-6 flex items-center justify-center border border-slate-200 dark:border-slate-700 rounded-md text-slate-400 hover:text-orange-600"
+                            title="Move down"
+                          >
+                            ↓
+                          </button>
+                        </div>
                       </td>
                       <td className="px-3 py-2 text-center">
                         <button
@@ -622,7 +681,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 })}
                 <tr className="bg-orange-50/10 dark:bg-orange-950/10 border-t border-slate-200 dark:border-slate-700">
                   <td className="px-4 py-3 text-center">+</td>
-                  <td colSpan={5} className="px-3 py-3">
+                  <td colSpan={9} className="px-3 py-3">
                     <div className="relative z-[120]" ref={searchContainerRef}>
                       <input
                         ref={searchInputRef}
