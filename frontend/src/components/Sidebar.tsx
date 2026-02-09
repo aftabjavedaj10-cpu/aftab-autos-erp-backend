@@ -140,7 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           onClick={onMobileClose}
           className="lg:hidden p-1.5 rounded-lg bg-orange-100/50 dark:bg-slate-900 text-orange-700 dark:text-slate-400 hover:bg-orange-200 dark:hover:text-white transition-colors"
         >
-          ?
+          X
         </button>
       </div>
 
@@ -149,7 +149,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         
         {permissionFlags.dashboard && (
           <SidebarItem 
-            icon="??" 
+            icon="DB" 
             label="Dashboard" 
             isCollapsed={effectiveCollapsed}
             active={activeTab === 'dashboard'} 
@@ -158,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
 
         <SidebarDropdown 
-          icon="???" 
+          icon="POS" 
           label="POS" 
           isCollapsed={effectiveCollapsed}
           isOpen={posOpen}
@@ -173,7 +173,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
         {setupItems.length > 0 && (
           <SidebarDropdown 
-            icon="???" 
+            icon="SET" 
             label="Setup" 
             isCollapsed={effectiveCollapsed}
             isOpen={setupOpen}
@@ -185,7 +185,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
         
         <SidebarDropdown 
-          icon="??" 
+          icon="SAL" 
           label="Sales" 
           isCollapsed={effectiveCollapsed}
           isOpen={salesOpen}
@@ -202,7 +202,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
         
         <SidebarDropdown 
-          icon="??" 
+          icon="PUR" 
           label="Purchase" 
           isCollapsed={effectiveCollapsed}
           isOpen={purchaseOpen}
@@ -218,7 +218,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         />
 
         <SidebarItem 
-          icon="??" 
+          icon="REP" 
           label="Reports" 
           isCollapsed={effectiveCollapsed}
           active={activeTab === 'reports'} 
@@ -228,14 +228,14 @@ const Sidebar: React.FC<SidebarProps> = ({
         {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-8 mb-4 px-4">Support</p>}
         {permissionFlags.settings && (
           <SidebarItem 
-            icon="??" 
+            icon="SET" 
             label="Settings" 
             isCollapsed={effectiveCollapsed} 
             active={activeTab === 'settings'}
             onClick={() => onTabChange('settings')}
           />
         )}
-        <SidebarItem icon="?" label="Help Center" isCollapsed={effectiveCollapsed} />
+        <SidebarItem icon="HELP" label="Help Center" isCollapsed={effectiveCollapsed} />
       </nav>
     </div>
   );
