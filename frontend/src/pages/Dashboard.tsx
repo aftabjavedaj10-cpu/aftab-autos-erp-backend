@@ -220,7 +220,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   }, []);
 
   return (
-    <div className="min-h-screen flex bg-[#fcf8f2] dark:bg-[#020617]">
+    <div className="min-h-screen flex bg-[#FEF3E2] dark:bg-[#020617]">
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}

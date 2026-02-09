@@ -88,7 +88,7 @@ const AcceptInvite: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fcf8f2] dark:bg-[#020617] px-4">
+    <div className="min-h-screen flex items-center justify-center bg-[#FEF3E2] dark:bg-[#020617] px-4">
       <div className="w-full max-w-md bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-white/60 dark:border-slate-800/60 rounded-[2rem] p-8">
         <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
           Activate Account

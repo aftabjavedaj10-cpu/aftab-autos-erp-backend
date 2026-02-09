@@ -81,7 +81,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, isDarkMode, onThemeToggl
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fcf8f2] dark:bg-[#020617] px-4 transition-colors duration-1000 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-[#FEF3E2] dark:bg-[#020617] px-4 transition-colors duration-1000 relative overflow-hidden font-sans">
       {adminToast && (
         <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-600 text-white text-[8px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl shadow-2xl">
           {adminToast}

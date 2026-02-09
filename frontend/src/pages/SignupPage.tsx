@@ -101,7 +101,7 @@ const SignupPage: React.FC<SignupPageProps> = ({
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#fcf8f2] dark:bg-[#020617] px-4 transition-colors duration-1000 relative overflow-hidden font-sans">
+    <div className="min-h-screen flex items-center justify-center bg-[#FEF3E2] dark:bg-[#020617] px-4 transition-colors duration-1000 relative overflow-hidden font-sans">
       <button
         onClick={onThemeToggle}
         className="absolute top-6 right-6 z-50 flex items-center gap-2 px-3 py-1.5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-xl border border-white/40 dark:border-slate-800/40 rounded-full shadow-2xl hover:bg-white/60 dark:hover:bg-slate-800/60 transition-all group"
