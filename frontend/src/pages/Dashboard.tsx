@@ -17,9 +17,11 @@ import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermi
 
 interface DashboardProps {
   onLogout: () => void;
+  isDarkMode?: boolean;
+  onThemeToggle?: () => void;
 }
 
-const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeToggle }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -216,6 +218,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           title={activeTab.replace("_", " ")}
           userLabel={userLabel}
           onLogout={onLogout}
+          isDarkMode={isDarkMode}
+          onThemeToggle={onThemeToggle}
         />
 
         <div className="p-6">

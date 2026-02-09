@@ -104,9 +104,36 @@ function App() {
           </>
         ) : (
           <>
-            <Route path="/" element={<Dashboard onLogout={handleLogout} />} />
-            <Route path="/products" element={<Dashboard onLogout={handleLogout} />} />
-            <Route path="/products/add" element={<Dashboard onLogout={handleLogout} />} />
+            <Route
+              path="/"
+              element={
+                <Dashboard
+                  onLogout={handleLogout}
+                  isDarkMode={isDarkMode}
+                  onThemeToggle={handleThemeToggle}
+                />
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <Dashboard
+                  onLogout={handleLogout}
+                  isDarkMode={isDarkMode}
+                  onThemeToggle={handleThemeToggle}
+                />
+              }
+            />
+            <Route
+              path="/products/add"
+              element={
+                <Dashboard
+                  onLogout={handleLogout}
+                  isDarkMode={isDarkMode}
+                  onThemeToggle={handleThemeToggle}
+                />
+              }
+            />
             <Route path="/accept-invite" element={<AcceptInvite />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </>

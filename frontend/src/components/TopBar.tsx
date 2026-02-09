@@ -4,7 +4,10 @@ import {
   FiChevronDown,
   FiLogOut,
   FiMenu,
+  FiMail,
+  FiMoon,
   FiSearch,
+  FiSun,
   FiUser,
 } from "react-icons/fi";
 
@@ -13,9 +16,18 @@ interface TopBarProps {
   title?: string;
   userLabel?: string;
   onLogout?: () => void;
+  isDarkMode?: boolean;
+  onThemeToggle?: () => void;
 }
 
-const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title, userLabel, onLogout }) => {
+const TopBar: React.FC<TopBarProps> = ({
+  onMenuClick,
+  title,
+  userLabel,
+  onLogout,
+  isDarkMode,
+  onThemeToggle,
+}) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -84,17 +96,30 @@ const TopBar: React.FC<TopBarProps> = ({ onMenuClick, title, userLabel, onLogout
           <FiBell />
         </button>
 
+        {onThemeToggle && (
+          <button
+            onClick={onThemeToggle}
+            className="
+              w-9 h-9 rounded-lg
+              flex items-center justify-center
+              text-slate-600
+              hover:bg-orange-500 hover:text-white
+              transition-all
+            "
+            title={isDarkMode ? "Light mode" : "Dark mode"}
+          >
+            {isDarkMode ? <FiSun /> : <FiMoon />}
+          </button>
+        )}
+
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
             className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 rounded-full px-2.5 py-1 transition-all"
           >
             <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-black text-sm">
-              {(userLabel || "A").slice(0, 1).toUpperCase()}
+              <FiMail />
             </div>
-            <span className="hidden md:block text-sm font-bold text-slate-700">
-              {userLabel || "Admin"}
-            </span>
             <FiChevronDown className="text-slate-500" />
           </button>
 
