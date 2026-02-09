@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
-import type { SalesInvoice, SalesInvoiceItem, Product, Customer } from "../types";
+﻿
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import type { Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types";
 
 interface SalesInvoiceFormPageProps {
   invoice?: SalesInvoice;
@@ -9,8 +10,6 @@ interface SalesInvoiceFormPageProps {
   onSave: (invoice: SalesInvoice, stayOnPage: boolean) => void;
 }
 
-type PrintMode = "invoice" | "receipt" | "a5" | "item_slip";
-
 const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   invoice,
   products,
@@ -19,10 +18,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   onSave,
 }) => {
   const isEdit = !!invoice;
-  const [savePrices, setSavePrices] = useState(true);
-  const [printMode, setPrintMode] = useState<PrintMode>("invoice");
-  const [printingItems, setPrintingItems] = useState<SalesInvoiceItem[]>([]);
-  const [selectedLineIds, setSelectedLineIds] = useState<Set<string>>(new Set());
 
   const [formData, setFormData] = useState({
     id: invoice?.id || `INV-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -44,8 +39,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const [customerSearchTerm, setCustomerSearchTerm] = useState("");
   const [isCustomerSearching, setIsCustomerSearching] = useState(false);
-  const [isSaveDropdownOpen, setIsSaveDropdownOpen] = useState(false);
-  const [isPrintDropdownOpen, setIsPrintDropdownOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [customerSelectedIndex, setCustomerSelectedIndex] = useState(0);
 
@@ -57,14 +50,11 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const overallDiscRef = useRef<HTMLInputElement>(null);
   const amountReceivedRef = useRef<HTMLInputElement>(null);
-  const saveBtnRef = useRef<HTMLButtonElement>(null);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const productListContainerRef = useRef<HTMLDivElement>(null);
   const productItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const customerSearchContainerRef = useRef<HTMLDivElement>(null);
-  const saveDropdownRef = useRef<HTMLDivElement>(null);
-  const printDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -74,12 +64,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       }
       if (customerSearchContainerRef.current && !customerSearchContainerRef.current.contains(target)) {
         setIsCustomerSearching(false);
-      }
-      if (saveDropdownRef.current && !saveDropdownRef.current.contains(target)) {
-        setIsSaveDropdownOpen(false);
-      }
-      if (printDropdownRef.current && !printDropdownRef.current.contains(target)) {
-        setIsPrintDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -156,17 +140,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       return sum + (gross - discount);
     }, 0);
 
-    const totalQty = formData.items.reduce((sum, item) => sum + item.quantity, 0);
-
-    const unitBreakdown = formData.items.reduce((acc, item) => {
-      const unit = item.unit || "PC";
-      acc[unit] = (acc[unit] || 0) + item.quantity;
-      return acc;
-    }, {} as Record<string, number>);
-
     const netTotal = itemsSubtotal - (formData.overallDiscount || 0);
     const balanceDue = netTotal - (formData.amountReceived || 0);
-    return { itemsSubtotal, netTotal, balanceDue, totalQty, unitBreakdown };
+    return { itemsSubtotal, netTotal, balanceDue };
   }, [formData.items, formData.overallDiscount, formData.amountReceived]);
 
   const handleAddItem = (product: Product) => {
@@ -208,21 +184,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     });
   };
 
-  const toggleSelectItem = (id: string) => {
-    const next = new Set(selectedLineIds);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelectedLineIds(next);
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedLineIds.size === formData.items.length && formData.items.length > 0) {
-      setSelectedLineIds(new Set());
-    } else {
-      setSelectedLineIds(new Set(formData.items.map((i) => i.productId)));
-    }
-  };
-
   const handleCustomerKeyDown = (e: React.KeyboardEvent) => {
     if (!isCustomerSearching || availableCustomers.length === 0) {
       if (e.key === "Enter") {
@@ -241,7 +202,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     } else if (e.key === "Enter") {
       e.preventDefault();
       const selected = availableCustomers[customerSelectedIndex];
-      setFormData({ ...formData, customerId: selected.id });
+      const selectedId = selected.id || "";
+      if (!selectedId) return;
+      setFormData({ ...formData, customerId: selectedId });
       setCustomerSearchTerm(selected.name);
       setIsCustomerSearching(false);
       setTimeout(() => dateInputRef.current?.focus(), 10);
@@ -282,48 +245,24 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       ...formData,
       items: formData.items.filter((i) => i.productId !== id),
     });
-    const next = new Set(selectedLineIds);
-    next.delete(id);
-    setSelectedLineIds(next);
-  };
-
-  const handlePrint = (mode: PrintMode, item?: SalesInvoiceItem | SalesInvoiceItem[]) => {
-    setPrintMode(mode);
-    if (Array.isArray(item)) {
-      setPrintingItems(item);
-    } else if (item) {
-      setPrintingItems([item]);
-    } else {
-      setPrintingItems([]);
-    }
-    setIsPrintDropdownOpen(false);
-    setTimeout(() => {
-      window.print();
-    }, 100);
-  };
-
-  const handleBulkPrintSlips = () => {
-    const itemsToPrint = formData.items.filter((i) => selectedLineIds.has(i.productId));
-    if (itemsToPrint.length === 0) return;
-    handlePrint("item_slip", itemsToPrint);
   };
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
     if (!formData.customerId) {
-      alert("?? REQUIRED FIELD: Please select a Customer Account to proceed with this invoice.");
+      alert("Required: Please select a Customer Account.");
       customerInputRef.current?.focus();
       return;
     }
 
     if (formData.items.length === 0) {
-      alert("?? EMPTY INVOICE: No products have been added. Please search and add parts to the grid.");
+      alert("Empty invoice: Add at least one item.");
       searchInputRef.current?.focus();
       return;
     }
 
     const zeroQtyItems = formData.items.filter((item) => item.quantity <= 0);
     if (zeroQtyItems.length > 0) {
-      alert(`?? INVALID QUANTITY: You have ${zeroQtyItems.length} item(s) with zero or invalid quantity.`);
+      alert("Invalid quantity: There are items with 0 qty.");
       const firstInvalidId = zeroQtyItems[0].productId;
       const qtyInput = document.getElementById(`qty-${firstInvalidId}`) as HTMLInputElement;
       if (qtyInput) {
@@ -341,9 +280,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       totalAmount: totals.netTotal,
     };
     onSave(invoiceData, stayOnPage);
-    if (stayOnPage) {
-      setIsSaveDropdownOpen(false);
-    }
   };
 
   const currentCustomer = useMemo(() => {
@@ -365,13 +301,13 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
   return (
     <div className="max-w-7xl mx-auto animate-in fade-in duration-300 pb-20 relative">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 print:hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-4">
           <button
             onClick={onBack}
             className="w-10 h-10 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-400 hover:text-orange-600 shadow-sm transition-all active:scale-95"
           >
-            <span className="text-xl">?</span>
+            <span className="text-xl">←</span>
           </button>
           <div>
             <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter italic">
@@ -382,43 +318,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </p>
           </div>
         </div>
-
-        <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-          <label className="flex items-center gap-3 cursor-pointer group select-none">
-            <div className="text-right hidden sm:block">
-              <p className="text-[10px] font-bold text-slate-900 dark:text-white uppercase tracking-widest leading-none">
-                Save Prices
-              </p>
-              <p className="text-[8px] font-bold text-slate-400 uppercase mt-0.5 leading-none">
-                Manual Control
-              </p>
-            </div>
-            <div className="relative">
-              <input
-                type="checkbox"
-                className="sr-only"
-                checked={savePrices}
-                onChange={() => setSavePrices(!savePrices)}
-              />
-              <div
-                className={`w-12 h-6 rounded-full transition-all duration-300 border ${
-                  savePrices
-                    ? "bg-orange-600 border-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-                    : "bg-slate-200 dark:bg-slate-800 border-slate-300 dark:border-slate-700"
-                }`}
-              >
-                <div
-                  className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform duration-300 shadow-sm ${
-                    savePrices ? "translate-x-6" : "translate-x-0"
-                  }`}
-                ></div>
-              </div>
-            </div>
-          </label>
-        </div>
       </div>
 
-      <div className="space-y-4 print:hidden">
+      <div className="space-y-4">
         <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
             <div className="md:col-span-3 border-r border-slate-200 dark:border-slate-800 pr-6">
@@ -433,7 +335,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 placeholder="INV-XXXXXX"
                 onKeyDown={(e) => onEnterMoveTo(e, customerInputRef)}
               />
-              <span className="text-[9px] font-bold uppercase text-emerald-500 mt-1 block">? Auto-ID</span>
+              <span className="text-[9px] font-bold uppercase text-emerald-500 mt-1 block">Auto-ID</span>
             </div>
 
             <div className="md:col-span-5 relative" ref={customerSearchContainerRef}>
@@ -462,37 +364,33 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                     }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 p-1"
                   >
-                    ?
+                    ✕
                   </button>
                 )}
               </div>
 
               {formData.customerId && currentCustomer && (
-                <div className="mt-2 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                <div className="mt-2 flex items-center gap-2">
                   <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
                     Account Ledger Balance:
                   </span>
-                  <span
-                    className={`text-[11px] font-black px-2 py-0.5 rounded-lg border transition-colors ${
-                      parseFloat((currentCustomer.balance || "0").toString().replace(/[^0-9.-]+/g, "")) > 0
-                        ? "text-rose-600 dark:text-rose-500 bg-rose-50 dark:bg-rose-900/20 border-rose-100 dark:border-rose-800"
-                        : "text-emerald-600 dark:text-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 border-emerald-100 dark:border-emerald-800"
-                    }`}
-                  >
+                  <span className="text-[11px] font-black px-2 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700">
                     {currentCustomer.balance || "Rs. 0.00"}
                   </span>
                 </div>
               )}
 
               {isCustomerSearching && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-[60] overflow-hidden animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-[60] overflow-hidden">
                   <div className="max-h-[250px] overflow-y-auto">
                     {availableCustomers.length > 0 ? (
                       availableCustomers.map((c, idx) => (
                         <button
-                          key={c.id}
+                          key={c.id || idx}
                           onClick={() => {
-                            setFormData({ ...formData, customerId: c.id });
+                            const selectedId = c.id || "";
+                            if (!selectedId) return;
+                            setFormData({ ...formData, customerId: selectedId });
                             setCustomerSearchTerm(c.name);
                             setIsCustomerSearching(false);
                             setTimeout(() => dateInputRef.current?.focus(), 10);
@@ -505,37 +403,17 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                           }`}
                         >
                           <div>
-                            <p
-                              className={`text-[11px] font-black ${
-                                customerSelectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"
-                              }`}
-                            >
-                              {c.name}
-                            </p>
+                            <p className={`text-[11px] font-black ${customerSelectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"}`}>{c.name}</p>
                             <div className="flex gap-2 mt-0.5">
-                              <span
-                                className={`text-[8px] font-bold ${
-                                  customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"
-                                }`}
-                              >
+                              <span className={`text-[8px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
                                 Code: {c.customerCode || "N/A"}
                               </span>
-                              <span
-                                className={`text-[8px] font-bold ${
-                                  customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"
-                                }`}
-                              >
-                                � {c.category || "General"}
+                              <span className={`text-[8px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
+                                • {c.category || "General"}
                               </span>
                             </div>
                           </div>
-                          <span
-                            className={`text-[9px] font-bold ${
-                              customerSelectedIndex === idx ? "text-orange-200" : "text-slate-400"
-                            }`}
-                          >
-                            {c.phone || ""}
-                          </span>
+                          <span className={`text-[9px] font-bold ${customerSelectedIndex === idx ? "text-orange-200" : "text-slate-400"}`}>{c.phone || ""}</span>
                         </button>
                       ))
                     ) : (
@@ -612,6 +490,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </div>
           </div>
         </div>
+
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-10 overflow-visible">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[900px]">
@@ -672,7 +551,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                           onClick={() => handleRemoveItem(item.productId)}
                           className="p-1.5 text-slate-300 hover:text-rose-500 transition-colors"
                         >
-                          ?
+                          ✕
                         </button>
                       </td>
                     </tr>
@@ -836,30 +715,18 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="relative inline-flex h-12 group" ref={saveDropdownRef}>
-              <button
-                ref={saveBtnRef}
-                onClick={() => handleSubmit("Draft", true)}
-                className="flex items-center gap-3 pl-6 pr-4 bg-orange-600 border border-orange-500 rounded-2xl text-white font-black text-[11px] uppercase tracking-widest hover:bg-orange-700 transition-all active:scale-95 shadow-lg"
-              >
-                <span>??</span> Save & Edit
-              </button>
-              {isSaveDropdownOpen && (
-                <div className="absolute bottom-full right-0 mb-4 w-60 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl z-50 overflow-hidden">
-                  <div className="p-1.5">
-                    <button
-                      onClick={() => {
-                        handleSubmit("Paid", false);
-                        setIsSaveDropdownOpen(false);
-                      }}
-                      className="w-full text-left px-5 py-3.5 text-[10px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:text-emerald-600 transition-all flex items-center gap-4 rounded-xl"
-                    >
-                      <span>?</span> Save & Approve
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={() => handleSubmit("Draft", true)}
+              className="flex items-center gap-3 pl-6 pr-4 bg-orange-600 border border-orange-500 rounded-2xl text-white font-black text-[11px] uppercase tracking-widest hover:bg-orange-700 transition-all active:scale-95 shadow-lg"
+            >
+              Save & Edit
+            </button>
+            <button
+              onClick={() => handleSubmit("Paid", false)}
+              className="flex items-center gap-3 px-5 bg-slate-900 border border-slate-900 rounded-2xl text-white font-black text-[11px] uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-lg"
+            >
+              Save & Approve
+            </button>
           </div>
         </div>
       </div>
