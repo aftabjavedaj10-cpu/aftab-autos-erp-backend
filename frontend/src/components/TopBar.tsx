@@ -49,6 +49,7 @@ const TopBar: React.FC<TopBarProps> = ({
   return (
     <header
       className="
+        sticky top-0 z-50
         h-14
         w-full
         flex items-center justify-between
