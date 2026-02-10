@@ -29,7 +29,6 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
   const [endDate, setEndDate] = useState<string>(
     new Date().toISOString().split("T")[0]
   );
-  const [entryFilter, setEntryFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("All Types");
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -87,17 +86,14 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
   const filteredEntries = useMemo(() => {
     return rawEntries.filter((entry) => {
       const matchesDate = entry.date >= startDate && entry.date <= endDate;
-      const matchesSearch =
-        entry.description.toLowerCase().includes(entryFilter.toLowerCase()) ||
-        entry.reference.toLowerCase().includes(entryFilter.toLowerCase());
       const matchesType = typeFilter === "All Types" || entry.type === typeFilter;
-      return matchesDate && matchesSearch && matchesType;
+      return matchesDate && matchesType;
     });
-  }, [rawEntries, startDate, endDate, entryFilter, typeFilter]);
+  }, [rawEntries, startDate, endDate, typeFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedVendorId, startDate, endDate, entryFilter, typeFilter]);
+  }, [selectedVendorId, startDate, endDate, typeFilter]);
 
   const paginatedEntries = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
@@ -160,20 +156,20 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 mb-4 print:hidden">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-1 relative" ref={searchRef}>
-            <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">
-              Target Vendor
-            </label>
-            <input
-              type="text"
-              value={vendorSearch}
-              onFocus={() => setShowResults(true)}
-              onChange={(e) => {
-                setVendorSearch(e.target.value);
-                setShowResults(true);
-              }}
-              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 rounded-xl py-1.5 px-3 text-[11px] font-bold dark:text-white outline-none"
-              placeholder="Search..."
-            />
+            <div className="relative">
+              <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 text-[11px]">🔍</span>
+              <input
+                type="text"
+                value={vendorSearch}
+                onFocus={() => setShowResults(true)}
+                onChange={(e) => {
+                  setVendorSearch(e.target.value);
+                  setShowResults(true);
+                }}
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 rounded-xl py-1.5 pl-9 pr-3 text-[11px] font-bold dark:text-white outline-none"
+                placeholder="Search vendor..."
+              />
+            </div>
             {showResults && (
               <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
                 {filteredVendorList.map((v) => (
@@ -231,49 +227,10 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
               ))}
             </select>
           </div>
-          <div>
-            <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">
-              Search Narration
-            </label>
-            <input
-              type="text"
-              placeholder="Filter..."
-              value={entryFilter}
-              onChange={(e) => setEntryFilter(e.target.value)}
-              className="w-full bg-slate-50 border rounded-xl py-1.5 px-3 text-[11px] font-bold"
-            />
-          </div>
         </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
-        <div className="grid grid-cols-4 border-b bg-slate-50/30 text-center">
-          <div className="p-4 border-r">
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
-              Total Bills (Dr)
-            </p>
-            <p className="text-sm font-black text-orange-600">
-              Rs. {totals.debit.toLocaleString()}
-            </p>
-          </div>
-          <div className="p-4 border-r">
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
-              Total Payments (Cr)
-            </p>
-            <p className="text-sm font-black text-emerald-600">
-              Rs. {totals.credit.toLocaleString()}
-            </p>
-          </div>
-          <div className="p-4 col-span-2 bg-orange-600/5">
-            <p className="text-[8px] font-black text-orange-600 uppercase tracking-widest mb-0.5">
-              Closing Balance
-            </p>
-            <p className="text-sm font-black">
-              Rs. {Math.abs(closingBalance).toLocaleString()}{" "}
-              {closingBalance >= 0 ? "DR" : "CR"}
-            </p>
-          </div>
-        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
@@ -332,6 +289,33 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
           onPageChange={setCurrentPage}
           onRowsPerPageChange={setRowsPerPage}
         />
+        <div className="grid grid-cols-1 md:grid-cols-4 border-t bg-slate-50/30 text-center">
+          <div className="p-4 border-b md:border-b-0 md:border-r">
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
+              Total Bills (Dr)
+            </p>
+            <p className="text-sm font-black text-orange-600">
+              Rs. {totals.debit.toLocaleString()}
+            </p>
+          </div>
+          <div className="p-4 border-b md:border-b-0 md:border-r">
+            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
+              Total Payments (Cr)
+            </p>
+            <p className="text-sm font-black text-emerald-600">
+              Rs. {totals.credit.toLocaleString()}
+            </p>
+          </div>
+          <div className="p-4 md:col-span-2 bg-orange-600/5">
+            <p className="text-[8px] font-black text-orange-600 uppercase tracking-widest mb-0.5">
+              Closing Balance
+            </p>
+            <p className="text-sm font-black">
+              Rs. {Math.abs(closingBalance).toLocaleString()}{" "}
+              {closingBalance >= 0 ? "DR" : "CR"}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
