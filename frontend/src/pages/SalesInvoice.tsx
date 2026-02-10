@@ -2,7 +2,15 @@ import React, { useState, useMemo, useEffect } from "react";
 import type { SalesInvoice } from "../types";
 import Pagination from "../components/Pagination";
 
-const STATUS_FILTERS = ["All Status", "Paid", "Unpaid", "Partial", "Overdue"];
+const STATUS_FILTERS = [
+  "All Status",
+  "Draft",
+  "Pending",
+  "Approved",
+  "Paid",
+  "Unpaid",
+  "Partial",
+];
 
 interface SalesInvoicePageProps {
   invoices: SalesInvoice[];
@@ -41,7 +49,11 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
       const matchesRef =
         !refSearch ||
         (inv.reference?.toLowerCase() || "").includes(refSearch.toLowerCase());
-      const matchesStatus = statusFilter === "All Status" || inv.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "All Status" ||
+        (["Draft", "Pending", "Approved"].includes(statusFilter) && inv.status === statusFilter) ||
+        (["Paid", "Unpaid", "Partial"].includes(statusFilter) &&
+          (inv.paymentStatus === statusFilter || inv.status === statusFilter));
       const invDate = new Date(inv.date);
       const matchesStart = !startDate || invDate >= new Date(startDate);
       const matchesEnd = !endDate || invDate <= new Date(endDate);

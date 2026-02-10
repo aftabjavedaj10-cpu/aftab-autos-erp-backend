@@ -472,45 +472,55 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="inline-flex rounded-md border border-slate-200 dark:border-slate-800 overflow-hidden text-[10px] font-black uppercase tracking-widest">
-            <div
-              className={`px-3 py-1 ${
-                formData.status === "Draft" ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-500"
-              }`}
-            >
-              Draft
-            </div>
-            <div
-              className={`px-3 py-1 border-l border-slate-200 dark:border-slate-800 ${
-                formData.status !== "Draft" ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-500"
-              }`}
-            >
-              {formData.status === "Approved" ? "Approved" : "Pending"}
-            </div>
-          </div>
-          {formData.status !== "Draft" && (
-            <span
-              className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
-                formData.paymentStatus === "Paid"
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20"
-                  : formData.paymentStatus === "Partial"
-                  ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20"
-                  : "bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20"
-              }`}
-            >
-              {formData.paymentStatus || "Unpaid"}
-            </span>
-          )}
+          <span
+            className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
+              formData.status === "Draft"
+                ? "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800"
+                : formData.status === "Approved"
+                ? "bg-indigo-50 text-indigo-700 border-indigo-100 dark:bg-indigo-900/20"
+                : "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20"
+            }`}
+          >
+            {formData.status || "Draft"}
+          </span>
+          <span
+            className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
+              formData.paymentStatus === "Paid"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20"
+                : formData.paymentStatus === "Partial"
+                ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20"
+                : "bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20"
+            }`}
+          >
+            {formData.paymentStatus || "Unpaid"}
+          </span>
         </div>
       </div>
 
       <div className="space-y-4">
         <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 space-y-6">
-          {(formData.status === "Approved" && formData.paymentStatus === "Paid") && (
-            <div className="absolute -right-10 top-6 rotate-45 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest px-10 py-1 shadow-lg">
-              Paid
-            </div>
-          )}
+          <div
+            className={`absolute -right-10 top-6 rotate-45 text-white text-[10px] font-black uppercase tracking-widest px-10 py-1 shadow-lg ${
+              formData.status === "Approved"
+                ? "bg-indigo-600"
+                : formData.status === "Pending"
+                ? "bg-amber-500"
+                : "bg-slate-500"
+            }`}
+          >
+            {formData.status || "Draft"}
+          </div>
+          <div
+            className={`absolute -right-10 top-14 rotate-45 text-white text-[10px] font-black uppercase tracking-widest px-10 py-1 shadow-lg ${
+              formData.paymentStatus === "Paid"
+                ? "bg-emerald-600"
+                : formData.paymentStatus === "Partial"
+                ? "bg-amber-600"
+                : "bg-rose-600"
+            }`}
+          >
+            {formData.paymentStatus || "Unpaid"}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             <div className="md:col-span-3 border-r border-slate-200 dark:border-slate-800 pr-4">
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
