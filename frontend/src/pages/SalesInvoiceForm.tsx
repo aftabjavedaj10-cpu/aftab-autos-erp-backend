@@ -49,7 +49,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     dueDate:
       invoice?.dueDate ||
       new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    status: invoice?.status || "Unpaid",
+    status: invoice?.status || "Draft",
+    paymentStatus: invoice?.paymentStatus || "Unpaid",
     notes: invoice?.notes || "",
     overallDiscount: invoice?.overallDiscount || 0,
     amountReceived: invoice?.amountReceived || 0,
@@ -335,6 +336,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     window.print();
   };
 
+  const computePaymentStatus = () => {
+    const total = totals.netTotal;
+    const received = formData.amountReceived || 0;
+    if (received <= 0) return "Unpaid";
+    if (received < total) return "Partial";
+    return "Paid";
+  };
+
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
     if (!formData.customerId) {
       alert("Required: Please select a Customer Account.");
@@ -361,9 +370,12 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     }
 
     const customer = customers.find((c) => c.id === formData.customerId);
+    const finalPaymentStatus = computePaymentStatus();
+    const finalStatus = status === "Draft" ? "Draft" : status;
     const invoiceData: SalesInvoice = {
       ...formData,
-      status,
+      status: finalStatus,
+      paymentStatus: finalPaymentStatus,
       customerName: customer?.name || "Unknown",
       totalAmount: totals.netTotal,
     };
@@ -391,7 +403,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
         dueDate:
           invoice.dueDate ||
           new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-        status: invoice.status || "Unpaid",
+        status: invoice.status || "Draft",
+        paymentStatus: invoice.paymentStatus || "Unpaid",
         notes: invoice.notes || "",
         overallDiscount: invoice.overallDiscount || 0,
         amountReceived: invoice.amountReceived || 0,
@@ -472,15 +485,28 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 formData.status !== "Draft" ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-500"
               }`}
             >
-              Posted
+              {formData.status === "Approved" ? "Approved" : "Pending"}
             </div>
           </div>
+          {formData.status !== "Draft" && (
+            <span
+              className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
+                formData.paymentStatus === "Paid"
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20"
+                  : formData.paymentStatus === "Partial"
+                  ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20"
+                  : "bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20"
+              }`}
+            >
+              {formData.paymentStatus || "Unpaid"}
+            </span>
+          )}
         </div>
       </div>
 
       <div className="space-y-4">
         <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 space-y-6">
-          {(formData.status === "Paid" || formData.status === "Approved") && (
+          {(formData.status === "Approved" && formData.paymentStatus === "Paid") && (
             <div className="absolute -right-10 top-6 rotate-45 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest px-10 py-1 shadow-lg">
               Paid
             </div>

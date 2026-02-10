@@ -82,6 +82,7 @@ export interface SalesInvoice {
   date: string;
   dueDate?: string;
   status: "Paid" | "Unpaid" | "Partial" | "Overdue" | "Pending" | "Draft" | string;
+  paymentStatus?: "Unpaid" | "Partial" | "Paid" | string;
   notes?: string;
   overallDiscount?: number;
   amountReceived?: number;

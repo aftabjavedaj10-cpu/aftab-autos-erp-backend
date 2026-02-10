@@ -235,6 +235,7 @@ const mapSalesInvoiceFromDb = (row: any) => ({
   date: row.date,
   dueDate: row.due_date ?? row.dueDate,
   status: row.status,
+  paymentStatus: row.payment_status ?? row.paymentStatus,
   notes: row.notes,
   overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
   amountReceived: row.amount_received ?? row.amountReceived ?? 0,
@@ -265,11 +266,12 @@ const mapSalesInvoiceToDb = (invoice: any) =>
       customer_name: invoice.customerName ?? invoice.customer_name,
       vehicle_number: invoice.vehicleNumber ?? invoice.vehicle_number,
       due_date: invoice.dueDate ?? invoice.due_date,
+      payment_status: invoice.paymentStatus ?? invoice.payment_status,
       overall_discount: invoice.overallDiscount ?? invoice.overall_discount ?? 0,
       amount_received: invoice.amountReceived ?? invoice.amount_received ?? 0,
       total_amount: invoice.totalAmount ?? invoice.total_amount ?? 0,
     },
-    ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "overallDiscount", "amountReceived", "totalAmount"]
+    ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "paymentStatus", "overallDiscount", "amountReceived", "totalAmount"]
   );
 
 const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) =>
