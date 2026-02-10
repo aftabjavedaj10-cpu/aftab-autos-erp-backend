@@ -30,7 +30,8 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     unit: product?.unit || 'Piece',
     reorderPoint: product?.reorderPoint || 10,
     description: product?.description || '',
-    image: product?.image || ''
+    image: product?.image || '',
+    isActive: product?.isActive ?? true
   });
 
   const [units, setUnits] = useState(DEFAULT_UNITS);
@@ -80,7 +81,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
         name: '', productCode: '', brandName: '', productType: 'Product', warehouse: WAREHOUSES[0],
         category: '', price: '', costPrice: '', barcode: '', 
         vendorId: vendors[0]?.id || '', stock: 0, unit: 'Piece', 
-        reorderPoint: 10, description: '', image: '' 
+        reorderPoint: 10, description: '', image: '', isActive: true
       });
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
@@ -411,6 +412,27 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                       value={formData.productType === 'Service' ? 0 : formData.reorderPoint}
                       onChange={(e) => setFormData({...formData, reorderPoint: parseInt(e.target.value) || 0})}
                     />
+                  </div>
+                </div>
+                <div className="md:col-span-2">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Product Status</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {formData.isActive ? 'Visible in lists and usable in invoices.' : 'Hidden from lists (can be reactivated anytime).'}
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={formData.isActive}
+                        onChange={() => setFormData({ ...formData, isActive: !formData.isActive })}
+                      />
+                      <div className={`w-12 h-6 rounded-full transition-all ${formData.isActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform translate-y-0.5 ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}`}></div>
+                      </div>
+                    </label>
                   </div>
                 </div>
               </div>

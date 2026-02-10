@@ -21,6 +21,12 @@ const STOCK_STATUSES = [
   { label: 'Out of Stock', value: 'out_of_stock' }
 ];
 
+const ACTIVITY_FILTERS = [
+  { label: 'Active Only', value: 'active' },
+  { label: 'Inactive Only', value: 'inactive' },
+  { label: 'All Status', value: 'all' }
+];
+
 const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendors, onAddClick, onEditClick, onDelete, onImportComplete }) => {
   const canRead = hasPermission('products.read');
   const canWrite = hasPermission('products.write');
@@ -29,6 +35,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
   const [selectedVendor, setSelectedVendor] = useState('All Vendors');
   const [selectedStockStatus, setSelectedStockStatus] = useState('all');
+  const [selectedActivity, setSelectedActivity] = useState('active');
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   
@@ -51,6 +58,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
+      const isActive = p.isActive ?? true;
       const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             (p.productCode?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
@@ -77,14 +85,21 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
         matchesStock = availableStock > 0;
       }
 
-      return matchesSearch && matchesCategory && matchesVendor && matchesStock;
+      let matchesActivity = true;
+      if (selectedActivity === 'active') {
+        matchesActivity = isActive;
+      } else if (selectedActivity === 'inactive') {
+        matchesActivity = !isActive;
+      }
+
+      return matchesSearch && matchesCategory && matchesVendor && matchesStock && matchesActivity;
     });
-  }, [products, searchQuery, selectedCategory, selectedVendor, selectedStockStatus]);
+  }, [products, searchQuery, selectedCategory, selectedVendor, selectedStockStatus, selectedActivity]);
 
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds(new Set()); 
-  }, [searchQuery, selectedCategory, selectedVendor, selectedStockStatus]);
+  }, [searchQuery, selectedCategory, selectedVendor, selectedStockStatus, selectedActivity]);
 
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
@@ -153,7 +168,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
       )}
 
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden mb-6 relative">
-        <div className="p-8 border-b border-slate-50 dark:border-slate-800 grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="p-8 border-b border-slate-50 dark:border-slate-800 grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative col-span-1 md:col-span-1">
               <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">🔍</span>
               <input 
@@ -185,6 +200,13 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
               className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-2.5 px-6 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-sm font-bold dark:text-white appearance-none"
             >
               {STOCK_STATUSES.map(status => <option key={status.value} value={status.value}>{status.label}</option>)}
+            </select>
+            <select 
+              value={selectedActivity}
+              onChange={(e) => setSelectedActivity(e.target.value)}
+              className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-2.5 px-6 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-sm font-bold dark:text-white appearance-none"
+            >
+              {ACTIVITY_FILTERS.map(status => <option key={status.value} value={status.value}>{status.label}</option>)}
             </select>
         </div>
 
@@ -246,7 +268,12 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                       </div>
                       <div>
                         <p className="font-black text-slate-900 dark:text-white text-xs leading-tight uppercase tracking-tight">{product.name}</p>
-                        <p className="text-[8px] text-slate-400 font-black tracking-widest mt-1 uppercase">ID: {product.barcode}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded border ${((product.isActive ?? true) ? 'bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900/40' : 'bg-slate-100 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700')}`}>
+                            {(product.isActive ?? true) ? 'Active' : 'Inactive'}
+                          </span>
+                          <span className="text-[8px] text-slate-400 font-black tracking-widest uppercase">ID: {product.barcode}</span>
+                        </div>
                       </div>
                     </div>
                   </td>

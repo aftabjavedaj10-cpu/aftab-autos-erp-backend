@@ -167,6 +167,7 @@ const mapProductFromDb = (row: any) => ({
   reorderPoint: row.reorder_point ?? row.reorderPoint,
   brandName: row.brand_name ?? row.brandName,
   productType: row.product_type ?? row.productType,
+  isActive: row.is_active ?? row.isActive ?? true,
 });
 
 const mapProductToDb = (product: any) =>
@@ -179,6 +180,7 @@ const mapProductToDb = (product: any) =>
       reorder_point: product.reorderPoint ?? product.reorder_point,
       brand_name: product.brandName ?? product.brand_name,
       product_type: product.productType ?? product.product_type,
+      is_active: product.isActive ?? product.is_active ?? true,
     },
     [
       "productCode",
@@ -394,6 +396,15 @@ export const productAPI = {
   delete: async (id: string) => {
     await ensurePermission("products.delete");
     return apiCall(`/products?id=eq.${id}`, "DELETE");
+  },
+  isUsed: async (id: string) => {
+    const [salesItems, stockRows] = await Promise.all([
+      apiCall(`/sales_invoice_items?select=id&product_id=eq.${id}&limit=1`).catch(() => []),
+      apiCall(`/stock_ledger?select=id&product_id=eq.${id}&limit=1`).catch(() => []),
+    ]);
+    const hasSales = Array.isArray(salesItems) && salesItems.length > 0;
+    const hasStock = Array.isArray(stockRows) && stockRows.length > 0;
+    return hasSales || hasStock;
   },
   bulkDelete: async (ids: Array<string | number>) => {
     await ensurePermission("products.delete");

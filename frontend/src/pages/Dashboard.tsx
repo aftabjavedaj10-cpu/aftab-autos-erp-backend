@@ -221,13 +221,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     });
   };
 
-  const handleDeleteProduct = (id: string) => {
-    productAPI.delete(id).then(() => {
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      const used = await productAPI.isUsed(id);
+      if (used) {
+        setError("This product is already used in transactions and cannot be deleted. Deactivate it instead.");
+        return;
+      }
+      await productAPI.delete(id);
       setProducts(products.filter(p => p.id !== id));
-    }).catch(err => {
+    } catch (err) {
       setError("Failed to delete product");
       console.error(err);
-    });
+    }
   };
 
   const handleImportProducts = (newProducts: Product[]) => {

@@ -12,6 +12,7 @@ export interface Product {
   stockOnHand?: number;
   stockReserved?: number;
   stockAvailable?: number;
+  isActive?: boolean;
   reorderPoint: number;
   unit: string;
   image?: string;
