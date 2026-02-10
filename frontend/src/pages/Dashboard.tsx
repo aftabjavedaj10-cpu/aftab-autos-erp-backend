@@ -484,11 +484,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         {activeTab === "add_sales_invoice" && (
           <SalesInvoiceFormPage
             invoice={editingSalesInvoice}
+            invoices={salesInvoices}
             products={products}
             customers={customers}
             onBack={() => {
               setEditingSalesInvoice(undefined);
               setActiveTab("sales_invoice");
+            }}
+            onNavigate={(inv) => {
+              setEditingSalesInvoice(inv);
+              setActiveTab("add_sales_invoice");
             }}
             onSave={(invoiceData, stayOnPage) => {
               const action = editingSalesInvoice

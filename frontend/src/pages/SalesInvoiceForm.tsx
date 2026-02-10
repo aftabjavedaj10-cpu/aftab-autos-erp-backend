@@ -4,23 +4,42 @@ import type { Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types
 
 interface SalesInvoiceFormPageProps {
   invoice?: SalesInvoice;
+  invoices: SalesInvoice[];
   products: Product[];
   customers: Customer[];
   onBack: () => void;
   onSave: (invoice: SalesInvoice, stayOnPage: boolean) => void;
+  onNavigate?: (invoice: SalesInvoice) => void;
 }
 
 const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   invoice,
+  invoices,
   products,
   customers,
   onBack,
   onSave,
+  onNavigate,
 }) => {
   const isEdit = !!invoice;
 
+  const formatInvoiceId = (num: number) => `SI-${String(num).padStart(6, "0")}`;
+  const getInvoiceNumber = (id?: string) => {
+    if (!id) return -1;
+    const match = id.match(/^SI-(\d{6})$/);
+    return match ? Number(match[1]) : -1;
+  };
+
+  const nextInvoiceId = useMemo(() => {
+    const maxNum = invoices
+      .map((inv) => getInvoiceNumber(inv.id))
+      .filter((num) => num >= 0)
+      .reduce((max, num) => (num > max ? num : max), 0);
+    return formatInvoiceId(maxNum + 1);
+  }, [invoices]);
+
   const [formData, setFormData] = useState({
-    id: invoice?.id || `INV-${Math.floor(100000 + Math.random() * 900000)}`,
+    id: invoice?.id || nextInvoiceId,
     customerId: invoice?.customerId || "",
     reference: invoice?.reference || "",
     vehicleNumber: invoice?.vehicleNumber || "",
@@ -349,6 +368,31 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     }
   }, [formData.customerId, currentCustomer]);
 
+  useEffect(() => {
+    if (!invoice && formData.id !== nextInvoiceId) {
+      setFormData((prev) => ({ ...prev, id: nextInvoiceId }));
+    }
+  }, [invoice, nextInvoiceId, formData.id]);
+
+  const sortedInvoices = useMemo(() => {
+    return [...invoices].sort((a, b) => {
+      const aNum = getInvoiceNumber(a.id);
+      const bNum = getInvoiceNumber(b.id);
+      if (aNum >= 0 && bNum >= 0) return aNum - bNum;
+      return (a.id || "").localeCompare(b.id || "");
+    });
+  }, [invoices]);
+
+  const currentInvoiceIndex = useMemo(() => {
+    if (!invoice?.id) return -1;
+    return sortedInvoices.findIndex((inv) => inv.id === invoice.id);
+  }, [sortedInvoices, invoice?.id]);
+
+  const prevInvoice = currentInvoiceIndex > 0 ? sortedInvoices[currentInvoiceIndex - 1] : undefined;
+  const nextInvoice = currentInvoiceIndex >= 0 && currentInvoiceIndex < sortedInvoices.length - 1
+    ? sortedInvoices[currentInvoiceIndex + 1]
+    : undefined;
+
   const onEnterMoveTo = (e: React.KeyboardEvent, nextRef: React.RefObject<any>) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -397,14 +441,39 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                 Invoice Number
               </label>
-              <input
-                type="text"
-                value={formData.id}
-                onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                className="w-full bg-transparent text-base font-black text-slate-900 dark:text-white outline-none focus:text-orange-600 transition-colors"
-                placeholder="INV-XXXXXX"
-                onKeyDown={(e) => onEnterMoveTo(e, customerInputRef)}
-              />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => prevInvoice && onNavigate?.(prevInvoice)}
+                  disabled={!prevInvoice}
+                  className={`w-6 h-6 flex items-center justify-center rounded-md border text-[10px] font-black ${
+                    prevInvoice
+                      ? "border-slate-200 text-slate-600 hover:text-orange-600"
+                      : "border-slate-100 text-slate-300"
+                  }`}
+                >
+                  &lt;
+                </button>
+                <input
+                  type="text"
+                  value={formData.id}
+                  readOnly
+                  className="flex-1 bg-transparent text-base font-black text-slate-900 dark:text-white outline-none text-center"
+                  placeholder="SI-000001"
+                />
+                <button
+                  type="button"
+                  onClick={() => nextInvoice && onNavigate?.(nextInvoice)}
+                  disabled={!nextInvoice}
+                  className={`w-6 h-6 flex items-center justify-center rounded-md border text-[10px] font-black ${
+                    nextInvoice
+                      ? "border-slate-200 text-slate-600 hover:text-orange-600"
+                      : "border-slate-100 text-slate-300"
+                  }`}
+                >
+                  &gt;
+                </button>
+              </div>
               <span className="text-[8px] font-bold uppercase text-emerald-500 mt-1 block">Auto-ID</span>
             </div>
 
