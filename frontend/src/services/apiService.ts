@@ -187,6 +187,9 @@ const mapProductToDb = (product: any) =>
       "reorderPoint",
       "brandName",
       "productType",
+      "stockAvailable",
+      "stockOnHand",
+      "stockReserved",
     ]
   );
 
