@@ -249,7 +249,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   };
 
   const reorderItem = (dragId: string, dropId: string) => {
-    if (dragId === dropId) return;
+    if (!dragId || dragId === dropId) return;
     const fromIndex = formData.items.findIndex((i) => i.productId === dragId);
     const toIndex = formData.items.findIndex((i) => i.productId === dropId);
     if (fromIndex === -1 || toIndex === -1) return;
@@ -600,7 +600,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       }}
                       onDrop={(e) => {
                         e.preventDefault();
-                        const dragId = e.dataTransfer.getData("text/plain");
+                        const dragId = e.dataTransfer.getData("application/x-item-id") || e.dataTransfer.getData("text/plain");
                         reorderItem(dragId, item.productId);
                         setDraggingId(null);
                       }}
@@ -692,7 +692,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                           draggable
                           onDragStart={(e) => {
                             setDraggingId(item.productId);
-                            e.dataTransfer.setData("text/plain", item.productId);
+                            e.dataTransfer.setData("application/x-item-id", item.productId);
                             e.dataTransfer.effectAllowed = "move";
                           }}
                           onDragEnd={() => setDraggingId(null)}
@@ -829,6 +829,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 ) : (
                   <div className="text-2xl font-black text-orange-600">{totals.totalQty}</div>
                 )}
+                <div className="text-right border-l border-slate-100 dark:border-slate-800 pl-4">
+                  <div className="text-2xl font-black text-slate-900 dark:text-white leading-none">{totals.totalQty}</div>
+                  <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest mt-1">Total</div>
+                </div>
               </div>
             </div>
             <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
