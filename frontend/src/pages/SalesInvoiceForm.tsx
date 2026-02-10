@@ -65,6 +65,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
+  const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -79,6 +81,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const productListContainerRef = useRef<HTMLDivElement>(null);
   const productItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const customerSearchContainerRef = useRef<HTMLDivElement>(null);
+  const saveMenuRef = useRef<HTMLDivElement>(null);
+  const printMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -88,6 +92,12 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       }
       if (customerSearchContainerRef.current && !customerSearchContainerRef.current.contains(target)) {
         setIsCustomerSearching(false);
+      }
+      if (saveMenuRef.current && !saveMenuRef.current.contains(target)) {
+        setIsSaveMenuOpen(false);
+      }
+      if (printMenuRef.current && !printMenuRef.current.contains(target)) {
+        setIsPrintMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -1053,27 +1063,100 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-4 pt-6">
+        <div className="flex items-center justify-end gap-3 pt-6">
           <button
             onClick={onBack}
-            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-rose-600 transition-colors"
+            className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-rose-600 transition-colors"
           >
-            Discard
+            Cancel
           </button>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => handleSubmit("Draft", true)}
-              className="flex items-center gap-2 px-4 py-2 bg-orange-600 border border-orange-500 rounded-lg text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all active:scale-95 shadow-sm"
-            >
-              Save & Edit
-            </button>
-            <button
-              onClick={() => handleSubmit("Paid", false)}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-900 border border-slate-900 rounded-lg text-white font-black text-[10px] uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 shadow-sm"
-            >
-              Save & Approve
-            </button>
+          <div className="relative" ref={printMenuRef}>
+            <div className="inline-flex">
+              <button
+                type="button"
+                onClick={() => setIsPrintMenuOpen((prev) => !prev)}
+                className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
+              >
+                Print
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPrintMenuOpen((prev) => !prev)}
+                className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-lg text-[10px] font-black text-slate-500 hover:text-orange-600"
+              >
+                ▴
+              </button>
+            </div>
+            {isPrintMenuOpen && (
+              <div className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-lg overflow-hidden z-[300]">
+                <button
+                  onClick={() => setIsPrintMenuOpen(false)}
+                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                >
+                  Invoice
+                </button>
+                <button
+                  onClick={() => setIsPrintMenuOpen(false)}
+                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                >
+                  Receipt
+                </button>
+                <button
+                  onClick={() => setIsPrintMenuOpen(false)}
+                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                >
+                  A5
+                </button>
+                <button
+                  onClick={() => setIsPrintMenuOpen(false)}
+                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                >
+                  Packing Slip
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div className="relative" ref={saveMenuRef}>
+            <div className="inline-flex">
+              <button
+                type="button"
+                onClick={() => setIsSaveMenuOpen((prev) => !prev)}
+                className="px-4 py-2 bg-orange-600 border border-orange-500 rounded-l-lg text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsSaveMenuOpen((prev) => !prev)}
+                className="w-8 h-8 flex items-center justify-center bg-orange-600 border border-l-0 border-orange-500 rounded-r-lg text-white text-[10px] font-black"
+              >
+                ▴
+              </button>
+            </div>
+            {isSaveMenuOpen && (
+              <div className="absolute bottom-full right-0 mb-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-lg overflow-hidden z-[300]">
+                <button
+                  onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Draft", true); }}
+                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                >
+                  Save & Edit
+                </button>
+                <button
+                  onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Pending", false); }}
+                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                >
+                  Save & Pending
+                </button>
+                <button
+                  onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Approved", false); }}
+                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                >
+                  Save & Approved
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
