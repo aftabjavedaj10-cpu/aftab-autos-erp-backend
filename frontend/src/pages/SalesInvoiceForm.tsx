@@ -43,6 +43,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [customerSelectedIndex, setCustomerSelectedIndex] = useState(0);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -592,19 +593,28 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       key={item.productId}
                       data-row-id={item.productId}
                       className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${
-                        draggingId === item.productId ? "bg-orange-50/60 dark:bg-orange-950/20" : ""
+                        draggingId === item.productId
+                          ? "bg-orange-50/60 dark:bg-orange-950/20"
+                          : dropTargetId === item.productId
+                          ? "bg-orange-50/40 dark:bg-orange-950/10"
+                          : ""
                       }`}
+                      onDragEnter={(e) => {
+                        e.preventDefault();
+                        if (draggingId && draggingId !== item.productId) {
+                          setDropTargetId(item.productId);
+                        }
+                      }}
                       onDragOver={(e) => {
                         e.preventDefault();
-                        e.dataTransfer.dropEffect = "move";
                       }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        const dragId = e.dataTransfer.getData("application/x-item-id") || e.dataTransfer.getData("text/plain");
-                        reorderItem(dragId, item.productId);
+                      onDragEnd={() => {
+                        if (draggingId && dropTargetId) {
+                          reorderItem(draggingId, dropTargetId);
+                        }
                         setDraggingId(null);
+                        setDropTargetId(null);
                       }}
-                      onDragEnd={() => setDraggingId(null)}
                     >
                       <td className="px-4 py-2 text-center">
                         <button
@@ -692,10 +702,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                           draggable
                           onDragStart={(e) => {
                             setDraggingId(item.productId);
-                            e.dataTransfer.setData("application/x-item-id", item.productId);
                             e.dataTransfer.effectAllowed = "move";
+                            e.dataTransfer.setData("text/plain", item.productId);
                           }}
-                          onDragEnd={() => setDraggingId(null)}
                         >
                           ⋮⋮
                         </div>
