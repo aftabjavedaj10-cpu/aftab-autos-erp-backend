@@ -513,7 +513,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       onNavigate?.(nextInvoice);
                     } else if (isLatestSaved) {
                       onNavigateNew?.();
-                      resetToNewInvoice();
                     }
                   }}
                   disabled={!canGoNext}
