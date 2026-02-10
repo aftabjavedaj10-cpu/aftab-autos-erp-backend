@@ -375,6 +375,19 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </p>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
+              formData.status === "Paid" || formData.status === "Approved"
+                ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-900/20"
+                : formData.status === "Pending"
+                ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-900/20"
+                : "bg-slate-50 text-slate-600 border-slate-200 dark:bg-slate-800"
+            }`}
+          >
+            {formData.status || "Draft"}
+          </span>
+        </div>
       </div>
 
       <div className="space-y-4">
