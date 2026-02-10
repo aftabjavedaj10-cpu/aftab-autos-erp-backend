@@ -408,10 +408,15 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     return sortedInvoices.findIndex((inv) => inv.id === invoice.id);
   }, [sortedInvoices, invoice?.id]);
 
-  const prevInvoice = currentInvoiceIndex > 0 ? sortedInvoices[currentInvoiceIndex - 1] : undefined;
-  const nextInvoice = currentInvoiceIndex >= 0 && currentInvoiceIndex < sortedInvoices.length - 1
-    ? sortedInvoices[currentInvoiceIndex + 1]
-    : undefined;
+  const fallbackIndex = sortedInvoices.length > 0 ? sortedInvoices.length - 1 : -1;
+  const effectiveIndex = currentInvoiceIndex >= 0 ? currentInvoiceIndex : fallbackIndex;
+
+  const prevInvoice =
+    effectiveIndex > 0 ? sortedInvoices[effectiveIndex - 1] : undefined;
+  const nextInvoice =
+    effectiveIndex >= 0 && effectiveIndex < sortedInvoices.length - 1
+      ? sortedInvoices[effectiveIndex + 1]
+      : undefined;
 
   const onEnterMoveTo = (e: React.KeyboardEvent, nextRef: React.RefObject<any>) => {
     if (e.key === "Enter") {
