@@ -419,8 +419,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     effectiveIndex >= 0 && effectiveIndex < sortedInvoices.length - 1
       ? sortedInvoices[effectiveIndex + 1]
       : undefined;
-  const canGoNext =
-    !!nextInvoice || (!!invoice?.id && sortedInvoices.length > 0 && effectiveIndex === sortedInvoices.length - 1);
+  const isLatestSaved = !!invoice?.id && sortedInvoices.length > 0 && effectiveIndex === sortedInvoices.length - 1;
+  const canGoNext = !!nextInvoice || isLatestSaved;
 
   const onEnterMoveTo = (e: React.KeyboardEvent, nextRef: React.RefObject<any>) => {
     if (e.key === "Enter") {
@@ -495,7 +495,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   onClick={() => {
                     if (nextInvoice) {
                       onNavigate?.(nextInvoice);
-                    } else if (invoice?.id && effectiveIndex === sortedInvoices.length - 1) {
+                    } else if (isLatestSaved) {
                       onNavigateNew?.();
                     }
                   }}
