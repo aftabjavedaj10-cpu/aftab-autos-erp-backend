@@ -396,22 +396,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     }
   }, [invoice, nextInvoiceId, formData.id]);
 
-  const resetToNewInvoice = () => {
-    setFormData({
-      id: nextInvoiceId,
-      customerId: "",
-      reference: "",
-      vehicleNumber: "",
-      date: new Date().toISOString().split("T")[0],
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-      status: "Draft",
-      notes: "",
-      overallDiscount: 0,
-      amountReceived: 0,
-      items: [],
-    });
-  };
-
   const sortedInvoices = useMemo(() => {
     return [...invoices].sort((a, b) => {
       const aNum = getInvoiceNumber(a.id);
