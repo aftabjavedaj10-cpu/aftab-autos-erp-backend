@@ -9,6 +9,9 @@ export interface Product {
   price: number | string;
   costPrice: number | string;
   stock: number;
+  stockOnHand?: number;
+  stockReserved?: number;
+  stockAvailable?: number;
   reorderPoint: number;
   unit: string;
   image?: string;
@@ -88,6 +91,18 @@ export interface SalesInvoice {
   amountReceived?: number;
   items: SalesInvoiceItem[];
   totalAmount: number;
+}
+
+export interface StockLedgerEntry {
+  id: string;
+  companyId: string;
+  productId: string;
+  qty: number;
+  direction: "IN" | "OUT" | string;
+  reason?: string;
+  source?: string;
+  sourceRef?: string;
+  createdAt?: string;
 }
 
 export type UserRole = string;

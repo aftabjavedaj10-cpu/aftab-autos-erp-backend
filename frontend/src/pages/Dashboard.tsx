@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
 import StatCard from "../components/StatCard";
 import ProductsPage from "./Products";
+import ReportsPage from "./Reports";
 import AddProducts from "./AddProducts";
 import CustomersPage from "./CustomersPage";
 import AddCustomerPage from "./AddCustomer";
@@ -13,8 +14,8 @@ import AddCategoryPage from "./AddCategory";
 import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
-import type { Product, Category, Vendor, Customer, SalesInvoice } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, salesInvoiceAPI } from "../services/apiService";
+import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry } from "../types";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, salesInvoiceAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -36,11 +37,47 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
+  const [stockLedger, setStockLedger] = useState<StockLedgerEntry[]>([]);
 
   const [editingCustomer, setEditingCustomer] = useState<Customer | undefined>(undefined);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>(undefined);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
+
+  const computeStockMap = (ledgerRows: StockLedgerEntry[]) => {
+    const map = new Map<string, { onHand: number; reserved: number; entries: number }>();
+    ledgerRows.forEach((row) => {
+      const entry = map.get(row.productId) || { onHand: 0, reserved: 0, entries: 0 };
+      const qty = Number(row.qty || 0);
+      const direction = String(row.direction || "").toUpperCase();
+      const signed = direction === "OUT" ? -qty : qty;
+      entry.onHand += signed;
+      if (direction === "OUT" && String(row.reason || "").toLowerCase() === "invoice_pending") {
+        entry.reserved += qty;
+      }
+      entry.entries += 1;
+      map.set(row.productId, entry);
+    });
+    return map;
+  };
+
+  const mergeStockToProducts = (productsData: Product[], ledgerRows: StockLedgerEntry[]) => {
+    const stockMap = computeStockMap(ledgerRows);
+    return productsData.map((product) => {
+      const entry = stockMap.get(product.id);
+      const baseStock = Number(product.stock || 0);
+      const onHand = entry?.entries ? entry.onHand : baseStock;
+      const reserved = entry?.entries ? entry.reserved : 0;
+      const available = Math.max(0, onHand - reserved);
+      return {
+        ...product,
+        stock: onHand,
+        stockOnHand: onHand,
+        stockReserved: reserved,
+        stockAvailable: available,
+      };
+    });
+  };
 
   // Fetch initial data from API
   useEffect(() => {
@@ -75,15 +112,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           setPermissions(permissions);
         }
 
-        const [productsData, customersData, vendorsData, categoriesData, salesInvoicesData] = await Promise.all([
+        const companyId = getActiveCompanyId();
+        const [productsData, customersData, vendorsData, categoriesData, salesInvoicesData, ledgerData] = await Promise.all([
           productAPI.getAll().catch(() => []),
           customerAPI.getAll().catch(() => []),
           vendorAPI.getAll().catch(() => []),
           categoryAPI.getAll().catch(() => []),
           salesInvoiceAPI.getAll().catch(() => []),
+          companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
         ]);
 
-        setProducts(Array.isArray(productsData) ? productsData : productsData.data || []);
+        const normalizedProducts = Array.isArray(productsData) ? productsData : productsData.data || [];
+        const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : ledgerData.data || [];
+        setStockLedger(normalizedLedger);
+        setProducts(mergeStockToProducts(normalizedProducts, normalizedLedger));
         setCustomers(Array.isArray(customersData) ? customersData : customersData.data || []);
         setVendors(Array.isArray(vendorsData) ? vendorsData : vendorsData.data || []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
@@ -211,7 +253,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   };
 
   const lowStockCount = useMemo(() => {
-    return products.filter(p => p.stock <= p.reorderPoint).length;
+    return products.filter(p => (p.stockAvailable ?? p.stock) <= p.reorderPoint).length;
   }, [products]);
 
   const userLabel = useMemo(() => {
@@ -481,6 +523,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           />
         )}
 
+        {activeTab === "reports" && (
+          <ReportsPage
+            products={products}
+            customers={customers}
+            vendors={vendors}
+            stockLedger={stockLedger}
+          />
+        )}
+
         {activeTab === "add_sales_invoice" && (
           <SalesInvoiceFormPage
             invoice={editingSalesInvoice}
@@ -493,6 +544,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             }}
             onNavigate={(inv) => {
               setEditingSalesInvoice(inv);
+              setActiveTab("add_sales_invoice");
+            }}
+            onNavigateNew={() => {
+              setEditingSalesInvoice(undefined);
               setActiveTab("add_sales_invoice");
             }}
             onSave={(invoiceData, stayOnPage) => {

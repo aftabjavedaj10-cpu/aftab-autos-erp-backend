@@ -988,7 +988,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                     <div className={`text-[9px] ${
                                       selectedIndex === idx ? "text-orange-100" : "text-slate-400"
                                     }`}>
-                                      Stock: {p.stock} {p.unit}
+                                      Stock: {p.stockOnHand ?? p.stock} {p.unit} (Avail: {p.stockAvailable ?? p.stock})
                                     </div>
                                   </div>
                                 </button>

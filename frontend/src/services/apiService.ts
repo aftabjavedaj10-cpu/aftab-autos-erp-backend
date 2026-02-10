@@ -336,6 +336,18 @@ const mapRoleToDb = (role: any) =>
     ["companyId", "isSystem", "createdAt"]
   );
 
+const mapStockLedgerFromDb = (row: any) => ({
+  id: row.id,
+  companyId: row.company_id ?? row.companyId,
+  productId: row.product_id ?? row.productId,
+  qty: Number(row.qty ?? 0),
+  direction: row.direction,
+  reason: row.reason,
+  source: row.source,
+  sourceRef: row.source_ref ?? row.sourceRef,
+  createdAt: row.created_at ?? row.createdAt,
+});
+
 const ensurePermission = async (permission: string) => {
   const stored = getPermissions();
   if (stored) {
@@ -574,6 +586,24 @@ export const salesInvoiceAPI = {
   },
 };
 
+// ============ STOCK LEDGER ============
+export const stockLedgerAPI = {
+  listByCompany: async (companyId: string, limit = 2000) => {
+    if (!companyId) return [];
+    const rows = await apiCall(
+      `/stock_ledger?select=*&company_id=eq.${companyId}&order=created_at.desc&limit=${limit}`
+    );
+    return Array.isArray(rows) ? rows.map(mapStockLedgerFromDb) : rows;
+  },
+  listRecent: async (companyId: string, limit = 50) => {
+    if (!companyId) return [];
+    const rows = await apiCall(
+      `/stock_ledger?select=*&company_id=eq.${companyId}&order=created_at.desc&limit=${limit}`
+    );
+    return Array.isArray(rows) ? rows.map(mapStockLedgerFromDb) : rows;
+  },
+};
+
 // ============ COMPANIES & PROFILES ============
 export const companyAPI = {
   create: async (name: string) => {
@@ -763,6 +793,7 @@ export default {
   vendorAPI,
   categoryAPI,
   salesInvoiceAPI,
+  stockLedgerAPI,
   companyAPI,
   profileAPI,
   companyMemberAPI,

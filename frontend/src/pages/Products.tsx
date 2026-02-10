@@ -68,12 +68,13 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
       const matchesVendor = selectedVendor === 'All Vendors' || p.vendorId === selectedVendor;
 
       let matchesStock = true;
+      const availableStock = p.stockAvailable ?? p.stock;
       if (selectedStockStatus === 'low') {
-        matchesStock = p.stock <= p.reorderPoint && p.stock > 0;
+        matchesStock = availableStock <= p.reorderPoint && availableStock > 0;
       } else if (selectedStockStatus === 'out_of_stock') {
-        matchesStock = p.stock <= 0;
+        matchesStock = availableStock <= 0;
       } else if (selectedStockStatus === 'in_stock') {
-        matchesStock = p.stock > 0;
+        matchesStock = availableStock > 0;
       }
 
       return matchesSearch && matchesCategory && matchesVendor && matchesStock;
@@ -266,11 +267,19 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                   </td>
                   <td className="px-8 py-5">
                     <div className="flex flex-col">
-                      <span className={`text-[11px] font-black ${product.stock <= product.reorderPoint ? 'text-rose-600 animate-pulse' : 'text-emerald-600'}`}>
-                        {product.stock} {product.unit}
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[11px] font-black ${((product.stockAvailable ?? product.stock) <= product.reorderPoint) ? 'text-rose-600 animate-pulse' : 'text-emerald-600'}`}>
+                          On-hand: {product.stockOnHand ?? product.stock} {product.unit}
+                        </span>
+                      </div>
+                      <span className="text-[9px] font-bold text-slate-400">
+                        Available: {product.stockAvailable ?? product.stock} {product.unit}
                       </span>
                       <div className="w-12 bg-slate-100 dark:bg-slate-800 h-1 rounded-full mt-1.5 overflow-hidden">
-                         <div className={`h-full ${product.stock <= product.reorderPoint ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${Math.min(100, (product.stock / (product.reorderPoint * 2)) * 100)}%` }}></div>
+                         <div
+                           className={`${((product.stockAvailable ?? product.stock) <= product.reorderPoint) ? 'bg-rose-500' : 'bg-emerald-500'} h-full`}
+                           style={{ width: `${Math.min(100, ((product.stockAvailable ?? product.stock) / (product.reorderPoint * 2)) * 100)}%` }}
+                         ></div>
                       </div>
                     </div>
                   </td>
@@ -296,6 +305,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
           onRowsPerPageChange={setRowsPerPage}
         />
       </div>
+
 
       {/* Simplified Floating Bulk Action Bar */}
       {canDelete && selectedIds.size > 0 && (
