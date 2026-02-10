@@ -461,12 +461,12 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                 Invoice Number
               </label>
-              <div className="flex items-center gap-2">
+              <div className="inline-flex items-center">
                 <button
                   type="button"
                   onClick={() => prevInvoice && onNavigate?.(prevInvoice)}
                   disabled={!prevInvoice}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg border text-[11px] font-black ${
+                  className={`w-8 h-8 flex items-center justify-center border text-[12px] font-black ${
                     prevInvoice
                       ? "border-slate-200 text-slate-600 hover:text-orange-600"
                       : "border-slate-100 text-slate-300"
@@ -478,14 +478,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   type="text"
                   value={formData.id}
                   readOnly
-                  className="flex-1 bg-transparent text-base font-black text-slate-900 dark:text-white outline-none text-center tracking-widest"
+                  className="w-32 bg-transparent text-base font-black text-slate-900 dark:text-white outline-none text-center tracking-widest border-y border-slate-200 dark:border-slate-800"
                   placeholder="SI-000001"
                 />
                 <button
                   type="button"
                   onClick={() => nextInvoice && onNavigate?.(nextInvoice)}
                   disabled={!nextInvoice}
-                  className={`w-7 h-7 flex items-center justify-center rounded-lg border text-[11px] font-black ${
+                  className={`w-8 h-8 flex items-center justify-center border text-[12px] font-black ${
                     nextInvoice
                       ? "border-slate-200 text-slate-600 hover:text-orange-600"
                       : "border-slate-100 text-slate-300"
