@@ -4,6 +4,9 @@ import TopBar from "../components/TopBar";
 import StatCard from "../components/StatCard";
 import ProductsPage from "./Products";
 import ReportsPage from "./Reports";
+import CustomerLedgerPage from "./CustomerLedger";
+import VendorLedgerPage from "./VendorLedger";
+import StockLedgerPage from "./StockLedger";
 import AddProducts from "./AddProducts";
 import CustomersPage from "./CustomersPage";
 import AddCustomerPage from "./AddCustomer";
@@ -544,11 +547,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onNavigate={(tab) => setActiveTab(tab)}
             pinnedIds={pinnedReportIds}
             onTogglePin={handleTogglePinReport}
-            stockLedger={stockLedger}
+          />
+        )}
+
+        {activeTab === "report_stock_ledger" && (
+          <StockLedgerPage
+            onBack={() => setActiveTab("reports")}
             products={products}
+            stockLedger={stockLedger}
+          />
+        )}
+
+        {activeTab === "report_customer_ledger" && (
+          <CustomerLedgerPage
+            onBack={() => setActiveTab("reports")}
             customers={customers}
-            vendors={vendors}
             salesInvoices={salesInvoices}
+          />
+        )}
+
+        {activeTab === "report_vendor_ledger" && (
+          <VendorLedgerPage
+            onBack={() => setActiveTab("reports")}
+            vendors={vendors}
           />
         )}
 

@@ -20,7 +20,7 @@ export const ALL_REPORTS: ReportDefinition[] = [
     description: "Track all inventory movements, in/out flows, and running stock.",
     category: "Inventory",
     icon: "📦",
-    tab: "reports",
+    tab: "report_stock_ledger",
   },
   {
     id: 2,
@@ -28,7 +28,7 @@ export const ALL_REPORTS: ReportDefinition[] = [
     description: "Per-customer balances, invoices, and payment history.",
     category: "Sales",
     icon: "👤",
-    tab: "reports",
+    tab: "report_customer_ledger",
   },
   {
     id: 3,
@@ -36,7 +36,7 @@ export const ALL_REPORTS: ReportDefinition[] = [
     description: "Payables, bills, and settlement history by vendor.",
     category: "Financial",
     icon: "🏢",
-    tab: "reports",
+    tab: "report_vendor_ledger",
   },
   {
     id: 4,

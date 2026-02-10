@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ALL_REPORTS } from "../constants";
 import type { ReportDefinition } from "../constants";
-import type { Product, Customer, Vendor, StockLedgerEntry, SalesInvoice } from "../types";
 
 const CATEGORIES = ["All", "Sales", "Inventory", "Financial", "Audit", "Tax"];
 
@@ -58,30 +57,15 @@ interface ReportsPageProps {
   onNavigate: (tab: string) => void;
   pinnedIds: number[];
   onTogglePin: (id: number) => void;
-  stockLedger?: StockLedgerEntry[];
-  products?: Product[];
-  customers?: Customer[];
-  vendors?: Vendor[];
-  salesInvoices?: SalesInvoice[];
 }
 
 const ReportsPage: React.FC<ReportsPageProps> = ({
   onNavigate,
   pinnedIds,
   onTogglePin,
-  stockLedger = [],
-  products = [],
-  customers = [],
-  vendors = [],
-  salesInvoices = [],
 }) => {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
-  const [activeReportId, setActiveReportId] = useState<number | null>(null);
-  const [stockSearch, setStockSearch] = useState("");
-  const [stockDirection, setStockDirection] = useState("all");
-  const [customerSearch, setCustomerSearch] = useState("");
-  const [vendorSearch, setVendorSearch] = useState("");
 
   const togglePin = (e: React.MouseEvent, id: number) => {
     e.stopPropagation();
@@ -103,119 +87,6 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
     () => ALL_REPORTS.filter((r) => pinnedIds.includes(r.id)),
     [pinnedIds]
   );
-
-  const activeReport = useMemo(
-    () => ALL_REPORTS.find((r) => r.id === activeReportId) || null,
-    [activeReportId]
-  );
-
-  const stockRows = useMemo(() => {
-    const query = stockSearch.toLowerCase().trim();
-    const dir = stockDirection.toLowerCase();
-    return stockLedger.filter((entry) => {
-      const product = products.find((p) => p.id === entry.productId);
-      const haystack = [
-        product?.name,
-        product?.productCode,
-        entry.productId,
-        entry.reason,
-        entry.direction,
-        entry.source,
-        entry.sourceRef,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      const matchesSearch = !query || haystack.includes(query);
-      const matchesDirection =
-        dir === "all" || String(entry.direction || "").toLowerCase() === dir;
-      return matchesSearch && matchesDirection;
-    });
-  }, [stockLedger, products, stockSearch, stockDirection]);
-
-  const customerLedgerRows = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        customerId?: string;
-        customerName: string;
-        customerCode?: string;
-        phone?: string;
-        email?: string;
-        totalInvoices: number;
-        totalBilled: number;
-        totalReceived: number;
-      }
-    >();
-
-    salesInvoices.forEach((inv) => {
-      const id = inv.customerId || inv.customerName || inv.id;
-      const customer = customers.find((c) => c.id === inv.customerId);
-      const row =
-        map.get(id) || {
-          customerId: inv.customerId,
-          customerName: customer?.name || inv.customerName || "Unknown",
-          customerCode: customer?.customerCode,
-          phone: customer?.phone,
-          email: customer?.email,
-          totalInvoices: 0,
-          totalBilled: 0,
-          totalReceived: 0,
-        };
-      row.totalInvoices += 1;
-      row.totalBilled += Number(inv.totalAmount || 0);
-      row.totalReceived += Number(inv.amountReceived || 0);
-      map.set(id, row);
-    });
-
-    customers.forEach((c) => {
-      if (!map.has(c.id || c.name)) {
-        map.set(c.id || c.name, {
-          customerId: c.id,
-          customerName: c.name,
-          customerCode: c.customerCode,
-          phone: c.phone,
-          email: c.email,
-          totalInvoices: 0,
-          totalBilled: 0,
-          totalReceived: 0,
-        });
-      }
-    });
-
-    const query = customerSearch.toLowerCase().trim();
-    return Array.from(map.values()).filter((row) => {
-      if (!query) return true;
-      const haystack = [
-        row.customerName,
-        row.customerCode,
-        row.phone,
-        row.email,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [salesInvoices, customers, customerSearch]);
-
-  const vendorLedgerRows = useMemo(() => {
-    const query = vendorSearch.toLowerCase().trim();
-    return vendors.filter((v) => {
-      if (!query) return true;
-      const haystack = [
-        v.name,
-        v.vendorCode,
-        v.phone,
-        v.email,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [vendors, vendorSearch]);
 
   return (
     <div className="animate-in fade-in duration-500 max-w-7xl mx-auto pb-20 px-4">
@@ -260,13 +131,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
             {pinnedReports.map((rep) => (
               <div
                 key={rep.id}
-                onClick={() => {
-                  if (rep.tab && rep.tab !== "reports") {
-                    onNavigate(rep.tab);
-                  } else {
-                    setActiveReportId(rep.id);
-                  }
-                }}
+                onClick={() => onNavigate(rep.tab || "reports")}
                 className="bg-gradient-to-br from-slate-950 to-slate-900 dark:from-slate-900 dark:to-black p-5 rounded-3xl shadow-2xl border border-white/10 hover:-translate-y-1 transition-all cursor-pointer group relative"
               >
                 <button
@@ -316,13 +181,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
             report={report}
             isPinned={pinnedIds.includes(report.id)}
             onTogglePin={togglePin}
-            onAction={(tab) => {
-              if (tab && tab !== "reports") {
-                onNavigate(tab);
-              } else {
-                setActiveReportId(report.id);
-              }
-            }}
+            onAction={(tab) => onNavigate(tab || "reports")}
           />
         ))}
       </div>
@@ -336,279 +195,6 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
           <p className="text-slate-400 font-bold uppercase tracking-[0.2em] text-[8px] mt-1">
             Refine your strategic search parameters.
           </p>
-        </div>
-      )}
-
-      {activeReport && (
-        <div className="mt-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden animate-in fade-in duration-300">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 border-b border-slate-100 dark:border-slate-800">
-            <div>
-              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                {activeReport.category}
-              </div>
-              <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight">
-                {activeReport.title}
-              </h2>
-            </div>
-            <button
-              onClick={() => setActiveReportId(null)}
-              className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-orange-600 transition-all"
-            >
-              Back to Reports
-            </button>
-          </div>
-
-          {activeReport.title === "Stock Ledger" && (
-            <div className="p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                <div>
-                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
-                    Recent movements
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 text-[11px]">
-                      🔍
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Search product/reason..."
-                      value={stockSearch}
-                      onChange={(e) => setStockSearch(e.target.value)}
-                      className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-[11px] font-bold outline-none focus:ring-4 focus:ring-orange-500/10"
-                    />
-                  </div>
-                  <select
-                    value={stockDirection}
-                    onChange={(e) => setStockDirection(e.target.value)}
-                    className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl py-2 px-3 text-[11px] font-bold outline-none focus:ring-4 focus:ring-orange-500/10"
-                  >
-                    <option value="all">All</option>
-                    <option value="in">IN</option>
-                    <option value="out">OUT</option>
-                  </select>
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    {stockRows.length} / {stockLedger.length}
-                  </span>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
-                      <th className="px-6 py-4">Product</th>
-                      <th className="px-6 py-4">Direction</th>
-                      <th className="px-6 py-4">Qty</th>
-                      <th className="px-6 py-4">Reason</th>
-                      <th className="px-6 py-4">When</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                    {stockRows.map((entry) => {
-                      const product = products.find((p) => p.id === entry.productId);
-                      return (
-                        <tr
-                          key={entry.id}
-                          className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="text-[11px] font-black text-slate-900 dark:text-white">
-                              {product?.name || entry.productId}
-                            </div>
-                            {product?.productCode && (
-                              <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                                {product.productCode}
-                              </div>
-                            )}
-                          </td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`text-[10px] font-black uppercase px-2 py-1 rounded border ${
-                                String(entry.direction).toUpperCase() === "OUT"
-                                  ? "bg-rose-50 text-rose-600 border-rose-100 dark:bg-rose-900/20"
-                                  : "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20"
-                              }`}
-                            >
-                              {entry.direction}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-[11px] font-black text-slate-700 dark:text-slate-300">
-                            {entry.qty}
-                          </td>
-                          <td className="px-6 py-4 text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                            {entry.reason || "—"}
-                          </td>
-                          <td className="px-6 py-4 text-[10px] font-bold text-slate-400">
-                            {entry.createdAt
-                              ? new Date(entry.createdAt).toLocaleString()
-                              : "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {stockRows.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest"
-                        >
-                          No ledger entries yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeReport.title === "Customer Ledger" && (
-            <div className="p-8">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                <div className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">
-                  Customer Ledger
-                </div>
-                <div className="relative w-full md:w-64">
-                  <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 text-[11px]">
-                    🔍
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Search customer..."
-                    value={customerSearch}
-                    onChange={(e) => setCustomerSearch(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-[11px] font-bold outline-none focus:ring-4 focus:ring-orange-500/10"
-                  />
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
-                      <th className="px-6 py-4">Customer</th>
-                      <th className="px-6 py-4">Invoices</th>
-                      <th className="px-6 py-4">Total Billed</th>
-                      <th className="px-6 py-4">Total Received</th>
-                      <th className="px-6 py-4">Balance</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                    {customerLedgerRows.map((row) => {
-                      const balance = row.totalBilled - row.totalReceived;
-                      return (
-                        <tr
-                          key={row.customerId || row.customerName}
-                          className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
-                        >
-                          <td className="px-6 py-4">
-                            <div className="text-[11px] font-black text-slate-900 dark:text-white">
-                              {row.customerName}
-                            </div>
-                            <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                              {row.customerCode || row.email || "—"}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-[11px] font-black text-slate-700 dark:text-slate-300">
-                            {row.totalInvoices}
-                          </td>
-                          <td className="px-6 py-4 text-[11px] font-black text-slate-700 dark:text-slate-300">
-                            Rs. {row.totalBilled.toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 text-[11px] font-black text-slate-700 dark:text-slate-300">
-                            Rs. {row.totalReceived.toLocaleString()}
-                          </td>
-                          <td className={`px-6 py-4 text-[11px] font-black ${balance > 0 ? "text-rose-600" : "text-emerald-600"}`}>
-                            Rs. {balance.toLocaleString()}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {customerLedgerRows.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest"
-                        >
-                          No customer data yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {activeReport.title === "Vendor Ledger" && (
-            <div className="p-8">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                <div className="text-[11px] font-black text-slate-900 dark:text-white uppercase tracking-widest">
-                  Vendor Ledger
-                </div>
-                <div className="relative w-full md:w-64">
-                  <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 text-[11px]">
-                    🔍
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Search vendor..."
-                    value={vendorSearch}
-                    onChange={(e) => setVendorSearch(e.target.value)}
-                    className="w-full bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl py-2 pl-9 pr-3 text-[11px] font-bold outline-none focus:ring-4 focus:ring-orange-500/10"
-                  />
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
-                      <th className="px-6 py-4">Vendor</th>
-                      <th className="px-6 py-4">Contact</th>
-                      <th className="px-6 py-4">Balance</th>
-                      <th className="px-6 py-4">Payable</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                    {vendorLedgerRows.map((row) => (
-                      <tr
-                        key={row.id}
-                        className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40 transition-colors"
-                      >
-                        <td className="px-6 py-4">
-                          <div className="text-[11px] font-black text-slate-900 dark:text-white">
-                            {row.name}
-                          </div>
-                          <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                            {row.vendorCode || "—"}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-[11px] font-bold text-slate-600 dark:text-slate-400">
-                          {row.phone || row.email || "—"}
-                        </td>
-                        <td className="px-6 py-4 text-[11px] font-black text-slate-700 dark:text-slate-300">
-                          {row.balance ?? "—"}
-                        </td>
-                        <td className="px-6 py-4 text-[11px] font-black text-slate-700 dark:text-slate-300">
-                          {row.payableBalance ?? "—"}
-                        </td>
-                      </tr>
-                    ))}
-                    {vendorLedgerRows.length === 0 && (
-                      <tr>
-                        <td
-                          colSpan={4}
-                          className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest"
-                        >
-                          No vendor data yet.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>
