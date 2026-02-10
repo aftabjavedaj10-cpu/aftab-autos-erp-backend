@@ -369,6 +369,26 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   }, [formData.customerId, currentCustomer]);
 
   useEffect(() => {
+    if (invoice) {
+      setFormData({
+        id: invoice.id,
+        customerId: invoice.customerId || "",
+        reference: invoice.reference || "",
+        vehicleNumber: invoice.vehicleNumber || "",
+        date: invoice.date || new Date().toISOString().split("T")[0],
+        dueDate:
+          invoice.dueDate ||
+          new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        status: invoice.status || "Unpaid",
+        notes: invoice.notes || "",
+        overallDiscount: invoice.overallDiscount || 0,
+        amountReceived: invoice.amountReceived || 0,
+        items: (invoice.items || []) as SalesInvoiceItem[],
+      });
+    }
+  }, [invoice]);
+
+  useEffect(() => {
     if (!invoice && formData.id !== nextInvoiceId) {
       setFormData((prev) => ({ ...prev, id: nextInvoiceId }));
     }
@@ -446,7 +466,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   type="button"
                   onClick={() => prevInvoice && onNavigate?.(prevInvoice)}
                   disabled={!prevInvoice}
-                  className={`w-6 h-6 flex items-center justify-center rounded-md border text-[10px] font-black ${
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg border text-[11px] font-black ${
                     prevInvoice
                       ? "border-slate-200 text-slate-600 hover:text-orange-600"
                       : "border-slate-100 text-slate-300"
@@ -458,14 +478,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   type="text"
                   value={formData.id}
                   readOnly
-                  className="flex-1 bg-transparent text-base font-black text-slate-900 dark:text-white outline-none text-center"
+                  className="flex-1 bg-transparent text-base font-black text-slate-900 dark:text-white outline-none text-center tracking-widest"
                   placeholder="SI-000001"
                 />
                 <button
                   type="button"
                   onClick={() => nextInvoice && onNavigate?.(nextInvoice)}
                   disabled={!nextInvoice}
-                  className={`w-6 h-6 flex items-center justify-center rounded-md border text-[10px] font-black ${
+                  className={`w-7 h-7 flex items-center justify-center rounded-lg border text-[11px] font-black ${
                     nextInvoice
                       ? "border-slate-200 text-slate-600 hover:text-orange-600"
                       : "border-slate-100 text-slate-300"
