@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
-import { ALL_REPORTS, ReportDefinition } from "../constants";
+import { ALL_REPORTS } from "../constants";
+import type { ReportDefinition } from "../constants";
 
 const CATEGORIES = ["All", "Sales", "Inventory", "Financial", "Audit", "Tax"];
 

@@ -7,6 +7,12 @@ export interface ReportDefinition {
   tab?: string;
 }
 
+export const WAREHOUSES: string[] = [
+  "Main",
+  "Warehouse A",
+  "Warehouse B",
+];
+
 export const ALL_REPORTS: ReportDefinition[] = [
   {
     id: 1,

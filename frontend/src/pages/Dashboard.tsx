@@ -37,7 +37,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
-  const [stockLedger, setStockLedger] = useState<StockLedgerEntry[]>([]);
   const [pinnedReportIds, setPinnedReportIds] = useState<number[]>(() => {
     try {
       const stored = localStorage.getItem("pinnedReports");
@@ -132,7 +131,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
         const normalizedProducts = Array.isArray(productsData) ? productsData : productsData.data || [];
         const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : ledgerData.data || [];
-        setStockLedger(normalizedLedger);
         setProducts(mergeStockToProducts(normalizedProducts, normalizedLedger));
         setCustomers(Array.isArray(customersData) ? customersData : customersData.data || []);
         setVendors(Array.isArray(vendorsData) ? vendorsData : vendorsData.data || []);
