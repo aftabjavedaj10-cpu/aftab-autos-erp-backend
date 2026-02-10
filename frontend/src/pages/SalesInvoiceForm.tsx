@@ -10,6 +10,7 @@ interface SalesInvoiceFormPageProps {
   onBack: () => void;
   onSave: (invoice: SalesInvoice, stayOnPage: boolean) => void;
   onNavigate?: (invoice: SalesInvoice) => void;
+  onNavigateNew?: () => void;
 }
 
 const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
@@ -20,6 +21,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   onBack,
   onSave,
   onNavigate,
+  onNavigateNew,
 }) => {
   const isEdit = !!invoice;
 
@@ -417,6 +419,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     effectiveIndex >= 0 && effectiveIndex < sortedInvoices.length - 1
       ? sortedInvoices[effectiveIndex + 1]
       : undefined;
+  const canGoNext =
+    !!nextInvoice || (!!invoice?.id && sortedInvoices.length > 0 && effectiveIndex === sortedInvoices.length - 1);
 
   const onEnterMoveTo = (e: React.KeyboardEvent, nextRef: React.RefObject<any>) => {
     if (e.key === "Enter") {
@@ -488,10 +492,16 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 />
                 <button
                   type="button"
-                  onClick={() => nextInvoice && onNavigate?.(nextInvoice)}
-                  disabled={!nextInvoice}
+                  onClick={() => {
+                    if (nextInvoice) {
+                      onNavigate?.(nextInvoice);
+                    } else if (invoice?.id && effectiveIndex === sortedInvoices.length - 1) {
+                      onNavigateNew?.();
+                    }
+                  }}
+                  disabled={!canGoNext}
                   className={`w-8 h-8 flex items-center justify-center border text-[12px] font-black ${
-                    nextInvoice
+                    canGoNext
                       ? "border-slate-200 text-slate-600 hover:text-orange-600"
                       : "border-slate-100 text-slate-300"
                   }`}
