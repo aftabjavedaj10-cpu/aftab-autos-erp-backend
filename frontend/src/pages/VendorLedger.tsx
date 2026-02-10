@@ -156,8 +156,8 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 mb-4 print:hidden">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="md:col-span-1 relative" ref={searchRef}>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 text-[11px]">🔍</span>
+            <div className="relative group">
+              <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 text-[12px]">🔍</span>
               <input
                 type="text"
                 value={vendorSearch}
@@ -166,17 +166,17 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
                   setVendorSearch(e.target.value);
                   setShowResults(true);
                 }}
-                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 rounded-xl py-1.5 pl-9 pr-3 text-[11px] font-bold dark:text-white outline-none"
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-[12px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all placeholder:text-slate-400"
                 placeholder="Search vendor..."
               />
             </div>
             {showResults && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
                 {filteredVendorList.map((v) => (
                   <button
                     key={v.id}
                     onClick={() => handleSelectVendor(v)}
-                    className="w-full text-left px-4 py-2 hover:bg-orange-50 border-b last:border-0"
+                    className="w-full text-left px-4 py-2 hover:bg-orange-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0"
                   >
                     <p className="text-[11px] font-black text-slate-900 uppercase">
                       {v.name}
@@ -282,13 +282,6 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
           </table>
         </div>
 
-        <Pagination
-          totalItems={filteredEntries.length}
-          currentPage={currentPage}
-          rowsPerPage={rowsPerPage}
-          onPageChange={setCurrentPage}
-          onRowsPerPageChange={setRowsPerPage}
-        />
         <div className="grid grid-cols-1 md:grid-cols-4 border-t bg-slate-50/30 text-center">
           <div className="p-4 border-b md:border-b-0 md:border-r">
             <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
@@ -316,6 +309,13 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
             </p>
           </div>
         </div>
+        <Pagination
+          totalItems={filteredEntries.length}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setCurrentPage}
+          onRowsPerPageChange={setRowsPerPage}
+        />
       </div>
     </div>
   );
