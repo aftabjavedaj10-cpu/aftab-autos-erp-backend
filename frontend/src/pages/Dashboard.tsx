@@ -38,6 +38,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [stockLedger, setStockLedger] = useState<StockLedgerEntry[]>([]);
+  const [pinnedReportIds, setPinnedReportIds] = useState<number[]>(() => {
+    try {
+      const stored = localStorage.getItem("pinnedReports");
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
 
   const [editingCustomer, setEditingCustomer] = useState<Customer | undefined>(undefined);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
@@ -260,6 +268,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     const session = getSession();
     return session?.user?.email || "Admin";
   }, []);
+
+  const handleTogglePinReport = (id: number) => {
+    setPinnedReportIds((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      localStorage.setItem("pinnedReports", JSON.stringify(next));
+      return next;
+    });
+  };
 
   return (
     <div className="min-h-screen flex bg-[#FEF3E2] dark:bg-[#020617]">
@@ -525,10 +541,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
         {activeTab === "reports" && (
           <ReportsPage
-            products={products}
-            customers={customers}
-            vendors={vendors}
-            stockLedger={stockLedger}
+            onNavigate={(tab) => setActiveTab(tab)}
+            pinnedIds={pinnedReportIds}
+            onTogglePin={handleTogglePinReport}
           />
         )}
 
