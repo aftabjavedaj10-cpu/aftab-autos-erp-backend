@@ -286,7 +286,7 @@ const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) =>
       discount_value: item.discountValue ?? item.discount_value ?? 0,
       discount_type: item.discountType ?? item.discount_type ?? "fixed",
     },
-    ["productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
+    ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
   );
 
 const mapCompanyFromDb = (row: any) => {
