@@ -68,6 +68,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
+  const [isRevising, setIsRevising] = useState(false);
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -344,6 +345,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     return "Paid";
   };
 
+  const isApproved = formData.status === "Approved";
+  const isLocked = isApproved && !isRevising;
+
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
     if (!formData.customerId) {
       alert("Required: Please select a Customer Account.");
@@ -499,28 +503,13 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
       <div className="space-y-4">
         <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 space-y-6">
-          <div
-            className={`absolute -right-10 top-6 rotate-45 text-white text-[10px] font-black uppercase tracking-widest px-10 py-1 shadow-lg ${
-              formData.status === "Approved"
-                ? "bg-indigo-600"
-                : formData.status === "Pending"
-                ? "bg-amber-500"
-                : "bg-slate-500"
-            }`}
-          >
-            {formData.status || "Draft"}
-          </div>
-          <div
-            className={`absolute -right-10 top-14 rotate-45 text-white text-[10px] font-black uppercase tracking-widest px-10 py-1 shadow-lg ${
-              formData.paymentStatus === "Paid"
-                ? "bg-emerald-600"
-                : formData.paymentStatus === "Partial"
-                ? "bg-amber-600"
-                : "bg-rose-600"
-            }`}
-          >
-            {formData.paymentStatus || "Unpaid"}
-          </div>
+          {isApproved && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-[56px] sm:text-[72px] font-black uppercase tracking-[0.2em] text-emerald-600/15 rotate-[-12deg]">
+                Approved
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             <div className="md:col-span-3 border-r border-slate-200 dark:border-slate-800 pr-4">
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
@@ -539,13 +528,13 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 >
                   &lt;
                 </button>
-                <input
-                  type="text"
-                  value={formData.id}
-                  readOnly
-                  className="w-32 bg-transparent text-base font-black text-slate-900 dark:text-white outline-none text-center tracking-widest border-y border-slate-200 dark:border-slate-800"
-                  placeholder="SI-000001"
-                />
+              <input
+                type="text"
+                value={formData.id}
+                readOnly
+                className="w-32 bg-transparent text-base font-black text-slate-900 dark:text-white outline-none text-center tracking-widest border-y border-slate-200 dark:border-slate-800"
+                placeholder="SI-000001"
+              />
                 <button
                   type="button"
                   onClick={() => {
@@ -573,20 +562,23 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 Customer Account
               </label>
               <div className="relative group">
-                <input
-                  ref={customerInputRef}
-                  type="text"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-slate-400"
-                  placeholder="Search name, phone, or code..."
-                  value={customerSearchTerm}
-                  onChange={(e) => {
-                    setCustomerSearchTerm(e.target.value);
-                    setIsCustomerSearching(true);
-                  }}
-                  onFocus={() => setIsCustomerSearching(true)}
-                  onKeyDown={handleCustomerKeyDown}
-                />
-                {formData.customerId && (
+              <input
+                ref={customerInputRef}
+                type="text"
+                disabled={isLocked}
+                className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-slate-400 ${
+                  isLocked ? "opacity-60 cursor-not-allowed" : ""
+                }`}
+                placeholder="Search name, phone, or code..."
+                value={customerSearchTerm}
+                onChange={(e) => {
+                  setCustomerSearchTerm(e.target.value);
+                  setIsCustomerSearching(true);
+                }}
+                onFocus={() => setIsCustomerSearching(true)}
+                onKeyDown={handleCustomerKeyDown}
+              />
+                {formData.customerId && !isLocked && (
                   <button
                     onClick={() => {
                       setFormData({ ...formData, customerId: "" });
@@ -610,7 +602,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 </div>
               )}
 
-              {isCustomerSearching && (
+              {isCustomerSearching && !isLocked && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[60] overflow-hidden">
                   <div className="max-h-[250px] overflow-y-auto">
                     {availableCustomers.length > 0 ? (
@@ -664,7 +656,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 <input
                   ref={dateInputRef}
                   type="date"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none"
+                  disabled={isLocked}
+                  className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
+                    isLocked ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
                   value={formData.date}
                   onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                   onKeyDown={(e) => onEnterMoveTo(e, dueDateInputRef)}
@@ -677,7 +672,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 <input
                   ref={dueDateInputRef}
                   type="date"
-                  className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none"
+                  disabled={isLocked}
+                  className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
+                    isLocked ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
                   onKeyDown={(e) => onEnterMoveTo(e, vehicleInputRef)}
@@ -697,7 +695,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 ref={vehicleInputRef}
                 type="text"
                 placeholder="REG-1234 (Optional)..."
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all uppercase"
+                disabled={isLocked}
+                className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all uppercase ${
+                  isLocked ? "opacity-60 cursor-not-allowed" : ""
+                }`}
                 value={formData.vehicleNumber}
                 onChange={(e) => setFormData({ ...formData, vehicleNumber: e.target.value.toUpperCase() })}
                 onKeyDown={(e) => onEnterMoveTo(e, refInputRef)}
@@ -712,7 +713,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 ref={refInputRef}
                 type="text"
                 placeholder="Customer Reference or PO ID..."
-                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all"
+                disabled={isLocked}
+                className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all ${
+                  isLocked ? "opacity-60 cursor-not-allowed" : ""
+                }`}
                 value={formData.reference}
                 onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
                 onKeyDown={(e) => onEnterMoveTo(e, searchInputRef)}
@@ -820,15 +824,18 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       </td>
                       <td className="px-3 py-2 text-center">
                         <div className="flex items-center justify-center gap-1">
-                          <input
-                            id={`qty-${item.productId}`}
-                            type="number"
-                            className="w-12 bg-slate-50 dark:bg-slate-800/50 rounded-md text-center font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
-                            value={item.quantity}
-                            onChange={(e) =>
-                              updateItemField(item.productId, "quantity", Math.max(0, parseInt(e.target.value) || 0))
-                            }
-                          />
+                        <input
+                          id={`qty-${item.productId}`}
+                          type="number"
+                          disabled={isLocked}
+                          className={`w-12 bg-slate-50 dark:bg-slate-800/50 rounded-md text-center font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all ${
+                            isLocked ? "opacity-60 cursor-not-allowed" : ""
+                          }`}
+                          value={item.quantity}
+                          onChange={(e) =>
+                            updateItemField(item.productId, "quantity", Math.max(0, parseInt(e.target.value) || 0))
+                          }
+                        />
                           <span className="text-[9px] font-black text-slate-400 uppercase">
                             {item.unit || "PC"}
                           </span>
@@ -838,7 +845,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                         <input
                           id={`price-${item.productId}`}
                           type="number"
-                          className="w-16 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
+                          disabled={isLocked}
+                          className={`w-16 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all ${
+                            isLocked ? "opacity-60 cursor-not-allowed" : ""
+                          }`}
                           value={item.unitPrice}
                           onChange={(e) =>
                             updateItemField(item.productId, "unitPrice", Math.max(0, parseFloat(e.target.value) || 0))
@@ -849,14 +859,18 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                         <div className="flex items-center justify-end gap-1.5">
                           <input
                             type="number"
-                            className="w-12 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all"
+                            disabled={isLocked}
+                            className={`w-12 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all ${
+                              isLocked ? "opacity-60 cursor-not-allowed" : ""
+                            }`}
                             value={item.discountValue || 0}
                             onChange={(e) =>
                               updateItemField(item.productId, "discountValue", Math.max(0, parseFloat(e.target.value) || 0))
                             }
                           />
                           <select
-                            className="bg-transparent text-[9px] font-black text-slate-400"
+                            disabled={isLocked}
+                            className={`bg-transparent text-[9px] font-black text-slate-400 ${isLocked ? "opacity-60" : ""}`}
                             value={item.discountType}
                             onChange={(e) => updateItemField(item.productId, "discountType", e.target.value as any)}
                           >
@@ -885,7 +899,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       <td className="px-3 py-2 text-center">
                         <button
                           onClick={() => handleRemoveItem(item.productId)}
-                          className="p-1 text-slate-300 hover:text-rose-500 transition-colors"
+                          disabled={isLocked}
+                          className={`p-1 text-slate-300 transition-colors ${
+                            isLocked ? "opacity-50 cursor-not-allowed" : "hover:text-rose-500"
+                          }`}
                         >
                           ✕
                         </button>
@@ -901,7 +918,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                         ref={searchInputRef}
                         type="text"
                         placeholder="Search SKU or product name..."
-                        className="w-full bg-transparent outline-none text-[11px] font-black text-slate-900 dark:text-white placeholder:text-slate-400 tracking-tight"
+                        disabled={isLocked}
+                        className={`w-full bg-transparent outline-none text-[11px] font-black text-slate-900 dark:text-white placeholder:text-slate-400 tracking-tight ${
+                          isLocked ? "opacity-60 cursor-not-allowed" : ""
+                        }`}
                         value={searchTerm}
                         onChange={(e) => {
                           setSearchTerm(e.target.value);
@@ -911,7 +931,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                         onKeyDown={handleProductSearchKeyDown}
                       />
 
-                      {isSearching && searchTerm && (
+                      {isSearching && searchTerm && !isLocked && (
                         <div className="absolute top-full left-0 right-0 mt-2 w-full max-w-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-[9999] overflow-hidden">
                           <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
                             <div>
@@ -1023,7 +1043,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               </label>
               <textarea
                 rows={3}
-                className="w-full bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700 rounded-lg p-3 text-[10px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/5 focus:border-orange-500/20 placeholder:text-slate-400 resize-none transition-all"
+                disabled={isLocked}
+                className={`w-full bg-slate-50 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-700 rounded-lg p-3 text-[10px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/5 focus:border-orange-500/20 placeholder:text-slate-400 resize-none transition-all ${
+                  isLocked ? "opacity-60 cursor-not-allowed" : ""
+                }`}
                 placeholder="Record terms, warranty data, or logistics notes..."
                 value={formData.notes}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -1046,7 +1069,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 <input
                   ref={overallDiscRef}
                   type="number"
-                  className="w-20 bg-transparent text-right font-black text-[11px] outline-none text-rose-500 focus:border-b focus:border-rose-500"
+                  disabled={isLocked}
+                  className={`w-20 bg-transparent text-right font-black text-[11px] outline-none text-rose-500 focus:border-b focus:border-rose-500 ${
+                    isLocked ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
                   value={formData.overallDiscount}
                   onChange={(e) =>
                     setFormData({ ...formData, overallDiscount: parseFloat(e.target.value) || 0 })
@@ -1072,7 +1098,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   <input
                     ref={amountReceivedRef}
                     type="number"
-                    className="w-20 bg-transparent text-right font-black text-[11px] outline-none text-orange-700 dark:text-orange-400 focus:border-b focus:border-orange-500"
+                    disabled={isLocked}
+                    className={`w-20 bg-transparent text-right font-black text-[11px] outline-none text-orange-700 dark:text-orange-400 focus:border-b focus:border-orange-500 ${
+                      isLocked ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
                     value={formData.amountReceived}
                     onChange={(e) =>
                       setFormData({ ...formData, amountReceived: parseFloat(e.target.value) || 0 })
@@ -1122,14 +1151,20 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <button
                 type="button"
                 onClick={() => setIsPrintMenuOpen((prev) => !prev)}
-                className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
+                disabled={isLocked}
+                className={`px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors ${
+                  isLocked ? "opacity-60 cursor-not-allowed" : ""
+                }`}
               >
                 Print
               </button>
               <button
                 type="button"
                 onClick={() => setIsPrintMenuOpen((prev) => !prev)}
-                className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-lg text-[10px] font-black text-slate-500 hover:text-orange-600"
+                disabled={isLocked}
+                className={`w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-lg text-[10px] font-black text-slate-500 hover:text-orange-600 ${
+                  isLocked ? "opacity-60 cursor-not-allowed" : ""
+                }`}
               >
                 ▴
               </button>
@@ -1169,14 +1204,20 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <button
                 type="button"
                 onClick={() => setIsSaveMenuOpen((prev) => !prev)}
-                className="px-4 py-2 bg-orange-600 border border-orange-500 rounded-l-lg text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all"
+                disabled={isLocked}
+                className={`px-4 py-2 bg-orange-600 border border-orange-500 rounded-l-lg text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all ${
+                  isLocked ? "opacity-60 cursor-not-allowed" : ""
+                }`}
               >
                 Save
               </button>
               <button
                 type="button"
                 onClick={() => setIsSaveMenuOpen((prev) => !prev)}
-                className="w-8 h-8 flex items-center justify-center bg-orange-600 border border-l-0 border-orange-500 rounded-r-lg text-white text-[10px] font-black"
+                disabled={isLocked}
+                className={`w-8 h-8 flex items-center justify-center bg-orange-600 border border-l-0 border-orange-500 rounded-r-lg text-white text-[10px] font-black ${
+                  isLocked ? "opacity-60 cursor-not-allowed" : ""
+                }`}
               >
                 ▴
               </button>
@@ -1204,6 +1245,16 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               </div>
             )}
           </div>
+
+          {isApproved && (
+            <button
+              type="button"
+              onClick={() => setIsRevising(true)}
+              className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
+            >
+              Revise
+            </button>
+          )}
         </div>
       </div>
 
