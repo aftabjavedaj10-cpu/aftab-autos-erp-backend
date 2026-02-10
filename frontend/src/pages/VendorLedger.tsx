@@ -69,7 +69,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
   const rawEntries = useMemo(() => {
     const entries: LedgerEntry[] = [];
     const vendor = vendors.find((v) => v.id === selectedVendorId);
-    const opening = Number(vendor?.openingBalance || 0);
+    const opening = Number(vendor?.balance || 0);
     if (!Number.isNaN(opening) && opening !== 0) {
       entries.push({
         id: `open-${selectedVendorId}`,
