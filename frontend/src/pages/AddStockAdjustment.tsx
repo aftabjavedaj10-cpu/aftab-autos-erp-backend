@@ -4,6 +4,16 @@ import type { Product } from "../types";
 interface AddStockAdjustmentPageProps {
   products: Product[];
   defaultAdjustmentNo: string;
+  adjustment?: {
+    id: string;
+    productId: string;
+    qty: number;
+    direction: "IN" | "OUT" | string;
+    reason?: string;
+    sourceRef?: string;
+    adjustmentNo?: string;
+    createdAt?: string;
+  };
   onBack: () => void;
   onSave: (payload: {
     productId: string;
@@ -19,18 +29,24 @@ interface AddStockAdjustmentPageProps {
 const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
   products,
   defaultAdjustmentNo,
+  adjustment,
   onBack,
   onSave,
 }) => {
+  const isEdit = !!adjustment?.id;
   const [productSearch, setProductSearch] = useState("");
-  const [selectedProductId, setSelectedProductId] = useState("");
-  const [qtyInput, setQtyInput] = useState("1");
-  const [direction, setDirection] = useState<"IN" | "OUT">("IN");
-  const [reason, setReason] = useState("manual_adjustment");
-  const [sourceRef, setSourceRef] = useState("");
-  const [adjustmentNo] = useState(defaultAdjustmentNo || "ADJ-000001");
+  const [selectedProductId, setSelectedProductId] = useState(String(adjustment?.productId || ""));
+  const [qtyInput, setQtyInput] = useState(String(adjustment?.qty || "1"));
+  const [direction, setDirection] = useState<"IN" | "OUT">(
+    String(adjustment?.direction || "IN").toUpperCase() === "OUT" ? "OUT" : "IN"
+  );
+  const [reason, setReason] = useState(adjustment?.reason || "manual_adjustment");
+  const [sourceRef, setSourceRef] = useState(adjustment?.sourceRef || "");
+  const [adjustmentNo] = useState(adjustment?.adjustmentNo || defaultAdjustmentNo || "ADJ-000001");
   const [adjustmentDate, setAdjustmentDate] = useState(
-    new Date().toISOString().slice(0, 10)
+    adjustment?.createdAt
+      ? new Date(adjustment.createdAt).toISOString().slice(0, 10)
+      : new Date().toISOString().slice(0, 10)
   );
   const [submitting, setSubmitting] = useState(false);
 
@@ -89,7 +105,7 @@ const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
         </button>
         <div>
           <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
-            Add Adjustment
+            {isEdit ? "Edit Adjustment" : "Add Adjustment"}
           </h1>
           <p className="text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest text-[10px]">
             Inventory correction entry

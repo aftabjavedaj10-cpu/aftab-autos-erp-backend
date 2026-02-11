@@ -6,12 +6,14 @@ interface StockAdjustmentPageProps {
   rows: StockLedgerEntry[];
   products: Product[];
   onAddClick: () => void;
+  onEditClick: (row: StockLedgerEntry) => void;
 }
 
 const StockAdjustmentPage: React.FC<StockAdjustmentPageProps> = ({
   rows,
   products,
   onAddClick,
+  onEditClick,
 }) => {
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState("all");
@@ -103,6 +105,7 @@ const StockAdjustmentPage: React.FC<StockAdjustmentPageProps> = ({
                 <th className="px-4 py-3">Reason</th>
                 <th className="px-4 py-3">Reference</th>
                 <th className="px-4 py-3">When</th>
+                <th className="px-4 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -133,13 +136,21 @@ const StockAdjustmentPage: React.FC<StockAdjustmentPageProps> = ({
                     <td className="px-4 py-2 text-[10px] font-bold text-slate-400">
                       {row.createdAt ? new Date(row.createdAt).toLocaleString() : "-"}
                     </td>
+                    <td className="px-4 py-2 text-right">
+                      <button
+                        onClick={() => onEditClick(row)}
+                        className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[9px] font-black uppercase tracking-widest hover:bg-orange-100 dark:hover:bg-slate-700"
+                      >
+                        Edit
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
               {paginatedRows.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest"
                   >
                     No adjustments found.
@@ -163,4 +174,3 @@ const StockAdjustmentPage: React.FC<StockAdjustmentPageProps> = ({
 };
 
 export default StockAdjustmentPage;
-

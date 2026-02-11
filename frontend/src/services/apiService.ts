@@ -772,6 +772,62 @@ export const stockLedgerAPI = {
     ).then(firstRow);
     return mapStockLedgerFromDb(created);
   },
+  updateAdjustment: async (
+    adjustmentRowId: string,
+    payload: {
+      productId: string | number;
+      qty: number;
+      direction: "IN" | "OUT";
+      reason?: string;
+      sourceRef?: string;
+      adjustmentNo?: string;
+      adjustmentDate?: string;
+    }
+  ) => {
+    await ensurePermission("products.write");
+    const companyId = getActiveCompanyId();
+    if (!companyId) {
+      throw new Error("Company not set");
+    }
+    const productId = Number(payload.productId);
+    if (!Number.isFinite(productId) || productId <= 0) {
+      throw new Error("Invalid product");
+    }
+    const qty = Number(payload.qty || 0);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      throw new Error("Quantity must be greater than 0");
+    }
+    const direction = String(payload.direction || "").toUpperCase();
+    if (direction !== "IN" && direction !== "OUT") {
+      throw new Error("Invalid direction");
+    }
+    const createdAt =
+      payload.adjustmentDate && /^\d{4}-\d{2}-\d{2}$/.test(payload.adjustmentDate)
+        ? `${payload.adjustmentDate}T00:00:00`
+        : undefined;
+
+    const patchBody: Record<string, any> = {
+      product_id: productId,
+      qty,
+      direction,
+      reason: payload.reason || "stock_adjustment",
+      source: "stock_adjustment",
+    };
+    if (payload.adjustmentNo) patchBody.source_id = payload.adjustmentNo;
+    if (payload.sourceRef) patchBody.source_ref = payload.sourceRef;
+    if (createdAt) patchBody.created_at = createdAt;
+
+    const updated = await apiCall(
+      `/stock_ledger?id=eq.${adjustmentRowId}&company_id=eq.${companyId}&source=eq.stock_adjustment`,
+      "PATCH",
+      patchBody,
+      true
+    ).then(firstRow);
+    if (!updated) {
+      throw new Error("Adjustment update returned no data");
+    }
+    return mapStockLedgerFromDb(updated);
+  },
 };
 
 // ============ COMPANIES & PROFILES ============

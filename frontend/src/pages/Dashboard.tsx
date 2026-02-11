@@ -56,6 +56,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>(undefined);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
+  const [editingStockAdjustment, setEditingStockAdjustment] = useState<StockLedgerEntry | undefined>(undefined);
 
   const nextAdjustmentNo = useMemo(() => {
     const maxNo = stockLedger
@@ -279,6 +280,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   };
 
   const handleAddStockAdjustment = () => {
+    setEditingStockAdjustment(undefined);
+    setActiveTab("add_stock_adjustment");
+  };
+
+  const handleEditStockAdjustment = (row: StockLedgerEntry) => {
+    setEditingStockAdjustment(row);
     setActiveTab("add_stock_adjustment");
   };
 
@@ -604,6 +611,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             rows={stockLedger}
             products={products}
             onAddClick={handleAddStockAdjustment}
+            onEditClick={handleEditStockAdjustment}
           />
         )}
 
@@ -611,10 +619,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           <AddStockAdjustmentPage
             products={products}
             defaultAdjustmentNo={nextAdjustmentNo}
-            onBack={() => setActiveTab("stock_adjustment")}
+            onBack={() => {
+              setEditingStockAdjustment(undefined);
+              setActiveTab("stock_adjustment");
+            }}
+            adjustment={
+              editingStockAdjustment
+                ? {
+                    id: editingStockAdjustment.id,
+                    productId: String(editingStockAdjustment.productId),
+                    qty: Number(editingStockAdjustment.qty),
+                    direction: String(editingStockAdjustment.direction || "IN"),
+                    reason: editingStockAdjustment.reason,
+                    sourceRef: editingStockAdjustment.sourceRef,
+                    adjustmentNo: editingStockAdjustment.sourceRef,
+                    createdAt: editingStockAdjustment.createdAt,
+                  }
+                : undefined
+            }
             onSave={async (payload) => {
               try {
-                await stockLedgerAPI.createAdjustment(payload);
+                if (editingStockAdjustment?.id) {
+                  await stockLedgerAPI.updateAdjustment(editingStockAdjustment.id, payload);
+                } else {
+                  await stockLedgerAPI.createAdjustment(payload);
+                }
                 const companyId = getActiveCompanyId();
                 const ledgerData = companyId
                   ? await stockLedgerAPI.listRecent(companyId, 5000)
@@ -622,6 +651,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
                 setStockLedger(normalizedLedger);
                 setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                setEditingStockAdjustment(undefined);
                 setActiveTab("stock_adjustment");
               } catch (err: any) {
                 setError(err?.message || "Failed to save stock adjustment");
