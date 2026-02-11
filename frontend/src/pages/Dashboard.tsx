@@ -57,6 +57,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>(undefined);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
 
+  const nextAdjustmentNo = useMemo(() => {
+    const maxNo = stockLedger
+      .filter((row) => String(row.source || "").toLowerCase() === "stock_adjustment")
+      .reduce((max, row) => {
+        const raw = String(row.sourceRef || "").trim();
+        const match = raw.match(/^ADJ-(\d{6})$/);
+        const value = match ? Number(match[1]) : 0;
+        return value > max ? value : max;
+      }, 0);
+    return `ADJ-${String(maxNo + 1).padStart(6, "0")}`;
+  }, [stockLedger]);
+
   const computeStockMap = (ledgerRows: StockLedgerEntry[]) => {
     const map = new Map<string, { onHand: number; reserved: number; entries: number }>();
     ledgerRows.forEach((row) => {
@@ -598,6 +610,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         {activeTab === "add_stock_adjustment" && (
           <AddStockAdjustmentPage
             products={products}
+            defaultAdjustmentNo={nextAdjustmentNo}
             onBack={() => setActiveTab("stock_adjustment")}
             onSave={async (payload) => {
               try {

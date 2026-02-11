@@ -370,6 +370,7 @@ const mapStockLedgerFromDb = (row: any) => ({
 });
 
 const SALES_INVOICE_ID_PATTERN = /^SI-(\d{6})$/;
+const STOCK_ADJUSTMENT_ID_PATTERN = /^ADJ-(\d{6})$/;
 
 const parseSalesInvoiceNumber = (id?: string) => {
   if (!id) return -1;
@@ -388,6 +389,27 @@ const getLatestSalesInvoiceId = async () => {
   const rows = await apiCall("/sales_invoices?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows[0]?.id ?? null;
+};
+
+const parseStockAdjustmentNumber = (id?: string) => {
+  if (!id) return -1;
+  const match = id.match(STOCK_ADJUSTMENT_ID_PATTERN);
+  return match ? Number(match[1]) : -1;
+};
+
+const formatStockAdjustmentId = (num: number) => `ADJ-${String(num).padStart(6, "0")}`;
+
+const getLatestStockAdjustmentId = async (companyId: string) => {
+  const rows = await apiCall(
+    `/stock_ledger?select=source_id,source_ref&company_id=eq.${companyId}&source=eq.stock_adjustment&order=created_at.desc&limit=50`
+  );
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  const maxFound = rows.reduce((max, row) => {
+    const sourceId = parseStockAdjustmentNumber(row?.source_id);
+    const sourceRef = parseStockAdjustmentNumber(row?.source_ref);
+    return Math.max(max, sourceId, sourceRef);
+  }, -1);
+  return maxFound > 0 ? formatStockAdjustmentId(maxFound) : null;
 };
 
 const ensurePermission = async (permission: string) => {
@@ -699,6 +721,8 @@ export const stockLedgerAPI = {
     direction: "IN" | "OUT";
     reason?: string;
     sourceRef?: string;
+    adjustmentNo?: string;
+    adjustmentDate?: string;
   }) => {
     await ensurePermission("products.write");
     const companyId = getActiveCompanyId();
@@ -718,7 +742,18 @@ export const stockLedgerAPI = {
       throw new Error("Invalid direction");
     }
 
-    const sourceId = `ADJ-${Date.now()}`;
+    let adjustmentNo = String(payload.adjustmentNo || "").trim();
+    if (!adjustmentNo) {
+      const latest = await getLatestStockAdjustmentId(companyId);
+      const latestNum = parseStockAdjustmentNumber(latest ?? undefined);
+      adjustmentNo = formatStockAdjustmentId(Math.max(0, latestNum) + 1);
+    }
+
+    const createdAt =
+      payload.adjustmentDate && /^\d{4}-\d{2}-\d{2}$/.test(payload.adjustmentDate)
+        ? `${payload.adjustmentDate}T00:00:00`
+        : undefined;
+
     const created = await apiCall(
       "/stock_ledger",
       "POST",
@@ -729,8 +764,9 @@ export const stockLedgerAPI = {
         direction,
         reason: payload.reason || "stock_adjustment",
         source: "stock_adjustment",
-        source_id: sourceId,
-        source_ref: payload.sourceRef || sourceId,
+        source_id: adjustmentNo,
+        source_ref: payload.sourceRef || adjustmentNo,
+        ...(createdAt ? { created_at: createdAt } : {}),
       },
       true
     ).then(firstRow);

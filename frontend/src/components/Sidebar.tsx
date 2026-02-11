@@ -242,7 +242,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           onItemClick={(val) => onTabChange(val)}
           items={[
             { label: "Stock Adjustment", value: "stock_adjustment" },
-            { label: "Add Adjustment", value: "add_stock_adjustment" },
           ]}
         />
 

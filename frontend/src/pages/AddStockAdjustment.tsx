@@ -3,6 +3,7 @@ import type { Product } from "../types";
 
 interface AddStockAdjustmentPageProps {
   products: Product[];
+  defaultAdjustmentNo: string;
   onBack: () => void;
   onSave: (payload: {
     productId: string;
@@ -10,20 +11,27 @@ interface AddStockAdjustmentPageProps {
     direction: "IN" | "OUT";
     reason: string;
     sourceRef: string;
+    adjustmentNo: string;
+    adjustmentDate: string;
   }) => Promise<void> | void;
 }
 
 const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
   products,
+  defaultAdjustmentNo,
   onBack,
   onSave,
 }) => {
   const [productSearch, setProductSearch] = useState("");
   const [selectedProductId, setSelectedProductId] = useState("");
-  const [qty, setQty] = useState(1);
+  const [qtyInput, setQtyInput] = useState("1");
   const [direction, setDirection] = useState<"IN" | "OUT">("IN");
   const [reason, setReason] = useState("manual_adjustment");
   const [sourceRef, setSourceRef] = useState("");
+  const [adjustmentNo] = useState(defaultAdjustmentNo || "ADJ-000001");
+  const [adjustmentDate, setAdjustmentDate] = useState(
+    new Date().toISOString().slice(0, 10)
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const filteredProducts = useMemo(() => {
@@ -49,6 +57,7 @@ const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
       alert("Select product first.");
       return;
     }
+    const qty = Number(qtyInput);
     if (!Number.isFinite(qty) || qty <= 0) {
       alert("Quantity must be greater than 0.");
       return;
@@ -61,6 +70,8 @@ const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
         direction,
         reason: reason.trim() || "manual_adjustment",
         sourceRef: sourceRef.trim(),
+        adjustmentNo,
+        adjustmentDate,
       });
     } finally {
       setSubmitting(false);
@@ -129,6 +140,27 @@ const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
           <div className="space-y-3">
             <div>
               <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                Adjustment #
+              </label>
+              <input
+                value={adjustmentNo}
+                readOnly
+                className="w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-[11px] font-black text-slate-700 dark:text-slate-200"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
+                Date
+              </label>
+              <input
+                type="date"
+                value={adjustmentDate}
+                onChange={(e) => setAdjustmentDate(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-[11px] font-bold dark:text-white outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">
                 Selected Product
               </label>
               <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-[11px] font-black text-slate-900 dark:text-white">
@@ -155,9 +187,9 @@ const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
                 </label>
                 <input
                   type="number"
-                  min={1}
-                  value={qty}
-                  onChange={(e) => setQty(Math.max(1, Number(e.target.value || 1)))}
+                  min={0}
+                  value={qtyInput}
+                  onChange={(e) => setQtyInput(e.target.value)}
                   className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 px-3 text-[11px] font-bold dark:text-white outline-none"
                 />
               </div>
@@ -208,4 +240,3 @@ const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
 };
 
 export default AddStockAdjustmentPage;
-
