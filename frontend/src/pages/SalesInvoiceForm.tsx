@@ -1422,7 +1422,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 <img
                   src={company.logoUrl}
                   alt="Company logo"
-                  className="h-16 mx-auto object-contain mb-1"
+                  className="h-20 mx-auto object-contain mb-1"
                 />
               ) : null}
               <p className="text-[18px] font-black uppercase tracking-wide">{company?.name || "AFTAB AUTOS"}</p>
@@ -1570,7 +1570,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       <style>{`
         @media print {
           @page {
-            margin: 4mm;
+            margin: 0;
             size: auto;
           }
           html, body {
@@ -1606,7 +1606,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             page-break-after: always;
           }
           .print-sheet-80mm {
-            width: 80mm !important;
+            width: 72mm !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             background: #fff !important;
