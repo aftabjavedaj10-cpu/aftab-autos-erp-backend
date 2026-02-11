@@ -195,6 +195,12 @@ const mapProductToDb = (product: any) =>
     ]
   );
 
+const sanitizeProductPayload = (payload: any) => {
+  const clean = { ...(payload || {}) };
+  if ("isActive" in clean) delete clean.isActive;
+  return clean;
+};
+
 const mapCustomerFromDb = (row: any) => ({
   ...row,
   customerCode: row.customer_code ?? row.customerCode,
@@ -404,10 +410,13 @@ export const productAPI = {
     getFirst(`/products?select=*&id=eq.${id}`).then(mapProductFromDb),
   create: async (product: any) => {
     await ensurePermission("products.write");
+    const productPayload = sanitizeProductPayload(
+      mapProductToDb(attachOwnership(product))
+    );
     const created = await apiCall(
       "/products",
       "POST",
-      mapProductToDb(attachOwnership(product)),
+      productPayload,
       true
     )
       .then(firstRow)
@@ -434,7 +443,8 @@ export const productAPI = {
   },
   update: async (id: string, product: any) => {
     await ensurePermission("products.write");
-    return apiCall(`/products?id=eq.${id}`, "PATCH", mapProductToDb(product), true)
+    const productPayload = sanitizeProductPayload(mapProductToDb(product));
+    return apiCall(`/products?id=eq.${id}`, "PATCH", productPayload, true)
       .then(firstRow)
       .then(mapProductFromDb);
   },
