@@ -1407,29 +1407,103 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         )}
         {printMode === "receipt" && (
-          <div className="max-w-[80mm] mx-auto p-4 text-[11px]">
-            <h1 className="text-center font-black text-base mb-2">Sales Receipt</h1>
-            <p className="text-center mb-3">{formData.id}</p>
-            <div className="mb-2">
-              <p>Date: {formData.date}</p>
-              <p>Customer: {currentCustomer?.name || "-"}</p>
+          <div className="receipt-print max-w-[80mm] mx-auto px-2 py-3 text-[11px] leading-tight">
+            <div className="text-center border-b border-black pb-2 mb-2">
+              <p className="text-[18px] font-black uppercase tracking-wide">AFTAB AUTOS</p>
+              <p className="text-[10px] mt-1">Main National Highway, Opp Quaid-e-Azam Park, Steel Town</p>
+              <p className="text-[10px]">Tel: 0334-3704587</p>
             </div>
-            <table className="w-full text-[10px]">
+
+            <div className="bg-black text-white text-center text-[12px] font-black py-1 mb-2 uppercase">
+              Sale Receipt
+            </div>
+
+            <div className="space-y-1 mb-2 text-[11px]">
+              <div className="flex justify-between">
+                <span className="font-semibold">Receipt No.</span>
+                <span className="font-black">{formData.id}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Date</span>
+                <span className="font-black">{formData.date}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Time</span>
+                <span className="font-black">{new Date().toLocaleTimeString()}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Operator Name</span>
+                <span className="font-black">Administrator</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Customer Name</span>
+                <span className="font-black text-right">{currentCustomer?.name || "-"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Payment Type</span>
+                <span className="font-black">{(formData.amountReceived || 0) > 0 ? "Cash/Card" : "-"}</span>
+              </div>
+            </div>
+
+            <table className="w-full text-[10px] border-y border-black mb-2">
+              <thead>
+                <tr className="border-b border-black">
+                  <th className="text-left py-1 font-black">Description</th>
+                  <th className="text-right py-1 font-black w-10">Qty</th>
+                  <th className="text-right py-1 font-black w-12">Price</th>
+                  <th className="text-right py-1 font-black w-10">Dis</th>
+                  <th className="text-right py-1 font-black w-12">Total</th>
+                </tr>
+              </thead>
               <tbody>
-                {formData.items.map((item) => (
-                  <tr key={item.productId}>
-                    <td>{item.productName}</td>
-                    <td className="text-right">{item.quantity}</td>
-                    <td className="text-right">{(item.quantity * item.unitPrice).toFixed(0)}</td>
-                  </tr>
-                ))}
+                {formData.items.map((item) => {
+                  const gross = item.quantity * item.unitPrice;
+                  const lineDiscount = item.discountType === "percent"
+                    ? (gross * (item.discountValue || 0)) / 100
+                    : (item.discountValue || 0);
+                  const lineNet = gross - lineDiscount;
+                  return (
+                    <tr key={item.productId} className="border-b border-black/20">
+                      <td className="py-1">{item.productName}</td>
+                      <td className="text-right py-1">{item.quantity}</td>
+                      <td className="text-right py-1">{item.unitPrice.toFixed(0)}</td>
+                      <td className="text-right py-1">{lineDiscount.toFixed(0)}</td>
+                      <td className="text-right py-1">{lineNet.toFixed(0)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
-            <div className="mt-3 border-t border-black pt-2 text-[11px]">
-              <p>Total: Rs. {totals.netTotal.toFixed(2)}</p>
-              <p>Received: Rs. {(formData.amountReceived || 0).toFixed(2)}</p>
-              <p>Balance: Rs. {totals.balanceDue.toFixed(2)}</p>
+
+            <div className="flex justify-between text-[11px] border-b border-black pb-1 mb-1">
+              <span>Item(s) {formData.items.length}</span>
+              <span>Total Qty {totals.totalQty.toFixed(2)}</span>
             </div>
+
+            <div className="space-y-1 text-[12px]">
+              <div className="flex justify-between">
+                <span className="font-semibold">Gross Total</span>
+                <span className="font-black">{totals.itemsSubtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Discount</span>
+                <span className="font-black">{(formData.overallDiscount || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-[14px] border-t border-black pt-1">
+                <span className="font-black">Net Total PKR</span>
+                <span className="font-black">{totals.netTotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Amount Received</span>
+                <span className="font-black">{(formData.amountReceived || 0).toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Cash Back PKR</span>
+                <span className="font-black">{Math.max(0, totals.balanceDue * -1).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <p className="text-center mt-3 font-black tracking-wide">*Thanks For Your Visit*</p>
           </div>
         )}
         {printMode === "a5" && (
@@ -1479,6 +1553,15 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       </div>
       <style>{`
         @media print {
+          @page {
+            margin: 8mm;
+            size: auto;
+          }
+          body {
+            margin: 0 !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
           .invoice-editor-root > *:not(.invoice-print-root) {
             display: none !important;
           }
