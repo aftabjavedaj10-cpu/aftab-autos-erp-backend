@@ -404,9 +404,33 @@ export const productAPI = {
     getFirst(`/products?select=*&id=eq.${id}`).then(mapProductFromDb),
   create: async (product: any) => {
     await ensurePermission("products.write");
-    return apiCall("/products", "POST", mapProductToDb(attachOwnership(product)), true)
+    const created = await apiCall(
+      "/products",
+      "POST",
+      mapProductToDb(attachOwnership(product)),
+      true
+    )
       .then(firstRow)
       .then(mapProductFromDb);
+
+    const openingQty = Number(product?.stock ?? created?.stock ?? 0);
+    const companyId = created?.company_id ?? product?.company_id ?? getActiveCompanyId();
+    const productId = Number(created?.id);
+
+    if (openingQty > 0 && companyId && Number.isFinite(productId)) {
+      await apiCall("/stock_ledger", "POST", {
+        company_id: companyId,
+        product_id: productId,
+        qty: openingQty,
+        direction: "IN",
+        reason: "opening_stock",
+        source: "products",
+        source_id: String(created.id),
+        source_ref: `OPEN-${created.id}`,
+      });
+    }
+
+    return created;
   },
   update: async (id: string, product: any) => {
     await ensurePermission("products.write");
