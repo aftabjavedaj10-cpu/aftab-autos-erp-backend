@@ -474,7 +474,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto animate-in fade-in duration-300 pb-12 relative">
+    <div className="invoice-editor-root max-w-7xl mx-auto animate-in fade-in duration-300 pb-12 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <div className="flex items-center gap-3">
           <button
@@ -1167,7 +1167,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             <div className="inline-flex">
               <button
                 type="button"
-                onClick={() => setIsPrintMenuOpen((prev) => !prev)}
+                onClick={() => {
+                  setIsPrintMenuOpen(false);
+                  handlePrintMode("invoice");
+                }}
                 disabled={isLocked}
                 className={`px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors ${
                   isLocked ? "opacity-60 cursor-not-allowed" : ""
@@ -1323,7 +1326,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
         </div>
       )}
 
-      <div className="hidden print:block text-black">
+      <div className="invoice-print-root hidden print:block text-black">
         {printMode === "invoice" && (
           <div className="max-w-[210mm] mx-auto bg-white p-10 text-black">
             <div className="text-center mb-7">
@@ -1474,6 +1477,16 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         )}
       </div>
+      <style>{`
+        @media print {
+          .invoice-editor-root > *:not(.invoice-print-root) {
+            display: none !important;
+          }
+          .invoice-print-root {
+            display: block !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
