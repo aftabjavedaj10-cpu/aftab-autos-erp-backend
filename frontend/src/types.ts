@@ -102,6 +102,7 @@ export interface StockLedgerEntry {
   direction: "IN" | "OUT" | string;
   reason?: string;
   source?: string;
+  sourceId?: string;
   sourceRef?: string;
   createdAt?: string;
 }

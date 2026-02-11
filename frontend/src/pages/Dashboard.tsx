@@ -62,7 +62,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     const maxNo = stockLedger
       .filter((row) => String(row.source || "").toLowerCase() === "stock_adjustment")
       .reduce((max, row) => {
-        const raw = String(row.sourceRef || "").trim();
+        const raw = String(row.sourceId || row.sourceRef || "").trim();
         const match = raw.match(/^ADJ-(\d{6})$/);
         const value = match ? Number(match[1]) : 0;
         return value > max ? value : max;
@@ -632,7 +632,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                     direction: String(editingStockAdjustment.direction || "IN"),
                     reason: editingStockAdjustment.reason,
                     sourceRef: editingStockAdjustment.sourceRef,
-                    adjustmentNo: editingStockAdjustment.sourceRef,
+                    adjustmentNo: editingStockAdjustment.sourceId || editingStockAdjustment.sourceRef,
                     createdAt: editingStockAdjustment.createdAt,
                   }
                 : undefined
