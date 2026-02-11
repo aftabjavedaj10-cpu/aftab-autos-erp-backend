@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from "react";
 import type { Product, StockLedgerEntry } from "../types";
 import Pagination from "../components/Pagination";
+import { formatDateDMY } from "../services/dateFormat";
 
 interface StockAdjustmentPageProps {
   rows: StockLedgerEntry[];
@@ -134,7 +135,7 @@ const StockAdjustmentPage: React.FC<StockAdjustmentPageProps> = ({
                     <td className="px-4 py-2 text-[10px] font-bold text-slate-500">{row.reason || "-"}</td>
                     <td className="px-4 py-2 text-[10px] font-black text-indigo-600">{row.sourceRef || "-"}</td>
                     <td className="px-4 py-2 text-[10px] font-bold text-slate-400">
-                      {row.createdAt ? new Date(row.createdAt).toLocaleString() : "-"}
+                      {formatDateDMY(row.createdAt)}
                     </td>
                     <td className="px-4 py-2 text-right">
                       <button

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import type { SalesInvoice } from "../types";
 import Pagination from "../components/Pagination";
+import { formatDateDMY } from "../services/dateFormat";
 
 const STATUS_FILTERS = [
   "All Status",
@@ -317,7 +318,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-[10px] text-slate-600 dark:text-slate-400 font-bold">
-                      {inv.date}
+                      {formatDateDMY(inv.date)}
                     </p>
                   </td>
                   <td className="px-4 py-3 text-[10px] font-black text-slate-500 dark:text-slate-400">

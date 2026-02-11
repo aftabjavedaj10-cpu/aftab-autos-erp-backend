@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import type { Product, StockLedgerEntry } from "../types";
 import Pagination from "../components/Pagination";
+import { formatDateDMY } from "../services/dateFormat";
 
 interface StockLedgerPageProps {
   onBack: () => void;
@@ -314,9 +315,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
                       {entry.reason || "-"}
                     </td>
                     <td className="px-4 py-2 text-[10px] font-bold text-slate-400">
-                      {entry.createdAt
-                        ? new Date(entry.createdAt).toLocaleString()
-                        : "-"}
+                      {formatDateDMY(entry.createdAt)}
                     </td>
                   </tr>
                 );

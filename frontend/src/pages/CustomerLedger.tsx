@@ -1,6 +1,7 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import type { Customer, SalesInvoice } from "../types";
 import Pagination from "../components/Pagination";
+import { formatDateDMY } from "../services/dateFormat";
 
 interface LedgerEntry {
   id: string;
@@ -319,7 +320,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
               {paginatedEntries.map((entry, idx) => (
                 <tr key={entry.id} className="hover:bg-slate-50 text-[11px]">
                   <td className="px-4 py-2 font-bold text-slate-500 italic">
-                    {entry.date}
+                    {formatDateDMY(entry.date)}
                   </td>
                   <td className="px-4 py-2 font-black uppercase text-slate-900">
                     {entry.description}
