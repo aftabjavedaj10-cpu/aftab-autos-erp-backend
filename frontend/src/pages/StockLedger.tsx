@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect, useRef } from "react";
 import type { Product, StockLedgerEntry } from "../types";
 import Pagination from "../components/Pagination";
 
@@ -13,10 +13,14 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
   products,
   stockLedger,
 }) => {
-  const [search, setSearch] = useState("");
+  const [productSearch, setProductSearch] = useState("");
+  const [selectedProductId, setSelectedProductId] = useState<string>("");
+  const [showResults, setShowResults] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [direction, setDirection] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   const productMap = useMemo(() => {
     const map = new Map<string, Product>();
@@ -24,40 +28,80 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
     return map;
   }, [products]);
 
+  const filteredProductList = useMemo(() => {
+    const query = productSearch.toLowerCase().trim();
+    if (!query) return products.slice(0, 30);
+    return products
+      .filter((p) => {
+        const name = String(p.name || "").toLowerCase();
+        const code = String(
+          (p as any).productCode || (p as any).product_code || ""
+        ).toLowerCase();
+        const id = String(p.id || "").toLowerCase();
+        return name.includes(query) || code.includes(query) || id.includes(query);
+      })
+      .slice(0, 30);
+  }, [products, productSearch]);
+
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [productSearch, showResults]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectProduct = (product: Product) => {
+    setSelectedProductId(String(product.id));
+    setProductSearch(product.name);
+    setShowResults(false);
+  };
+
+  const handleProductSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showResults) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        Math.min(prev + 1, Math.max(filteredProductList.length - 1, 0))
+      );
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const target = filteredProductList[highlightedIndex];
+      if (target) selectProduct(target);
+      return;
+    }
+    if (e.key === "Escape") {
+      setShowResults(false);
+    }
+  };
+
   const filteredRows = useMemo(() => {
-    const query = search.toLowerCase().trim();
     const dir = direction.toLowerCase();
     return stockLedger.filter((entry) => {
-      const product = productMap.get(String(entry.productId));
-      const productName = (product?.name || "").toLowerCase();
-      const productCode = (
-        product?.productCode ||
-        (product as any)?.product_code ||
-        ""
-      ).toLowerCase();
-      const haystack = [
-        productName,
-        productCode,
-        entry.productId,
-        entry.reason,
-        entry.direction,
-        entry.source,
-        entry.sourceRef,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      const matchesSearch = !query || haystack.includes(query);
+      const matchesProduct =
+        !selectedProductId || String(entry.productId) === String(selectedProductId);
       const matchesDirection =
         dir === "all" || String(entry.direction || "").toLowerCase() === dir;
-      return matchesSearch && matchesDirection;
+      return matchesProduct && matchesDirection;
     });
-  }, [stockLedger, productMap, search, direction]);
+  }, [stockLedger, selectedProductId, direction]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, direction]);
+  }, [selectedProductId, direction]);
 
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
@@ -73,7 +117,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
               onClick={onBack}
               className="p-1.5 bg-white dark:bg-slate-900 border border-slate-100 rounded-lg text-slate-400 hover:text-orange-600 shadow-sm active:scale-95"
             >
-              <span className="text-sm">←</span>
+              <span className="text-sm">&larr;</span>
             </button>
             <h1 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">
               Stock Ledger
@@ -87,17 +131,64 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 mb-4">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <div className="relative w-full md:w-72">
+          <div className="relative w-full md:w-80" ref={searchRef}>
             <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 text-[11px]">
-              🔍
+              Search
             </span>
             <input
               type="text"
-              placeholder="Search product/reason..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 rounded-xl py-2 pl-9 pr-3 text-[11px] font-bold dark:text-white outline-none"
+              placeholder="Search and select product..."
+              value={productSearch}
+              onFocus={() => setShowResults(true)}
+              onChange={(e) => {
+                setProductSearch(e.target.value);
+                setSelectedProductId("");
+                setShowResults(true);
+              }}
+              onKeyDown={handleProductSearchKeyDown}
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-100 rounded-xl py-2 pl-16 pr-12 text-[11px] font-bold dark:text-white outline-none"
             />
+            {!!selectedProductId && (
+              <button
+                onClick={() => {
+                  setSelectedProductId("");
+                  setProductSearch("");
+                  setShowResults(false);
+                }}
+                className="absolute inset-y-0 right-3 text-slate-400 hover:text-rose-600 text-xs font-black"
+                title="Clear selection"
+              >
+                X
+              </button>
+            )}
+            {showResults && (
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto">
+                {filteredProductList.length > 0 ? (
+                  filteredProductList.map((p, idx) => (
+                    <button
+                      key={p.id}
+                      onClick={() => selectProduct(p)}
+                      className={`w-full text-left px-4 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0 ${
+                        highlightedIndex === idx
+                          ? "bg-orange-50 dark:bg-slate-800"
+                          : "hover:bg-orange-50 dark:hover:bg-slate-800"
+                      }`}
+                    >
+                      <p className="text-[11px] font-black text-slate-900 dark:text-white uppercase">
+                        {p.name}
+                      </p>
+                      <p className="text-[9px] text-slate-400 font-bold uppercase">
+                        {(p as any).productCode || (p as any).product_code || p.id}
+                      </p>
+                    </button>
+                  ))
+                ) : (
+                  <div className="px-4 py-3 text-[11px] font-bold text-slate-400">
+                    No products found
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           <div className="w-full md:w-40">
             <select
@@ -111,7 +202,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
             </select>
           </div>
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            {filteredRows.length} / {stockLedger.length}
+            {selectedProductId ? "Selected product entries" : "All product entries"}: {filteredRows.length}
           </div>
         </div>
       </div>
@@ -139,7 +230,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
                       {product?.name || entry.productId}
                     </td>
                     <td className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">
-                      {product?.productCode || "-"}
+                      {(product as any)?.productCode || (product as any)?.product_code || "-"}
                     </td>
                     <td className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">
                       {product?.unit || "-"}
@@ -159,12 +250,12 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
                       {entry.qty}
                     </td>
                     <td className="px-4 py-2 text-[10px] font-bold text-slate-500">
-                      {entry.reason || "—"}
+                      {entry.reason || "-"}
                     </td>
                     <td className="px-4 py-2 text-[10px] font-bold text-slate-400">
                       {entry.createdAt
                         ? new Date(entry.createdAt).toLocaleString()
-                        : "—"}
+                        : "-"}
                     </td>
                   </tr>
                 );
