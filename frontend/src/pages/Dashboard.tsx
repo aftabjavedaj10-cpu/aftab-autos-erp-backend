@@ -19,7 +19,7 @@ import AddCategoryPage from "./AddCategory";
 import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
-import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry } from "../types";
+import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, salesInvoiceAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
@@ -43,6 +43,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [stockLedger, setStockLedger] = useState<StockLedgerEntry[]>([]);
+  const [activeCompany, setActiveCompany] = useState<Company | null>(null);
   const [pinnedReportIds, setPinnedReportIds] = useState<number[]>(() => {
     try {
       const stored = localStorage.getItem("pinnedReports");
@@ -139,6 +140,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         }
 
         const companyId = getActiveCompanyId();
+        if (companyId) {
+          const company = await companyAPI.getById(companyId).catch(() => null);
+          setActiveCompany(company);
+        }
         const [productsData, customersData, vendorsData, categoriesData, salesInvoicesData, ledgerData] = await Promise.all([
           productAPI.getAll().catch(() => []),
           customerAPI.getAll().catch(() => []),
@@ -703,6 +708,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={salesInvoices}
             products={products}
             customers={customers}
+            company={activeCompany || undefined}
             onBack={() => {
               setEditingSalesInvoice(undefined);
               setActiveTab("sales_invoice");

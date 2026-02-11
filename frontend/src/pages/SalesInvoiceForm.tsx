@@ -1,12 +1,13 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types";
+import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types";
 
 interface SalesInvoiceFormPageProps {
   invoice?: SalesInvoice;
   invoices: SalesInvoice[];
   products: Product[];
   customers: Customer[];
+  company?: Company;
   onBack: () => void;
   onSave: (invoice: SalesInvoice, stayOnPage: boolean) => void;
   onNavigate?: (invoice: SalesInvoice) => void;
@@ -20,6 +21,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   invoices,
   products,
   customers,
+  company,
   onBack,
   onSave,
   onNavigate,
@@ -1326,10 +1328,17 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
         </div>
       )}
 
-      <div className="invoice-print-root hidden print:block text-black">
+      <div className="invoice-print-root hidden print:block text-black bg-white">
         {printMode === "invoice" && (
-          <div className="max-w-[210mm] mx-auto bg-white p-10 text-black">
+          <div className="print-sheet-a4 bg-white p-10 text-black">
             <div className="text-center mb-7">
+              {company?.logoUrl ? (
+                <img
+                  src={company.logoUrl}
+                  alt="Company logo"
+                  className="h-16 mx-auto object-contain mb-2"
+                />
+              ) : null}
               <div className="text-3xl leading-none mb-2">|</div>
               <h1 className="text-[40px] tracking-wide font-serif font-semibold leading-none">INVOICE</h1>
             </div>
@@ -1350,8 +1359,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               </div>
               <div>
                 <p className="text-[12px] font-semibold">Issued from:</p>
-                <p className="text-[11px] mt-1">Aftab Autos ERP</p>
-                <p className="text-[11px]">Pakistan</p>
+                <p className="text-[11px] mt-1">{company?.name || "Aftab Autos ERP"}</p>
+                <p className="text-[11px]">{company?.address || "Pakistan"}</p>
               </div>
             </div>
 
@@ -1407,11 +1416,18 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         )}
         {printMode === "receipt" && (
-          <div className="receipt-print max-w-[80mm] mx-auto px-2 py-3 text-[11px] leading-tight">
+          <div className="receipt-print print-sheet-80mm px-2 py-3 text-[11px] leading-tight">
             <div className="text-center border-b border-black pb-2 mb-2">
-              <p className="text-[18px] font-black uppercase tracking-wide">AFTAB AUTOS</p>
-              <p className="text-[10px] mt-1">Main National Highway, Opp Quaid-e-Azam Park, Steel Town</p>
-              <p className="text-[10px]">Tel: 0334-3704587</p>
+              {company?.logoUrl ? (
+                <img
+                  src={company.logoUrl}
+                  alt="Company logo"
+                  className="h-12 mx-auto object-contain mb-1"
+                />
+              ) : null}
+              <p className="text-[18px] font-black uppercase tracking-wide">{company?.name || "AFTAB AUTOS"}</p>
+              <p className="text-[10px] mt-1">{company?.address || "Main National Highway, Opp Quaid-e-Azam Park, Steel Town"}</p>
+              <p className="text-[10px]">{company?.phone ? `Tel: ${company.phone}` : "Tel: 0334-3704587"}</p>
             </div>
 
             <div className="bg-black text-white text-center text-[12px] font-black py-1 mb-2 uppercase">
@@ -1557,16 +1573,43 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             margin: 8mm;
             size: auto;
           }
-          body {
+          html, body {
             margin: 0 !important;
+            padding: 0 !important;
+            background: #fff !important;
             -webkit-print-color-adjust: exact;
             print-color-adjust: exact;
           }
-          .invoice-editor-root > *:not(.invoice-print-root) {
-            display: none !important;
+          body * {
+            visibility: hidden !important;
+          }
+          .invoice-print-root,
+          .invoice-print-root * {
+            visibility: visible !important;
           }
           .invoice-print-root {
+            position: fixed !important;
+            inset: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
             display: block !important;
+            overflow: hidden !important;
+            background: #fff !important;
+            z-index: 999999 !important;
+          }
+          .print-sheet-a4 {
+            width: 210mm !important;
+            min-height: 297mm !important;
+            margin: 0 auto !important;
+            box-sizing: border-box !important;
+            background: #fff !important;
+            page-break-after: always;
+          }
+          .print-sheet-80mm {
+            width: 80mm !important;
+            margin: 0 auto !important;
+            box-sizing: border-box !important;
+            background: #fff !important;
           }
         }
       `}</style>
