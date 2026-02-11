@@ -1330,13 +1330,13 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
       <div className="invoice-print-root hidden print:block text-black bg-white">
         {printMode === "invoice" && (
-          <div className="print-sheet-a4 bg-white p-10 text-black">
+          <div className="print-sheet-a4 bg-white p-6 text-black">
             <div className="text-center mb-7">
               {company?.logoUrl ? (
                 <img
                   src={company.logoUrl}
                   alt="Company logo"
-                  className="h-16 mx-auto object-contain mb-2"
+                  className="h-24 mx-auto object-contain mb-2"
                 />
               ) : null}
               <div className="text-3xl leading-none mb-2">|</div>
@@ -1416,13 +1416,13 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         )}
         {printMode === "receipt" && (
-          <div className="receipt-print print-sheet-80mm px-2 py-3 text-[11px] leading-tight">
+          <div className="receipt-print print-sheet-80mm px-1 py-2 text-[11px] leading-tight">
             <div className="text-center border-b border-black pb-2 mb-2">
               {company?.logoUrl ? (
                 <img
                   src={company.logoUrl}
                   alt="Company logo"
-                  className="h-12 mx-auto object-contain mb-1"
+                  className="h-16 mx-auto object-contain mb-1"
                 />
               ) : null}
               <p className="text-[18px] font-black uppercase tracking-wide">{company?.name || "AFTAB AUTOS"}</p>
@@ -1570,7 +1570,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       <style>{`
         @media print {
           @page {
-            margin: 8mm;
+            margin: 4mm;
             size: auto;
           }
           html, body {
@@ -1600,14 +1600,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           .print-sheet-a4 {
             width: 210mm !important;
             min-height: 297mm !important;
-            margin: 0 auto !important;
+            margin: 0 !important;
             box-sizing: border-box !important;
             background: #fff !important;
             page-break-after: always;
           }
           .print-sheet-80mm {
             width: 80mm !important;
-            margin: 0 auto !important;
+            margin: 0 !important;
             box-sizing: border-box !important;
             background: #fff !important;
           }
