@@ -99,6 +99,47 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
     });
   }, [stockLedger, selectedProductId, direction]);
 
+  const selectedProduct = useMemo(() => {
+    if (!selectedProductId) return undefined;
+    return productMap.get(String(selectedProductId));
+  }, [productMap, selectedProductId]);
+
+  const stockSummary = useMemo(() => {
+    if (!selectedProductId) {
+      return { onHand: 0, reserved: 0, available: 0 };
+    }
+
+    const onHandFromProduct = Number(
+      (selectedProduct as any)?.stockOnHand ??
+      (selectedProduct as any)?.stock ??
+      0
+    );
+    const reservedFromProduct = Number(
+      (selectedProduct as any)?.stockReserved ?? 0
+    );
+    const availableFromProduct = Number(
+      (selectedProduct as any)?.stockAvailable ??
+      Math.max(0, onHandFromProduct - reservedFromProduct)
+    );
+
+    const ledgerOnHand = stockLedger
+      .filter((entry) => String(entry.productId) === String(selectedProductId))
+      .reduce((sum, entry) => {
+        const qty = Number(entry.qty || 0);
+        const dir = String(entry.direction || "").toUpperCase();
+        return sum + (dir === "OUT" ? -qty : qty);
+      }, 0);
+
+    // Prefer live product snapshot where available; fallback to ledger aggregate.
+    const onHand = Number.isFinite(onHandFromProduct) ? onHandFromProduct : ledgerOnHand;
+    const reserved = Number.isFinite(reservedFromProduct) ? reservedFromProduct : 0;
+    const available = Number.isFinite(availableFromProduct)
+      ? availableFromProduct
+      : Math.max(0, onHand - reserved);
+
+    return { onHand, reserved, available };
+  }, [selectedProductId, selectedProduct, stockLedger]);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedProductId, direction]);
@@ -208,6 +249,35 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
         </div>
       </div>
 
+      {selectedProductId && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
+              Stock In Hand
+            </p>
+            <p className="text-xl font-black text-slate-900 dark:text-white">
+              {stockSummary.onHand}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
+              Reserved Qty
+            </p>
+            <p className="text-xl font-black text-amber-600">
+              {stockSummary.reserved}
+            </p>
+          </div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl p-4">
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">
+              Available Qty
+            </p>
+            <p className="text-xl font-black text-emerald-600">
+              {stockSummary.available}
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -218,6 +288,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
                 <th className="px-4 py-3">Unit</th>
                 <th className="px-4 py-3">Direction</th>
                 <th className="px-4 py-3">Qty</th>
+                <th className="px-4 py-3">Invoice #</th>
                 <th className="px-4 py-3">Reason</th>
                 <th className="px-4 py-3">When</th>
               </tr>
@@ -250,6 +321,9 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
                     <td className="px-4 py-2 font-black text-slate-700">
                       {entry.qty}
                     </td>
+                    <td className="px-4 py-2 text-[10px] font-black text-indigo-600">
+                      {entry.sourceRef || "-"}
+                    </td>
                     <td className="px-4 py-2 text-[10px] font-bold text-slate-500">
                       {entry.reason || "-"}
                     </td>
@@ -264,7 +338,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
               {paginatedRows.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={8}
                     className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest"
                   >
                     No ledger entries.
