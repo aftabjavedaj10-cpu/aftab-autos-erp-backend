@@ -73,9 +73,17 @@ const SettingsPage: React.FC = () => {
   const [roles, setRoles] = useState<CompanyRole[]>([]);
   const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [newRoleName, setNewRoleName] = useState("");
-  const [activeSection, setActiveSection] = useState<"company" | "members" | "roles">(
+  const [activeSection, setActiveSection] = useState<"company" | "members" | "roles" | "print">(
     "company"
   );
+  const [printSettings, setPrintSettings] = useState({
+    defaultTemplate: "invoice",
+    showCompanyLogo: true,
+    showCompanyAddress: true,
+    showTaxId: true,
+    showNotes: true,
+    footerText: "",
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -236,6 +244,20 @@ const SettingsPage: React.FC = () => {
         // silent fail; roles UI will show empty state
       });
   }, [activeCompanyId]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem("printTemplateSettings");
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw);
+      setPrintSettings((prev) => ({
+        ...prev,
+        ...parsed,
+      }));
+    } catch {
+      // ignore invalid local storage payload
+    }
+  }, []);
 
   const handleCreateCompany = async () => {
     if (!companyName.trim()) {
@@ -646,6 +668,16 @@ const SettingsPage: React.FC = () => {
                 }`}
               >
                 Roles & Permissions
+              </button>
+              <button
+                onClick={() => setActiveSection("print")}
+                className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                  activeSection === "print"
+                    ? "bg-slate-900 text-white dark:bg-orange-600"
+                    : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                }`}
+              >
+                Print & Template
               </button>
             </div>
 
@@ -1321,6 +1353,135 @@ const SettingsPage: React.FC = () => {
                 ))}
               </div>
             )}
+              </div>
+            </div>
+          )}
+
+          {activeSection === "print" && (
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+              <h3 className="text-[10px] font-black text-slate-900 dark:text-white uppercase mb-3">
+                Print & Template Settings
+              </h3>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-4">
+                Customize default print behavior and layout visibility.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Default Template
+                  </label>
+                  <select
+                    value={printSettings.defaultTemplate}
+                    onChange={(e) =>
+                      setPrintSettings((prev) => ({
+                        ...prev,
+                        defaultTemplate: e.target.value,
+                      }))
+                    }
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
+                  >
+                    <option value="invoice">Invoice</option>
+                    <option value="receipt">Receipt</option>
+                    <option value="a5">A5</option>
+                    <option value="token">Product Token</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                    Footer Text
+                  </label>
+                  <input
+                    value={printSettings.footerText}
+                    onChange={(e) =>
+                      setPrintSettings((prev) => ({
+                        ...prev,
+                        footerText: e.target.value,
+                      }))
+                    }
+                    placeholder="Thank you for your business"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
+                  />
+                </div>
+
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                  <span>Show Company Logo</span>
+                  <input
+                    type="checkbox"
+                    checked={printSettings.showCompanyLogo}
+                    onChange={(e) =>
+                      setPrintSettings((prev) => ({
+                        ...prev,
+                        showCompanyLogo: e.target.checked,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                  <span>Show Company Address</span>
+                  <input
+                    type="checkbox"
+                    checked={printSettings.showCompanyAddress}
+                    onChange={(e) =>
+                      setPrintSettings((prev) => ({
+                        ...prev,
+                        showCompanyAddress: e.target.checked,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                  <span>Show Tax ID (NTN)</span>
+                  <input
+                    type="checkbox"
+                    checked={printSettings.showTaxId}
+                    onChange={(e) =>
+                      setPrintSettings((prev) => ({
+                        ...prev,
+                        showTaxId: e.target.checked,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                  <span>Show Invoice Notes</span>
+                  <input
+                    type="checkbox"
+                    checked={printSettings.showNotes}
+                    onChange={(e) =>
+                      setPrintSettings((prev) => ({
+                        ...prev,
+                        showNotes: e.target.checked,
+                      }))
+                    }
+                  />
+                </label>
+              </div>
+
+              <div className="mt-4">
+                <button
+                  onClick={() => {
+                    localStorage.setItem(
+                      "printTemplateSettings",
+                      JSON.stringify(printSettings)
+                    );
+                    setSuccess("Print template settings saved");
+                    setError(null);
+                  }}
+                  disabled={saving || !canManageCompany}
+                  className="bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
+                >
+                  Save Print Settings
+                </button>
+                {!canManageCompany && (
+                  <p className="text-[10px] text-slate-400 mt-2">
+                    Only admins can change print settings.
+                  </p>
+                )}
               </div>
             </div>
           )}

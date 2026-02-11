@@ -13,6 +13,8 @@ interface SalesInvoiceFormPageProps {
   onNavigateNew?: () => void;
 }
 
+type PrintMode = "invoice" | "receipt" | "a5" | "token";
+
 const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   invoice,
   invoices,
@@ -69,6 +71,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
   const [isRevising, setIsRevising] = useState(false);
+  const [printMode, setPrintMode] = useState<PrintMode>("invoice");
+  const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -334,7 +338,20 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
   const handlePrintSelected = () => {
     if (selectedItemIds.size === 0) return;
-    window.print();
+    const selected = formData.items.filter((i) => selectedItemIds.has(i.productId));
+    setPrintItems(selected);
+    setPrintMode("token");
+    setTimeout(() => window.print(), 50);
+  };
+
+  const handlePrintMode = (mode: PrintMode) => {
+    if (mode === "token") {
+      setPrintItems(formData.items);
+    } else {
+      setPrintItems([]);
+    }
+    setPrintMode(mode);
+    setTimeout(() => window.print(), 50);
   };
 
   const computePaymentStatus = () => {
@@ -1172,28 +1189,40 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             {isPrintMenuOpen && (
               <div className="absolute bottom-full right-0 mb-2 w-48 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-lg overflow-hidden z-[300]">
                 <button
-                  onClick={() => setIsPrintMenuOpen(false)}
+                  onClick={() => {
+                    setIsPrintMenuOpen(false);
+                    handlePrintMode("invoice");
+                  }}
                   className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
                 >
                   Invoice
                 </button>
                 <button
-                  onClick={() => setIsPrintMenuOpen(false)}
+                  onClick={() => {
+                    setIsPrintMenuOpen(false);
+                    handlePrintMode("receipt");
+                  }}
                   className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
                 >
                   Receipt
                 </button>
                 <button
-                  onClick={() => setIsPrintMenuOpen(false)}
+                  onClick={() => {
+                    setIsPrintMenuOpen(false);
+                    handlePrintMode("a5");
+                  }}
                   className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
                 >
                   A5
                 </button>
                 <button
-                  onClick={() => setIsPrintMenuOpen(false)}
+                  onClick={() => {
+                    setIsPrintMenuOpen(false);
+                    handlePrintMode("token");
+                  }}
                   className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
                 >
-                  Packing Slip
+                  Product Token
                 </button>
               </div>
             )}
@@ -1293,6 +1322,126 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         </div>
       )}
+
+      <div className="hidden print:block text-black">
+        {printMode === "invoice" && (
+          <div className="max-w-[210mm] mx-auto p-8">
+            <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+              <div>
+                <h1 className="text-2xl font-black">Sales Invoice</h1>
+                <p className="text-sm">{formData.id}</p>
+              </div>
+              <div className="text-right text-sm">
+                <p>Date: {formData.date}</p>
+                <p>Due: {formData.dueDate}</p>
+                <p>Status: {formData.status} / {formData.paymentStatus}</p>
+              </div>
+            </div>
+            <div className="mb-4 text-sm">
+              <p><strong>Customer:</strong> {currentCustomer?.name || "-"}</p>
+              <p><strong>Reference:</strong> {formData.reference || "-"}</p>
+              <p><strong>Vehicle #:</strong> {formData.vehicleNumber || "-"}</p>
+            </div>
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-b border-black">
+                  <th className="text-left py-2">Item</th>
+                  <th className="text-right py-2">Qty</th>
+                  <th className="text-right py-2">Rate</th>
+                  <th className="text-right py-2">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData.items.map((item) => (
+                  <tr key={item.productId} className="border-b border-slate-300">
+                    <td className="py-1">{item.productName}</td>
+                    <td className="text-right py-1">{item.quantity}</td>
+                    <td className="text-right py-1">{item.unitPrice.toFixed(2)}</td>
+                    <td className="text-right py-1">{(item.quantity * item.unitPrice).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-4 text-right text-sm">
+              <p>Subtotal: Rs. {totals.itemsSubtotal.toFixed(2)}</p>
+              <p>Discount: Rs. {(formData.overallDiscount || 0).toFixed(2)}</p>
+              <p><strong>Total: Rs. {totals.netTotal.toFixed(2)}</strong></p>
+              <p>Received: Rs. {(formData.amountReceived || 0).toFixed(2)}</p>
+              <p><strong>Balance: Rs. {totals.balanceDue.toFixed(2)}</strong></p>
+            </div>
+          </div>
+        )}
+        {printMode === "receipt" && (
+          <div className="max-w-[80mm] mx-auto p-4 text-[11px]">
+            <h1 className="text-center font-black text-base mb-2">Sales Receipt</h1>
+            <p className="text-center mb-3">{formData.id}</p>
+            <div className="mb-2">
+              <p>Date: {formData.date}</p>
+              <p>Customer: {currentCustomer?.name || "-"}</p>
+            </div>
+            <table className="w-full text-[10px]">
+              <tbody>
+                {formData.items.map((item) => (
+                  <tr key={item.productId}>
+                    <td>{item.productName}</td>
+                    <td className="text-right">{item.quantity}</td>
+                    <td className="text-right">{(item.quantity * item.unitPrice).toFixed(0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="mt-3 border-t border-black pt-2 text-[11px]">
+              <p>Total: Rs. {totals.netTotal.toFixed(2)}</p>
+              <p>Received: Rs. {(formData.amountReceived || 0).toFixed(2)}</p>
+              <p>Balance: Rs. {totals.balanceDue.toFixed(2)}</p>
+            </div>
+          </div>
+        )}
+        {printMode === "a5" && (
+          <div className="max-w-[148mm] mx-auto p-5 text-sm">
+            <div className="flex justify-between border-b border-black pb-2 mb-3">
+              <h1 className="font-black">A5 Invoice</h1>
+              <span>{formData.id}</span>
+            </div>
+            <p>Customer: {currentCustomer?.name || "-"}</p>
+            <p>Date: {formData.date}</p>
+            <table className="w-full mt-3 text-[11px]">
+              <thead>
+                <tr className="border-b border-black">
+                  <th className="text-left">Product</th>
+                  <th className="text-right">Qty</th>
+                  <th className="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData.items.map((item) => (
+                  <tr key={item.productId}>
+                    <td>{item.productName}</td>
+                    <td className="text-right">{item.quantity}</td>
+                    <td className="text-right">{(item.quantity * item.unitPrice).toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {printMode === "token" && (
+          <div className="p-4 space-y-4">
+            {(printItems.length > 0 ? printItems : formData.items).map((item, idx) => (
+              <div key={`${item.productId}-${idx}`} className="max-w-[80mm] mx-auto border-2 border-black p-3 break-after-page">
+                <div className="flex justify-between border-b border-black pb-1 mb-2">
+                  <span className="font-black text-sm">PRODUCT TOKEN</span>
+                  <span className="text-xs">{idx + 1}</span>
+                </div>
+                <p className="text-sm font-black uppercase">{item.productName}</p>
+                <p className="text-xs mt-1">Code: {item.productCode || "-"}</p>
+                <p className="text-xs">Invoice: {formData.id}</p>
+                <p className="text-2xl font-black mt-2">{item.quantity} {item.unit || "PC"}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
