@@ -105,6 +105,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [posOpen, setPosOpen] = useState(false);
   const [salesOpen, setSalesOpen] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [inventoryOpen, setInventoryOpen] = useState(false);
 
   const effectiveCollapsed = isMobileOpen ? false : isCollapsed;
   const permissionFlags = useMemo(() => ({
@@ -228,6 +229,20 @@ const Sidebar: React.FC<SidebarProps> = ({
             { label: "Purchase Invoice", value: "purchase_invoice" },
             { label: "Purchase Return", value: "purchase_return" },
             { label: "Make Payment", value: "make_payment" }
+          ]}
+        />
+
+        <SidebarDropdown
+          icon={<FiPackage />}
+          label="Inventory"
+          isCollapsed={effectiveCollapsed}
+          isOpen={inventoryOpen}
+          toggle={() => setInventoryOpen(!inventoryOpen)}
+          activeValue={activeTab}
+          onItemClick={(val) => onTabChange(val)}
+          items={[
+            { label: "Stock Adjustment", value: "stock_adjustment" },
+            { label: "Add Adjustment", value: "add_stock_adjustment" },
           ]}
         />
 

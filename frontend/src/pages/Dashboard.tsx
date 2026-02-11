@@ -7,6 +7,8 @@ import ReportsPage from "./Reports";
 import CustomerLedgerPage from "./CustomerLedger";
 import VendorLedgerPage from "./VendorLedger";
 import StockLedgerPage from "./StockLedger";
+import StockAdjustmentPage from "./StockAdjustment";
+import AddStockAdjustmentPage from "./AddStockAdjustment";
 import AddProducts from "./AddProducts";
 import CustomersPage from "./CustomersPage";
 import AddCustomerPage from "./AddCustomer";
@@ -262,6 +264,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const handleAddSalesInvoice = () => {
     setEditingSalesInvoice(undefined);
     setActiveTab("add_sales_invoice");
+  };
+
+  const handleAddStockAdjustment = () => {
+    setActiveTab("add_stock_adjustment");
   };
 
   const handleEditSalesInvoice = (invoice: SalesInvoice) => {
@@ -578,6 +584,37 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onBack={() => setActiveTab("reports")}
             products={products}
             stockLedger={stockLedger}
+          />
+        )}
+
+        {activeTab === "stock_adjustment" && (
+          <StockAdjustmentPage
+            rows={stockLedger}
+            products={products}
+            onAddClick={handleAddStockAdjustment}
+          />
+        )}
+
+        {activeTab === "add_stock_adjustment" && (
+          <AddStockAdjustmentPage
+            products={products}
+            onBack={() => setActiveTab("stock_adjustment")}
+            onSave={async (payload) => {
+              try {
+                await stockLedgerAPI.createAdjustment(payload);
+                const companyId = getActiveCompanyId();
+                const ledgerData = companyId
+                  ? await stockLedgerAPI.listRecent(companyId, 5000)
+                  : [];
+                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+                setStockLedger(normalizedLedger);
+                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                setActiveTab("stock_adjustment");
+              } catch (err: any) {
+                setError(err?.message || "Failed to save stock adjustment");
+                console.error(err);
+              }
+            }}
           />
         )}
 

@@ -66,14 +66,24 @@ const apiCall = async (
     } catch {
       // ignore json parse errors
     }
+    if (errorMessage.includes("products_product_code_key")) {
+      errorMessage = "Product code already exists. Use a unique product code.";
+    }
     throw new Error(errorMessage);
   }
 
   if (response.status === 204) {
     return null;
   }
-
-  return response.json();
+  const raw = await response.text();
+  if (!raw || !raw.trim()) {
+    return null;
+  }
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
 };
 
 const functionCall = async (path: string, body: any) => {
@@ -682,6 +692,49 @@ export const stockLedgerAPI = {
       `/stock_ledger?select=*&company_id=eq.${companyId}&order=created_at.desc&limit=${limit}`
     );
     return Array.isArray(rows) ? rows.map(mapStockLedgerFromDb) : rows;
+  },
+  createAdjustment: async (payload: {
+    productId: string | number;
+    qty: number;
+    direction: "IN" | "OUT";
+    reason?: string;
+    sourceRef?: string;
+  }) => {
+    await ensurePermission("products.write");
+    const companyId = getActiveCompanyId();
+    if (!companyId) {
+      throw new Error("Company not set");
+    }
+    const productId = Number(payload.productId);
+    if (!Number.isFinite(productId) || productId <= 0) {
+      throw new Error("Invalid product");
+    }
+    const qty = Number(payload.qty || 0);
+    if (!Number.isFinite(qty) || qty <= 0) {
+      throw new Error("Quantity must be greater than 0");
+    }
+    const direction = String(payload.direction || "").toUpperCase();
+    if (direction !== "IN" && direction !== "OUT") {
+      throw new Error("Invalid direction");
+    }
+
+    const sourceId = `ADJ-${Date.now()}`;
+    const created = await apiCall(
+      "/stock_ledger",
+      "POST",
+      {
+        company_id: companyId,
+        product_id: productId,
+        qty,
+        direction,
+        reason: payload.reason || "stock_adjustment",
+        source: "stock_adjustment",
+        source_id: sourceId,
+        source_ref: payload.sourceRef || sourceId,
+      },
+      true
+    ).then(firstRow);
+    return mapStockLedgerFromDb(created);
   },
 };
 
