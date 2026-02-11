@@ -1325,49 +1325,81 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
       <div className="hidden print:block text-black">
         {printMode === "invoice" && (
-          <div className="max-w-[210mm] mx-auto p-8">
-            <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
+          <div className="max-w-[210mm] mx-auto bg-white p-10 text-black">
+            <div className="text-center mb-7">
+              <div className="text-3xl leading-none mb-2">|</div>
+              <h1 className="text-[40px] tracking-wide font-serif font-semibold leading-none">INVOICE</h1>
+            </div>
+
+            <div className="grid grid-cols-4 gap-4 border-b border-black/30 pb-3 mb-4">
               <div>
-                <h1 className="text-2xl font-black">Sales Invoice</h1>
-                <p className="text-sm">{formData.id}</p>
+                <p className="text-[12px] font-semibold">Issued to:</p>
+                <p className="text-[11px] mt-1">{currentCustomer?.name || "-"}</p>
+                <p className="text-[11px]">{currentCustomer?.address || "-"}</p>
               </div>
-              <div className="text-right text-sm">
-                <p>Date: {formData.date}</p>
-                <p>Due: {formData.dueDate}</p>
-                <p>Status: {formData.status} / {formData.paymentStatus}</p>
+              <div>
+                <p className="text-[12px] font-semibold">Invoice No.</p>
+                <p className="text-[11px] mt-1">{formData.id}</p>
+              </div>
+              <div>
+                <p className="text-[12px] font-semibold">Date</p>
+                <p className="text-[11px] mt-1">{formData.date}</p>
+              </div>
+              <div>
+                <p className="text-[12px] font-semibold">Issued from:</p>
+                <p className="text-[11px] mt-1">Aftab Autos ERP</p>
+                <p className="text-[11px]">Pakistan</p>
               </div>
             </div>
-            <div className="mb-4 text-sm">
-              <p><strong>Customer:</strong> {currentCustomer?.name || "-"}</p>
-              <p><strong>Reference:</strong> {formData.reference || "-"}</p>
-              <p><strong>Vehicle #:</strong> {formData.vehicleNumber || "-"}</p>
-            </div>
-            <table className="w-full border-collapse text-sm">
+
+            <table className="w-full border-collapse text-[12px] mb-6">
               <thead>
-                <tr className="border-b border-black">
-                  <th className="text-left py-2">Item</th>
-                  <th className="text-right py-2">Qty</th>
-                  <th className="text-right py-2">Rate</th>
-                  <th className="text-right py-2">Amount</th>
+                <tr className="border-b border-black/50">
+                  <th className="text-left py-2 font-semibold">Description</th>
+                  <th className="text-right py-2 font-semibold w-24">Price</th>
+                  <th className="text-right py-2 font-semibold w-20">Qty</th>
+                  <th className="text-right py-2 font-semibold w-24">Total</th>
                 </tr>
               </thead>
               <tbody>
                 {formData.items.map((item) => (
-                  <tr key={item.productId} className="border-b border-slate-300">
-                    <td className="py-1">{item.productName}</td>
-                    <td className="text-right py-1">{item.quantity}</td>
-                    <td className="text-right py-1">{item.unitPrice.toFixed(2)}</td>
-                    <td className="text-right py-1">{(item.quantity * item.unitPrice).toFixed(2)}</td>
+                  <tr key={item.productId} className="border-b border-black/10">
+                    <td className="py-2">{item.productName}</td>
+                    <td className="text-right py-2">{item.unitPrice.toFixed(2)}</td>
+                    <td className="text-right py-2">{item.quantity}</td>
+                    <td className="text-right py-2">
+                      {(item.quantity * item.unitPrice).toFixed(2)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            <div className="mt-4 text-right text-sm">
-              <p>Subtotal: Rs. {totals.itemsSubtotal.toFixed(2)}</p>
-              <p>Discount: Rs. {(formData.overallDiscount || 0).toFixed(2)}</p>
-              <p><strong>Total: Rs. {totals.netTotal.toFixed(2)}</strong></p>
-              <p>Received: Rs. {(formData.amountReceived || 0).toFixed(2)}</p>
-              <p><strong>Balance: Rs. {totals.balanceDue.toFixed(2)}</strong></p>
+
+            <div className="grid grid-cols-2 gap-6 border-t border-black/30 pt-4">
+              <div>
+                <p className="text-[13px] font-semibold mb-1">Payment Method:</p>
+                <p className="text-[12px]">Cash / Card</p>
+                <p className="text-[11px] text-black/70 mt-6 font-semibold">Terms & Conditions:</p>
+                <p className="text-[11px] leading-relaxed mt-1">
+                  {formData.notes?.trim()
+                    ? formData.notes
+                    : "Goods once sold cannot be returned without prior approval."}
+                </p>
+              </div>
+              <div className="text-right">
+                <div className="flex justify-between text-[12px] mb-1">
+                  <span>Subtotal:</span>
+                  <span>{totals.itemsSubtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-[12px] mb-1">
+                  <span>Tax (%):</span>
+                  <span>0.00</span>
+                </div>
+                <div className="flex justify-between text-[13px] font-semibold bg-black/5 px-3 py-1.5">
+                  <span>Total:</span>
+                  <span>{totals.netTotal.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
           </div>
         )}
