@@ -13,6 +13,12 @@ interface LedgerEntry {
   credit: number;
 }
 
+const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
+  if (a.date !== b.date) return a.date.localeCompare(b.date);
+  if (a.reference !== b.reference) return a.reference.localeCompare(b.reference);
+  return a.id.localeCompare(b.id);
+};
+
 const TRANSACTION_TYPES = ["All Types", "Invoice", "Receipt", "Return"];
 
 interface CustomerLedgerPageProps {
@@ -26,9 +32,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
   customers,
   salesInvoices,
 }) => {
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(
-    customers[0]?.id || ""
-  );
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
   const [startDate, setStartDate] = useState<string>("2023-10-01");
@@ -46,12 +50,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
     () => customers.find((c) => c.id === selectedCustomerId),
     [selectedCustomerId, customers]
   );
-
-  useEffect(() => {
-    if (selectedCustomer) {
-      setCustomerSearch(selectedCustomer.name);
-    }
-  }, [selectedCustomerId, selectedCustomer]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -120,7 +118,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         }
       });
 
-    return entries.sort((a, b) => a.date.localeCompare(b.date));
+    return entries.sort(compareLedgerEntries);
   }, [customers, salesInvoices, selectedCustomerId]);
 
   const filteredEntries = useMemo(() => {
@@ -230,6 +228,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
                 onFocus={() => setShowResults(true)}
                 onChange={(e) => {
                   setCustomerSearch(e.target.value);
+                  setSelectedCustomerId("");
                   setShowResults(true);
                 }}
                 onKeyDown={handleCustomerSearchKeyDown}

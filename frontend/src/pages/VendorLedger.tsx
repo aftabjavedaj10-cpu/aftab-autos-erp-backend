@@ -13,6 +13,12 @@ interface LedgerEntry {
   credit: number;
 }
 
+const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
+  if (a.date !== b.date) return a.date.localeCompare(b.date);
+  if (a.reference !== b.reference) return a.reference.localeCompare(b.reference);
+  return a.id.localeCompare(b.id);
+};
+
 const TRANSACTION_TYPES = ["All Types", "Bill", "Payment", "Return"];
 
 interface VendorLedgerPageProps {
@@ -21,9 +27,7 @@ interface VendorLedgerPageProps {
 }
 
 const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) => {
-  const [selectedVendorId, setSelectedVendorId] = useState<string>(
-    vendors[0]?.id || ""
-  );
+  const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [vendorSearch, setVendorSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
   const [startDate, setStartDate] = useState<string>("2023-10-01");
@@ -41,12 +45,6 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
     () => vendors.find((v) => v.id === selectedVendorId),
     [selectedVendorId, vendors]
   );
-
-  useEffect(() => {
-    if (selectedVendor) {
-      setVendorSearch(selectedVendor.name);
-    }
-  }, [selectedVendorId, selectedVendor]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -86,7 +84,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
         credit: opening < 0 ? Math.abs(opening) : 0,
       });
     }
-    return entries.sort((a, b) => a.date.localeCompare(b.date));
+    return entries.sort(compareLedgerEntries);
   }, [vendors, selectedVendorId]);
 
   const filteredEntries = useMemo(() => {
@@ -195,6 +193,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
                 onFocus={() => setShowResults(true)}
                 onChange={(e) => {
                   setVendorSearch(e.target.value);
+                  setSelectedVendorId("");
                   setShowResults(true);
                 }}
                 onKeyDown={handleVendorSearchKeyDown}
