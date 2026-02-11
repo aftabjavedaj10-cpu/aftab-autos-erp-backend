@@ -30,6 +30,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
     new Date().toISOString().split("T")[0]
   );
   const [typeFilter, setTypeFilter] = useState("All Types");
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -64,6 +65,10 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
         (v.id || "").toLowerCase().includes(vendorSearch.toLowerCase())
     );
   }, [vendorSearch, selectedVendor, vendors]);
+
+  useEffect(() => {
+    setHighlightedIndex(0);
+  }, [vendorSearch, showResults]);
 
   const rawEntries = useMemo(() => {
     const entries: LedgerEntry[] = [];
@@ -126,6 +131,31 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
     setShowResults(false);
   };
 
+  const handleVendorSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!showResults) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlightedIndex((prev) =>
+        Math.min(prev + 1, Math.max(filteredVendorList.length - 1, 0))
+      );
+      return;
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+      return;
+    }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const target = filteredVendorList[highlightedIndex];
+      if (target) handleSelectVendor(target);
+      return;
+    }
+    if (e.key === "Escape") {
+      setShowResults(false);
+    }
+  };
+
   return (
     <div className="animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 print:hidden">
@@ -166,17 +196,22 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
                   setVendorSearch(e.target.value);
                   setShowResults(true);
                 }}
+                onKeyDown={handleVendorSearchKeyDown}
                 className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-9 pr-3 text-[12px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 transition-all placeholder:text-slate-400"
                 placeholder="Search vendor..."
               />
             </div>
             {showResults && (
               <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto">
-                {filteredVendorList.map((v) => (
+                {filteredVendorList.map((v, idx) => (
                   <button
                     key={v.id}
                     onClick={() => handleSelectVendor(v)}
-                    className="w-full text-left px-4 py-2 hover:bg-orange-50 dark:hover:bg-slate-800 border-b border-slate-100 dark:border-slate-800 last:border-0"
+                    className={`w-full text-left px-4 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0 ${
+                      highlightedIndex === idx
+                        ? "bg-orange-50 dark:bg-slate-800"
+                        : "hover:bg-orange-50 dark:hover:bg-slate-800"
+                    }`}
                   >
                     <p className="text-[11px] font-black text-slate-900 uppercase">
                       {v.name}

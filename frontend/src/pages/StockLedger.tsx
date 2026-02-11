@@ -18,11 +18,17 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
+  const productMap = useMemo(() => {
+    const map = new Map<string, Product>();
+    products.forEach((p) => map.set(String(p.id), p));
+    return map;
+  }, [products]);
+
   const filteredRows = useMemo(() => {
     const query = search.toLowerCase().trim();
     const dir = direction.toLowerCase();
     return stockLedger.filter((entry) => {
-      const product = products.find((p) => p.id === entry.productId);
+      const product = productMap.get(String(entry.productId));
       const haystack = [
         product?.name,
         product?.productCode,
@@ -41,7 +47,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
         dir === "all" || String(entry.direction || "").toLowerCase() === dir;
       return matchesSearch && matchesDirection;
     });
-  }, [stockLedger, products, search, direction]);
+  }, [stockLedger, productMap, search, direction]);
 
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
@@ -106,6 +112,8 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
             <thead>
               <tr className="bg-slate-50/80 text-[9px] font-black uppercase text-slate-500 tracking-widest border-b">
                 <th className="px-4 py-3">Product</th>
+                <th className="px-4 py-3">Code</th>
+                <th className="px-4 py-3">Unit</th>
                 <th className="px-4 py-3">Direction</th>
                 <th className="px-4 py-3">Qty</th>
                 <th className="px-4 py-3">Reason</th>
@@ -114,16 +122,17 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
             </thead>
             <tbody>
               {paginatedRows.map((entry) => {
-                const product = products.find((p) => p.id === entry.productId);
+                const product = productMap.get(String(entry.productId));
                 return (
                   <tr key={entry.id} className="hover:bg-slate-50 text-[11px]">
                     <td className="px-4 py-2 font-black text-slate-900">
                       {product?.name || entry.productId}
-                      {product?.productCode && (
-                        <div className="text-[9px] text-slate-400 font-bold uppercase tracking-widest">
-                          {product.productCode}
-                        </div>
-                      )}
+                    </td>
+                    <td className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">
+                      {product?.productCode || "-"}
+                    </td>
+                    <td className="px-4 py-2 text-[10px] font-bold text-slate-500 uppercase">
+                      {product?.unit || "-"}
                     </td>
                     <td className="px-4 py-2">
                       <span
@@ -153,7 +162,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
               {paginatedRows.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={7}
                     className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest"
                   >
                     No ledger entries.
