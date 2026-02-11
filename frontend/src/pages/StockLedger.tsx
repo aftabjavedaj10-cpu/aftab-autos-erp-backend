@@ -99,46 +99,32 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
     });
   }, [stockLedger, selectedProductId, direction]);
 
-  const selectedProduct = useMemo(() => {
-    if (!selectedProductId) return undefined;
-    return productMap.get(String(selectedProductId));
-  }, [productMap, selectedProductId]);
-
   const stockSummary = useMemo(() => {
     if (!selectedProductId) {
       return { onHand: 0, reserved: 0, available: 0 };
     }
-
-    const onHandFromProduct = Number(
-      (selectedProduct as any)?.stockOnHand ??
-      (selectedProduct as any)?.stock ??
-      0
-    );
-    const reservedFromProduct = Number(
-      (selectedProduct as any)?.stockReserved ?? 0
-    );
-    const availableFromProduct = Number(
-      (selectedProduct as any)?.stockAvailable ??
-      Math.max(0, onHandFromProduct - reservedFromProduct)
+    const productRows = stockLedger.filter(
+      (entry) => String(entry.productId) === String(selectedProductId)
     );
 
-    const ledgerOnHand = stockLedger
-      .filter((entry) => String(entry.productId) === String(selectedProductId))
-      .reduce((sum, entry) => {
-        const qty = Number(entry.qty || 0);
-        const dir = String(entry.direction || "").toUpperCase();
-        return sum + (dir === "OUT" ? -qty : qty);
-      }, 0);
+    const onHand = productRows.reduce((sum, entry) => {
+      const qty = Number(entry.qty || 0);
+      const dir = String(entry.direction || "").toUpperCase();
+      return sum + (dir === "OUT" ? -qty : qty);
+    }, 0);
 
-    // Prefer live product snapshot where available; fallback to ledger aggregate.
-    const onHand = Number.isFinite(onHandFromProduct) ? onHandFromProduct : ledgerOnHand;
-    const reserved = Number.isFinite(reservedFromProduct) ? reservedFromProduct : 0;
-    const available = Number.isFinite(availableFromProduct)
-      ? availableFromProduct
-      : Math.max(0, onHand - reserved);
+    const reserved = productRows.reduce((sum, entry) => {
+      const dir = String(entry.direction || "").toUpperCase();
+      const reason = String(entry.reason || "").toLowerCase();
+      const qty = Number(entry.qty || 0);
+      if (dir === "OUT" && reason === "invoice_pending") return sum + qty;
+      if (dir === "IN" && reason === "invoice_reversal") return Math.max(0, sum - qty);
+      return sum;
+    }, 0);
 
+    const available = Math.max(0, onHand - reserved);
     return { onHand, reserved, available };
-  }, [selectedProductId, selectedProduct, stockLedger]);
+  }, [selectedProductId, stockLedger]);
 
   useEffect(() => {
     setCurrentPage(1);
