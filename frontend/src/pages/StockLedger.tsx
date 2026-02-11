@@ -89,10 +89,10 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
   };
 
   const filteredRows = useMemo(() => {
+    if (!selectedProductId) return [];
     const dir = direction.toLowerCase();
     return stockLedger.filter((entry) => {
-      const matchesProduct =
-        !selectedProductId || String(entry.productId) === String(selectedProductId);
+      const matchesProduct = String(entry.productId) === String(selectedProductId);
       const matchesDirection =
         dir === "all" || String(entry.direction || "").toLowerCase() === dir;
       return matchesProduct && matchesDirection;
@@ -202,7 +202,8 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
             </select>
           </div>
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
-            {selectedProductId ? "Selected product entries" : "All product entries"}: {filteredRows.length}
+            {selectedProductId ? "Selected product entries" : "Select a product to view ledger"}:{" "}
+            {selectedProductId ? filteredRows.length : 0}
           </div>
         </div>
       </div>

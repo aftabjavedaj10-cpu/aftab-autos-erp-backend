@@ -286,6 +286,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     });
   };
 
+  useEffect(() => {
+    const refreshStockLedgerOnOpen = async () => {
+      if (activeTab !== "report_stock_ledger") return;
+      const companyId = getActiveCompanyId();
+      if (!companyId) return;
+      try {
+        const ledgerData = await stockLedgerAPI.listRecent(companyId, 5000);
+        const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+        setStockLedger(normalizedLedger);
+        setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+      } catch (err) {
+        console.error("Failed to refresh stock ledger:", err);
+      }
+    };
+    refreshStockLedgerOnOpen();
+  }, [activeTab]);
+
   return (
     <div className="min-h-screen flex bg-[#FEF3E2] dark:bg-[#020617]">
       <Sidebar
