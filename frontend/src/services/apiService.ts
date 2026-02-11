@@ -353,6 +353,27 @@ const mapStockLedgerFromDb = (row: any) => ({
   createdAt: row.created_at ?? row.createdAt,
 });
 
+const SALES_INVOICE_ID_PATTERN = /^SI-(\d{6})$/;
+
+const parseSalesInvoiceNumber = (id?: string) => {
+  if (!id) return -1;
+  const match = id.match(SALES_INVOICE_ID_PATTERN);
+  return match ? Number(match[1]) : -1;
+};
+
+const formatSalesInvoiceId = (num: number) => `SI-${String(num).padStart(6, "0")}`;
+
+const isSalesInvoiceDuplicateKeyError = (err: unknown) => {
+  if (!(err instanceof Error)) return false;
+  return err.message.includes('duplicate key value violates unique constraint "sales_invoices_pkey"');
+};
+
+const getLatestSalesInvoiceId = async () => {
+  const rows = await apiCall("/sales_invoices?select=id&order=created_at.desc&limit=1");
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0]?.id ?? null;
+};
+
 const ensurePermission = async (permission: string) => {
   const stored = getPermissions();
   if (stored) {
@@ -554,12 +575,24 @@ export const salesInvoiceAPI = {
   create: async (invoice: any) => {
     await ensurePermission("sales_invoices.write");
     const withCompany = attachOwnership(invoice);
-    const header = await apiCall(
-      "/sales_invoices",
-      "POST",
-      mapSalesInvoiceToDb(withCompany),
-      true
-    ).then(firstRow);
+    let header: any = null;
+    let createPayload = mapSalesInvoiceToDb(withCompany);
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        header = await apiCall("/sales_invoices", "POST", createPayload, true).then(firstRow);
+        break;
+      } catch (err) {
+        if (!isSalesInvoiceDuplicateKeyError(err) || attempt === 2) {
+          throw err;
+        }
+        const latestId = await getLatestSalesInvoiceId();
+        const currentNum = parseSalesInvoiceNumber(createPayload?.id);
+        const latestNum = parseSalesInvoiceNumber(latestId ?? undefined);
+        const nextNum = Math.max(currentNum, latestNum, 0) + 1;
+        createPayload = { ...createPayload, id: formatSalesInvoiceId(nextNum) };
+      }
+    }
 
     const items = Array.isArray(invoice.items) ? invoice.items : [];
     if (items.length > 0) {
