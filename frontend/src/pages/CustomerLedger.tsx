@@ -59,9 +59,12 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
     if (!customerSearch || selectedCustomer?.name === customerSearch)
       return customers;
     return customers.filter(
-      (c) =>
-        c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
-        (c.id || "").toLowerCase().includes(customerSearch.toLowerCase())
+      (c) => {
+        const name = String(c.name || "").toLowerCase();
+        const id = String(c.id || "").toLowerCase();
+        const query = customerSearch.toLowerCase();
+        return name.includes(query) || id.includes(query);
+      }
     );
   }, [customerSearch, selectedCustomer, customers]);
 

@@ -59,9 +59,12 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
   const filteredVendorList = useMemo(() => {
     if (!vendorSearch || selectedVendor?.name === vendorSearch) return vendors;
     return vendors.filter(
-      (v) =>
-        v.name.toLowerCase().includes(vendorSearch.toLowerCase()) ||
-        (v.id || "").toLowerCase().includes(vendorSearch.toLowerCase())
+      (v) => {
+        const name = String(v.name || "").toLowerCase();
+        const id = String(v.id || "").toLowerCase();
+        const query = vendorSearch.toLowerCase();
+        return name.includes(query) || id.includes(query);
+      }
     );
   }, [vendorSearch, selectedVendor, vendors]);
 
