@@ -193,7 +193,6 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
                 onFocus={() => setShowResults(true)}
                 onChange={(e) => {
                   setVendorSearch(e.target.value);
-                  setSelectedVendorId("");
                   setShowResults(true);
                 }}
                 onKeyDown={handleVendorSearchKeyDown}

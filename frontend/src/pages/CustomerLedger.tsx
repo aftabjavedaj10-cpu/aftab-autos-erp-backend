@@ -13,12 +13,6 @@ interface LedgerEntry {
   credit: number;
 }
 
-const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
-  if (a.date !== b.date) return a.date.localeCompare(b.date);
-  if (a.reference !== b.reference) return a.reference.localeCompare(b.reference);
-  return a.id.localeCompare(b.id);
-};
-
 const TRANSACTION_TYPES = ["All Types", "Invoice", "Receipt", "Return"];
 
 interface CustomerLedgerPageProps {
@@ -92,9 +86,14 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       });
     }
 
-    salesInvoices
+    const customerInvoices = salesInvoices
       .filter((inv) => inv.customerId === customerId)
-      .forEach((inv) => {
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return String(a.id).localeCompare(String(b.id));
+      });
+
+    customerInvoices.forEach((inv) => {
         entries.push({
           id: `inv-${inv.id}`,
           date: inv.date,
@@ -118,7 +117,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         }
       });
 
-    return entries.sort(compareLedgerEntries);
+    return entries;
   }, [customers, salesInvoices, selectedCustomerId]);
 
   const filteredEntries = useMemo(() => {
@@ -228,7 +227,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
                 onFocus={() => setShowResults(true)}
                 onChange={(e) => {
                   setCustomerSearch(e.target.value);
-                  setSelectedCustomerId("");
                   setShowResults(true);
                 }}
                 onKeyDown={handleCustomerSearchKeyDown}
