@@ -829,6 +829,17 @@ export const stockLedgerAPI = {
     }
     return mapStockLedgerFromDb(updated);
   },
+  deleteAdjustment: async (adjustmentRowId: string) => {
+    await ensurePermission("products.delete");
+    const companyId = getActiveCompanyId();
+    if (!companyId) {
+      throw new Error("Company not set");
+    }
+    return apiCall(
+      `/stock_ledger?id=eq.${adjustmentRowId}&company_id=eq.${companyId}&source=eq.stock_adjustment`,
+      "DELETE"
+    );
+  },
 };
 
 // ============ COMPANIES & PROFILES ============

@@ -8,6 +8,7 @@ interface StockAdjustmentPageProps {
   products: Product[];
   onAddClick: () => void;
   onEditClick: (row: StockLedgerEntry) => void;
+  onDeleteClick: (row: StockLedgerEntry) => void;
 }
 
 const StockAdjustmentPage: React.FC<StockAdjustmentPageProps> = ({
@@ -15,6 +16,7 @@ const StockAdjustmentPage: React.FC<StockAdjustmentPageProps> = ({
   products,
   onAddClick,
   onEditClick,
+  onDeleteClick,
 }) => {
   const [search, setSearch] = useState("");
   const [direction, setDirection] = useState("all");
@@ -138,12 +140,20 @@ const StockAdjustmentPage: React.FC<StockAdjustmentPageProps> = ({
                       {formatDateDMY(row.createdAt)}
                     </td>
                     <td className="px-4 py-2 text-right">
-                      <button
-                        onClick={() => onEditClick(row)}
-                        className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[9px] font-black uppercase tracking-widest hover:bg-orange-100 dark:hover:bg-slate-700"
-                      >
-                        Edit
-                      </button>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => onEditClick(row)}
+                          className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-[9px] font-black uppercase tracking-widest hover:bg-orange-100 dark:hover:bg-slate-700"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => onDeleteClick(row)}
+                          className="px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 text-[9px] font-black uppercase tracking-widest hover:bg-rose-100 dark:hover:bg-rose-900/30"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );

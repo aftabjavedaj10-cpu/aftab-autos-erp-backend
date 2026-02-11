@@ -289,6 +289,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_stock_adjustment");
   };
 
+  const handleDeleteStockAdjustment = async (row: StockLedgerEntry) => {
+    const ok = window.confirm(
+      `Delete adjustment ${row.sourceId || row.sourceRef || row.id}? This cannot be undone.`
+    );
+    if (!ok) return;
+    try {
+      await stockLedgerAPI.deleteAdjustment(row.id);
+      const companyId = getActiveCompanyId();
+      const ledgerData = companyId
+        ? await stockLedgerAPI.listRecent(companyId, 5000)
+        : [];
+      const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+      setStockLedger(normalizedLedger);
+      setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+    } catch (err: any) {
+      setError(err?.message || "Failed to delete stock adjustment");
+      console.error(err);
+    }
+  };
+
   const handleEditSalesInvoice = (invoice: SalesInvoice) => {
     setEditingSalesInvoice(invoice);
     setActiveTab("add_sales_invoice");
@@ -612,6 +632,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             products={products}
             onAddClick={handleAddStockAdjustment}
             onEditClick={handleEditStockAdjustment}
+            onDeleteClick={handleDeleteStockAdjustment}
           />
         )}
 
