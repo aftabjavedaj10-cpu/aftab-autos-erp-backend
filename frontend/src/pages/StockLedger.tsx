@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import type { Product, StockLedgerEntry } from "../types";
 import Pagination from "../components/Pagination";
 
@@ -29,9 +29,15 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
     const dir = direction.toLowerCase();
     return stockLedger.filter((entry) => {
       const product = productMap.get(String(entry.productId));
+      const productName = (product?.name || "").toLowerCase();
+      const productCode = (
+        product?.productCode ||
+        (product as any)?.product_code ||
+        ""
+      ).toLowerCase();
       const haystack = [
-        product?.name,
-        product?.productCode,
+        productName,
+        productCode,
         entry.productId,
         entry.reason,
         entry.direction,
@@ -48,6 +54,10 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
       return matchesSearch && matchesDirection;
     });
   }, [stockLedger, productMap, search, direction]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, direction]);
 
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;

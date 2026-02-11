@@ -349,7 +349,7 @@ const mapStockLedgerFromDb = (row: any) => ({
   direction: row.direction,
   reason: row.reason,
   source: row.source,
-  sourceRef: row.source_ref ?? row.sourceRef,
+  sourceRef: row.source_ref ?? row.source_id ?? row.sourceRef,
   createdAt: row.created_at ?? row.createdAt,
 });
 
