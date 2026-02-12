@@ -33,10 +33,10 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
 }) => {
   const isEdit = !!invoice;
 
-  const formatInvoiceId = (num: number) => `SI-${String(num).padStart(6, "0")}`;
+  const formatInvoiceId = (num: number) => `QT-${String(num).padStart(6, "0")}`;
   const getInvoiceNumber = (id?: string) => {
     if (!id) return -1;
-    const match = id.match(/^SI-(\d{6})$/);
+    const match = id.match(/^QT-(\d{6})$/);
     return match ? Number(match[1]) : -1;
   };
 
@@ -88,7 +88,6 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
   const [isRevising, setIsRevising] = useState(false);
-  const [savePrices, setSavePrices] = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
@@ -100,7 +99,6 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
   const refInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const overallDiscRef = useRef<HTMLInputElement>(null);
-  const amountReceivedRef = useRef<HTMLInputElement>(null);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const productListContainerRef = useRef<HTMLDivElement>(null);
@@ -216,8 +214,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
       return acc;
     }, {} as Record<string, number>);
     const netTotal = itemsSubtotal - (formData.overallDiscount || 0);
-    const balanceDue = netTotal - (formData.amountReceived || 0);
-    return { itemsSubtotal, netTotal, balanceDue, totalQty, unitBreakdown };
+    return { itemsSubtotal, netTotal, totalQty, unitBreakdown };
   }, [formData.items, formData.overallDiscount, formData.amountReceived]);
 
   const handleAddItem = (product: Product) => {
@@ -383,14 +380,6 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
     setTimeout(() => window.print(), 50);
   };
 
-  const computePaymentStatus = () => {
-    const total = totals.netTotal;
-    const received = formData.amountReceived || 0;
-    if (received <= 0) return "Unpaid";
-    if (received < total) return "Partial";
-    return "Paid";
-  };
-
   const isApproved = formData.status === "Approved";
   const isLocked = isApproved && !isRevising;
 
@@ -420,7 +409,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
     }
 
     const customer = customers.find((c) => c.id === formData.customerId);
-    const finalPaymentStatus = computePaymentStatus();
+    const finalPaymentStatus = "Unpaid";
     const finalStatus = status === "Draft" ? "Draft" : status;
     const invoiceData: SalesInvoice = {
       ...formData,
@@ -429,7 +418,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
       customerName: customer?.name || "Unknown",
       totalAmount: totals.netTotal,
     };
-    onSave(invoiceData, stayOnPage, savePrices);
+    onSave(invoiceData, stayOnPage, false);
   };
 
   const currentCustomer = useMemo(() => {
@@ -522,33 +511,6 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Save Prices</span>
-            <button
-              type="button"
-              onClick={() => setSavePrices((prev) => !prev)}
-              className={`relative w-10 h-6 rounded-full border overflow-hidden transition-colors ${
-                savePrices
-                  ? "bg-orange-500 border-orange-500"
-                  : "bg-slate-200 border-slate-300 dark:bg-slate-700 dark:border-slate-600"
-              }`}
-              aria-pressed={savePrices}
-              title="When enabled, edited item prices will update product sale prices."
-            >
-              <span
-                className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                  savePrices ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-            <span
-              className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                savePrices ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-              }`}
-            >
-              {savePrices ? "On" : "Off"}
-            </span>
-          </div>
           <span
             className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
               formData.status === "Draft"
@@ -586,7 +548,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             <div className="md:col-span-3 border-r border-slate-200 dark:border-slate-800 pr-4">
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
-                Invoice Number
+                Quotation Number
               </label>
               <div className="inline-flex items-center">
                 <button
@@ -606,7 +568,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                 value={formData.id}
                 readOnly
                 className="w-32 bg-transparent text-base font-black text-slate-900 dark:text-white outline-none text-center tracking-widest border-y border-slate-200 dark:border-slate-800"
-                placeholder="SI-000001"
+                placeholder="QT-000001"
               />
                 <button
                   type="button"
@@ -1170,53 +1132,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
               </span>
             </div>
 
-            <div className="bg-orange-50 dark:bg-orange-500/5 p-3 rounded-lg border border-orange-100 dark:border-orange-500/10 mt-4">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] font-black text-orange-700 dark:text-orange-400 uppercase tracking-tight">
-                  Cash Received
-                </span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-orange-600 font-black">Rs.</span>
-                  <input
-                    ref={amountReceivedRef}
-                    type="number"
-                    disabled={isLocked}
-                    className={`w-20 bg-transparent text-right font-black text-[11px] outline-none text-orange-700 dark:text-orange-400 focus:border-b focus:border-orange-500 ${
-                      isLocked ? "opacity-60 cursor-not-allowed" : ""
-                    }`}
-                    value={formData.amountReceived}
-                    onChange={(e) =>
-                      setFormData({ ...formData, amountReceived: parseFloat(e.target.value) || 0 })
-                    }
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div
-              className={`p-3 rounded-lg border mt-2 transition-colors ${
-                totals.balanceDue > 0
-                  ? "bg-rose-50 dark:bg-rose-500/5 border-rose-100 dark:border-rose-500/10"
-                  : "bg-emerald-50 dark:bg-emerald-500/5 border-emerald-100 dark:border-emerald-800"
-              }`}
-            >
-              <div className="flex justify-between items-center">
-                <span
-                  className={`text-[10px] font-black uppercase tracking-tight ${
-                    totals.balanceDue > 0 ? "text-rose-700" : "text-emerald-700"
-                  }`}
-                >
-                  Balance Due
-                </span>
-                <span
-                  className={`text-[14px] font-black tracking-tight ${
-                    totals.balanceDue > 0 ? "text-rose-700" : "text-emerald-700"
-                  }`}
-                >
-                  Rs. {totals.balanceDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-            </div>
+            
           </div>
         </div>
 
@@ -1584,7 +1500,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
               <p className="flex justify-end gap-1"><span className="font-semibold">Discount :</span><span className="font-black min-w-[70px] text-right">{(formData.overallDiscount || 0).toFixed(2)}</span></p>
               <p className="text-[14px] border-t border-black pt-1 flex justify-end gap-1"><span className="font-black">Net Total PKR :</span><span className="font-black min-w-[70px] text-right">{totals.netTotal.toFixed(2)}</span></p>
               <p className="flex justify-end gap-1"><span className="font-semibold">Amount Received :</span><span className="font-black min-w-[70px] text-right">{(formData.amountReceived || 0).toFixed(2)}</span></p>
-              <p className="flex justify-end gap-1"><span className="font-semibold">Cash Back PKR :</span><span className="font-black min-w-[70px] text-right">{Math.max(0, totals.balanceDue * -1).toFixed(2)}</span></p>
+              <p className="flex justify-end gap-1"><span className="font-semibold">Cash Back PKR :</span><span className="font-black min-w-[70px] text-right">{Math.max(0, (formData.amountReceived || 0) - totals.netTotal).toFixed(2)}</span></p>
             </div>
 
             <div className="mt-2 border-t border-b border-black py-1">
