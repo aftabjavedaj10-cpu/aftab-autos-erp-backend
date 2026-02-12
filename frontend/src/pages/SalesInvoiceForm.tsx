@@ -507,7 +507,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <label className="inline-flex items-center gap-2">
+          <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1">
             <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Save Prices</span>
             <button
               type="button"
@@ -526,7 +526,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 }`}
               />
             </button>
-          </label>
+            <span
+              className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                savePrices ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+              }`}
+            >
+              {savePrices ? "On" : "Off"}
+            </span>
+          </div>
           <span
             className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
               formData.status === "Draft"
@@ -1573,19 +1580,32 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         )}
         {printMode === "token" && (
-          <div className="p-4 space-y-4">
-            {(printItems.length > 0 ? printItems : formData.items).map((item, idx) => (
-              <div key={`${item.productId}-${idx}`} className="max-w-[80mm] mx-auto border-2 border-black p-3 break-after-page">
-                <div className="flex justify-between border-b border-black pb-1 mb-2">
-                  <span className="font-black text-sm">PRODUCT TOKEN</span>
-                  <span className="text-xs">{idx + 1}</span>
-                </div>
-                <p className="text-sm font-black uppercase">{item.productName}</p>
-                <p className="text-xs mt-1">Code: {item.productCode || "-"}</p>
-                <p className="text-xs">Invoice: {formData.id}</p>
-                <p className="text-2xl font-black mt-2">{item.quantity} {item.unit || "PC"}</p>
+          <div className="p-4">
+            <div className="max-w-[80mm] mx-auto border-2 border-black p-3">
+              <div className="flex justify-between border-b border-black pb-1 mb-2">
+                <span className="font-black text-sm">PRODUCT TOKEN</span>
+                <span className="text-xs">{formData.id}</span>
               </div>
-            ))}
+              <table className="w-full text-[10px]">
+                <thead>
+                  <tr className="border-b border-black">
+                    <th className="text-left py-1 font-black">Product</th>
+                    <th className="text-left py-1 font-black">Code</th>
+                    <th className="text-right py-1 font-black">Qty</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(printItems.length > 0 ? printItems : formData.items).map((item, idx) => (
+                    <tr key={`${item.productId}-${idx}`} className="border-b border-black/20">
+                      <td className="py-1">{item.productName}</td>
+                      <td className="py-1">{item.productCode || "-"}</td>
+                      <td className="text-right py-1 font-black">{item.quantity} {item.unit || "PC"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-[10px] mt-2">Total Items: {(printItems.length > 0 ? printItems : formData.items).length}</p>
+            </div>
           </div>
         )}
       </div>
