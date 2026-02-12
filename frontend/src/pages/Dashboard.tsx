@@ -46,6 +46,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
+  const [salesInvoiceForceNewMode, setSalesInvoiceForceNewMode] = useState(false);
   const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
   const [editingQuotationInvoice, setEditingQuotationInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [salesOrders, setSalesOrders] = useState<SalesModuleDoc[]>([]);
@@ -305,6 +306,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleAddSalesInvoice = () => {
     setEditingSalesInvoice(undefined);
+    setSalesInvoiceForceNewMode(false);
     setActiveTab("add_sales_invoice");
   };
 
@@ -340,6 +342,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleEditSalesInvoice = (invoice: SalesInvoice) => {
     setEditingSalesInvoice(invoice);
+    setSalesInvoiceForceNewMode(false);
     setActiveTab("add_sales_invoice");
   };
 
@@ -731,6 +734,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 reference: quotation.reference || quotation.id,
               };
               setEditingSalesInvoice(converted);
+              setSalesInvoiceForceNewMode(true);
               setActiveTab("add_sales_invoice");
             }}
             onSave={async (invoiceData, stayOnPage, savePrices) => {
@@ -981,20 +985,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         {activeTab === "add_sales_invoice" && (
           <SalesInvoiceFormPage
             invoice={editingSalesInvoice}
+            forceNewMode={salesInvoiceForceNewMode}
             invoices={salesInvoices}
             products={products}
             customers={customers}
             company={activeCompany || undefined}
             onBack={() => {
               setEditingSalesInvoice(undefined);
+              setSalesInvoiceForceNewMode(false);
               setActiveTab("sales_invoice");
             }}
             onNavigate={(inv) => {
               setEditingSalesInvoice(inv);
+              setSalesInvoiceForceNewMode(false);
               setActiveTab("add_sales_invoice");
             }}
             onNavigateNew={() => {
               setEditingSalesInvoice(undefined);
+              setSalesInvoiceForceNewMode(false);
               setActiveTab("add_sales_invoice");
             }}
             onSave={async (invoiceData, stayOnPage, savePrices) => {
@@ -1024,7 +1032,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   );
                 }
 
-                const saved = editingSalesInvoice
+                const saved = editingSalesInvoice && !salesInvoiceForceNewMode
                   ? await salesInvoiceAPI.update(invoiceData.id, invoiceData)
                   : await salesInvoiceAPI.create(invoiceData);
 
@@ -1036,8 +1044,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   return [saved, ...prev];
                 });
 
+                if (stayOnPage) {
+                  setEditingSalesInvoice(saved);
+                  setSalesInvoiceForceNewMode(false);
+                }
+
                 if (!stayOnPage) {
                   setEditingSalesInvoice(undefined);
+                  setSalesInvoiceForceNewMode(false);
                   setActiveTab("sales_invoice");
                 }
               } catch (err: any) {

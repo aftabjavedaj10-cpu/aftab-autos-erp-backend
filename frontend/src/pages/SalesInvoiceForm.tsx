@@ -4,6 +4,7 @@ import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem } from 
 
 interface SalesInvoiceFormPageProps {
   invoice?: SalesInvoice;
+  forceNewMode?: boolean;
   invoices: SalesInvoice[];
   products: Product[];
   customers: Customer[];
@@ -20,6 +21,7 @@ type PrintMode = "invoice" | "receipt" | "a5" | "token";
 
 const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   invoice,
+  forceNewMode = false,
   invoices,
   products,
   customers,
@@ -31,7 +33,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   formTitleNew = "New Sales Invoice",
   formTitleEdit = "Edit Invoice",
 }) => {
-  const isEdit = !!invoice;
+  const isEdit = !!invoice && !forceNewMode;
 
   const formatInvoiceId = (num: number) => `SI-${String(num).padStart(6, "0")}`;
   const getInvoiceNumber = (id?: string) => {
