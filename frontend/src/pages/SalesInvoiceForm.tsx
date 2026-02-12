@@ -512,7 +512,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             <button
               type="button"
               onClick={() => setSavePrices((prev) => !prev)}
-              className={`relative w-10 h-6 rounded-full border transition-colors ${
+              className={`relative w-10 h-6 rounded-full border overflow-hidden transition-colors ${
                 savePrices
                   ? "bg-orange-500 border-orange-500"
                   : "bg-slate-200 border-slate-300 dark:bg-slate-700 dark:border-slate-600"
@@ -521,8 +521,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               title="When enabled, edited item prices will update product sale prices."
             >
               <span
-                className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                  savePrices ? "translate-x-5" : "translate-x-0.5"
+                className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                  savePrices ? "translate-x-5" : "translate-x-0"
                 }`}
               />
             </button>
