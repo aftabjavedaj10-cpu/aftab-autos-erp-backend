@@ -19,6 +19,8 @@ import AddCategoryPage from "./AddCategory";
 import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
+import SalesModulePage, { type SalesModuleDoc } from "./SalesModulePage";
+import AddSalesModulePage from "./AddSalesModulePage";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, salesInvoiceAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
@@ -42,6 +44,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
+  const [quotations, setQuotations] = useState<SalesModuleDoc[]>([]);
+  const [salesOrders, setSalesOrders] = useState<SalesModuleDoc[]>([]);
+  const [salesReturns, setSalesReturns] = useState<SalesModuleDoc[]>([]);
+  const [receivePayments, setReceivePayments] = useState<SalesModuleDoc[]>([]);
+  const [editingQuotation, setEditingQuotation] = useState<SalesModuleDoc | undefined>(undefined);
+  const [editingSalesOrder, setEditingSalesOrder] = useState<SalesModuleDoc | undefined>(undefined);
+  const [editingSalesReturn, setEditingSalesReturn] = useState<SalesModuleDoc | undefined>(undefined);
+  const [editingReceivePayment, setEditingReceivePayment] = useState<SalesModuleDoc | undefined>(undefined);
   const [stockLedger, setStockLedger] = useState<StockLedgerEntry[]>([]);
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
   const [pinnedReportIds, setPinnedReportIds] = useState<number[]>(() => {
@@ -317,6 +327,57 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const handleEditSalesInvoice = (invoice: SalesInvoice) => {
     setEditingSalesInvoice(invoice);
     setActiveTab("add_sales_invoice");
+  };
+
+  const upsertSalesModuleDoc = (
+    docs: SalesModuleDoc[],
+    incoming: SalesModuleDoc
+  ): SalesModuleDoc[] => {
+    const exists = docs.some((d) => d.id === incoming.id);
+    if (exists) {
+      return docs.map((d) => (d.id === incoming.id ? incoming : d));
+    }
+    return [incoming, ...docs];
+  };
+
+  const handleAddQuotation = () => {
+    setEditingQuotation(undefined);
+    setActiveTab("add_quotation");
+  };
+
+  const handleEditQuotation = (doc: SalesModuleDoc) => {
+    setEditingQuotation(doc);
+    setActiveTab("add_quotation");
+  };
+
+  const handleAddSalesOrder = () => {
+    setEditingSalesOrder(undefined);
+    setActiveTab("add_sales_order");
+  };
+
+  const handleEditSalesOrder = (doc: SalesModuleDoc) => {
+    setEditingSalesOrder(doc);
+    setActiveTab("add_sales_order");
+  };
+
+  const handleAddSalesReturn = () => {
+    setEditingSalesReturn(undefined);
+    setActiveTab("add_sales_return");
+  };
+
+  const handleEditSalesReturn = (doc: SalesModuleDoc) => {
+    setEditingSalesReturn(doc);
+    setActiveTab("add_sales_return");
+  };
+
+  const handleAddReceivePayment = () => {
+    setEditingReceivePayment(undefined);
+    setActiveTab("add_receive_payment");
+  };
+
+  const handleEditReceivePayment = (doc: SalesModuleDoc) => {
+    setEditingReceivePayment(doc);
+    setActiveTab("add_receive_payment");
   };
 
   const lowStockCount = useMemo(() => {
@@ -600,6 +661,130 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
         {activeTab === "settings" && (
           <SettingsPage />
+        )}
+
+        {activeTab === "quotation" && (
+          <SalesModulePage
+            moduleTitle="Quotation"
+            moduleSubtitle="Sales pre-confirmation documents"
+            addButtonLabel="Add Quotation"
+            docs={quotations}
+            onAddClick={handleAddQuotation}
+            onEditClick={handleEditQuotation}
+            onDelete={(id) => setQuotations((prev) => prev.filter((d) => d.id !== id))}
+          />
+        )}
+
+        {activeTab === "add_quotation" && (
+          <AddSalesModulePage
+            moduleTitle="Quotation"
+            prefix="QT"
+            docs={quotations}
+            customers={customers}
+            doc={editingQuotation}
+            onBack={() => {
+              setEditingQuotation(undefined);
+              setActiveTab("quotation");
+            }}
+            onSave={(doc) => {
+              setQuotations((prev) => upsertSalesModuleDoc(prev, doc));
+              setEditingQuotation(undefined);
+              setActiveTab("quotation");
+            }}
+          />
+        )}
+
+        {activeTab === "sales_order" && (
+          <SalesModulePage
+            moduleTitle="Sales Order"
+            moduleSubtitle="Confirmed customer orders"
+            addButtonLabel="Add Sales Order"
+            docs={salesOrders}
+            onAddClick={handleAddSalesOrder}
+            onEditClick={handleEditSalesOrder}
+            onDelete={(id) => setSalesOrders((prev) => prev.filter((d) => d.id !== id))}
+          />
+        )}
+
+        {activeTab === "add_sales_order" && (
+          <AddSalesModulePage
+            moduleTitle="Sales Order"
+            prefix="SO"
+            docs={salesOrders}
+            customers={customers}
+            doc={editingSalesOrder}
+            onBack={() => {
+              setEditingSalesOrder(undefined);
+              setActiveTab("sales_order");
+            }}
+            onSave={(doc) => {
+              setSalesOrders((prev) => upsertSalesModuleDoc(prev, doc));
+              setEditingSalesOrder(undefined);
+              setActiveTab("sales_order");
+            }}
+          />
+        )}
+
+        {activeTab === "sales_return" && (
+          <SalesModulePage
+            moduleTitle="Sales Return"
+            moduleSubtitle="Customer return records"
+            addButtonLabel="Add Sales Return"
+            docs={salesReturns}
+            onAddClick={handleAddSalesReturn}
+            onEditClick={handleEditSalesReturn}
+            onDelete={(id) => setSalesReturns((prev) => prev.filter((d) => d.id !== id))}
+          />
+        )}
+
+        {activeTab === "add_sales_return" && (
+          <AddSalesModulePage
+            moduleTitle="Sales Return"
+            prefix="SR"
+            docs={salesReturns}
+            customers={customers}
+            doc={editingSalesReturn}
+            onBack={() => {
+              setEditingSalesReturn(undefined);
+              setActiveTab("sales_return");
+            }}
+            onSave={(doc) => {
+              setSalesReturns((prev) => upsertSalesModuleDoc(prev, doc));
+              setEditingSalesReturn(undefined);
+              setActiveTab("sales_return");
+            }}
+          />
+        )}
+
+        {activeTab === "receive_payment" && (
+          <SalesModulePage
+            moduleTitle="Receive Payment"
+            moduleSubtitle="Customer payment entries"
+            addButtonLabel="Add Payment"
+            docs={receivePayments}
+            onAddClick={handleAddReceivePayment}
+            onEditClick={handleEditReceivePayment}
+            onDelete={(id) => setReceivePayments((prev) => prev.filter((d) => d.id !== id))}
+          />
+        )}
+
+        {activeTab === "add_receive_payment" && (
+          <AddSalesModulePage
+            moduleTitle="Receive Payment"
+            prefix="RP"
+            docs={receivePayments}
+            customers={customers}
+            doc={editingReceivePayment}
+            onBack={() => {
+              setEditingReceivePayment(undefined);
+              setActiveTab("receive_payment");
+            }}
+            onSave={(doc) => {
+              setReceivePayments((prev) => upsertSalesModuleDoc(prev, doc));
+              setEditingReceivePayment(undefined);
+              setActiveTab("receive_payment");
+            }}
+          />
         )}
 
         {activeTab === "sales_invoice" && (

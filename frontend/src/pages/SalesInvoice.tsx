@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import type { SalesInvoice } from "../types";
 import Pagination from "../components/Pagination";
 import { formatDateDMY } from "../services/dateFormat";
@@ -32,6 +32,13 @@ const parseDMYToDate = (value: string): Date | null => {
   return parsed;
 };
 
+const isoToDMY = (iso: string): string => {
+  if (!iso) return "";
+  const [year, month, day] = iso.split("-");
+  if (!year || !month || !day) return "";
+  return `${day}/${month}/${year}`;
+};
+
 interface SalesInvoicePageProps {
   invoices: SalesInvoice[];
   onAddClick: () => void;
@@ -60,6 +67,8 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const startPickerRef = useRef<HTMLInputElement>(null);
+  const endPickerRef = useRef<HTMLInputElement>(null);
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
@@ -141,6 +150,15 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
     setStatusFilter("All Status");
     setStartDate("");
     setEndDate("");
+  };
+
+  const openPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    if (!ref.current) return;
+    if (typeof ref.current.showPicker === "function") {
+      ref.current.showPicker();
+      return;
+    }
+    ref.current.click();
   };
 
   return (
@@ -245,6 +263,22 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                 />
+                <button
+                  type="button"
+                  onClick={() => openPicker(startPickerRef)}
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:text-orange-600 text-[12px]"
+                  title="Pick start date"
+                >
+                  📅
+                </button>
+                <input
+                  ref={startPickerRef}
+                  type="date"
+                  tabIndex={-1}
+                  className="absolute opacity-0 pointer-events-none w-0 h-0"
+                  onChange={(e) => setStartDate(isoToDMY(e.target.value))}
+                  aria-hidden="true"
+                />
                 <span className="text-slate-300 font-bold">to</span>
                 <input
                   type="text"
@@ -252,6 +286,22 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                   className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg py-1.5 px-2 text-[10px] font-bold dark:text-white outline-none"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => openPicker(endPickerRef)}
+                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:text-orange-600 text-[12px]"
+                  title="Pick end date"
+                >
+                  📅
+                </button>
+                <input
+                  ref={endPickerRef}
+                  type="date"
+                  tabIndex={-1}
+                  className="absolute opacity-0 pointer-events-none w-0 h-0"
+                  onChange={(e) => setEndDate(isoToDMY(e.target.value))}
+                  aria-hidden="true"
                 />
               </div>
             </div>
