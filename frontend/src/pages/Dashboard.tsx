@@ -19,6 +19,8 @@ import AddCategoryPage from "./AddCategory";
 import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
+import PurchaseInvoicePage from "./PurchaseInvoice";
+import PurchaseInvoiceFormPage from "./PurchaseInvoiceForm";
 import QuotationPage from "./Quotation";
 import QuotationFormPage from "./QuotationForm";
 import SalesModulePage, { type SalesModuleDoc } from "./SalesModulePage";
@@ -913,7 +915,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "purchase_invoice" && (
-          <SalesInvoicePage
+          <PurchaseInvoicePage
             invoices={purchaseInvoices}
             onAddClick={handleAddPurchaseInvoice}
             onEditClick={handleEditPurchaseInvoice}
@@ -925,9 +927,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 console.error(err);
               });
             }}
-            pageTitle="Purchase Invoices"
-            pageSubtitle="Accounts Payable & Stock Intake"
-            addButtonLabel="Create Purchase Invoice"
           />
         )}
 
@@ -1098,25 +1097,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "add_purchase_invoice" && (
-          <SalesInvoiceFormPage
+          <PurchaseInvoiceFormPage
             invoice={editingPurchaseInvoice}
-            idPrefix="PI"
-            partyLabel="Vendor Account"
-            partySearchPlaceholder="Search vendor name, phone, or code..."
-            partyEmptyText="No vendors found"
-            partyCodeLabel="Vendor"
             invoices={purchaseInvoices}
             products={products}
-            customers={vendors.map((v) => ({
-              id: String(v.id),
-              name: v.name,
-              customerCode: v.vendorCode || "",
-              phone: v.phone || "",
-              email: v.email || "",
-            }))}
+            vendors={vendors}
             company={activeCompany || undefined}
-            formTitleNew="New Purchase Invoice"
-            formTitleEdit="Edit Purchase Invoice"
             onBack={() => {
               setEditingPurchaseInvoice(undefined);
               setActiveTab("purchase_invoice");
@@ -1129,7 +1115,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setEditingPurchaseInvoice(undefined);
               setActiveTab("add_purchase_invoice");
             }}
-            onSave={async (invoiceData, stayOnPage, savePrices) => {
+            onSave={async (invoiceData, stayOnPage, savePrices, salesPriceUpdates) => {
               try {
                 if (savePrices) {
                   const latestCostByProduct = new Map<string, number>();
@@ -1143,15 +1129,40 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                       const newCost = latestCostByProduct.get(String(p.id));
                       if (newCost === undefined) return;
                       const currentCost = Number(String(p.costPrice).replace(/[^0-9.-]/g, "")) || 0;
-                      if (Math.abs(currentCost - newCost) < 0.0001) return;
-                      await productAPI.update(String(p.id), { ...p, costPrice: newCost });
+                      const newSale =
+                        salesPriceUpdates && Object.prototype.hasOwnProperty.call(salesPriceUpdates, String(p.id))
+                          ? Number(salesPriceUpdates[String(p.id)])
+                          : undefined;
+                      const currentSale = Number(String(p.price).replace(/[^0-9.-]/g, "")) || 0;
+                      const costChanged = Math.abs(currentCost - newCost) >= 0.0001;
+                      const saleChanged =
+                        typeof newSale === "number" && Number.isFinite(newSale)
+                          ? Math.abs(currentSale - newSale) >= 0.0001
+                          : false;
+                      if (!costChanged && !saleChanged) return;
+                      await productAPI.update(String(p.id), {
+                        ...p,
+                        costPrice: newCost,
+                        ...(saleChanged ? { price: newSale } : {}),
+                      });
                     })
                   );
 
                   setProducts((prev) =>
                     prev.map((p) => {
                       const newCost = latestCostByProduct.get(String(p.id));
-                      return newCost === undefined ? p : { ...p, costPrice: newCost };
+                      if (newCost === undefined) return p;
+                      const newSale =
+                        salesPriceUpdates && Object.prototype.hasOwnProperty.call(salesPriceUpdates, String(p.id))
+                          ? Number(salesPriceUpdates[String(p.id)])
+                          : undefined;
+                      return {
+                        ...p,
+                        costPrice: newCost,
+                        ...(typeof newSale === "number" && Number.isFinite(newSale)
+                          ? { price: newSale }
+                          : {}),
+                      };
                     })
                   );
                 }

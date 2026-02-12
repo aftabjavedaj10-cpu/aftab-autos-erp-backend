@@ -1,18 +1,13 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types";
+import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem, Vendor } from "../types";
 
-interface SalesInvoiceFormPageProps {
+interface PurchaseInvoiceFormPageProps {
   invoice?: SalesInvoice;
   forceNewMode?: boolean;
-  idPrefix?: string;
-  partyLabel?: string;
-  partySearchPlaceholder?: string;
-  partyEmptyText?: string;
-  partyCodeLabel?: string;
   invoices: SalesInvoice[];
   products: Product[];
-  customers: Customer[];
+  vendors: Vendor[];
   company?: Company;
   onBack: () => void;
   onSave: (
@@ -29,27 +24,39 @@ interface SalesInvoiceFormPageProps {
 
 type PrintMode = "invoice" | "receipt" | "a5" | "token";
 
-const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
+const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   invoice,
   forceNewMode = false,
-  idPrefix = "SI",
-  partyLabel = "Customer Account",
-  partySearchPlaceholder = "Search name, phone, or code...",
-  partyEmptyText = "No customers found",
-  partyCodeLabel = "Code",
   invoices,
   products,
-  customers,
+  vendors,
   company,
   onBack,
   onSave,
   onNavigate,
   onNavigateNew,
-  formTitleNew = "New Sales Invoice",
-  formTitleEdit = "Edit Invoice",
+  formTitleNew = "New Purchase Invoice",
+  formTitleEdit = "Edit Purchase Invoice",
 }) => {
+  const idPrefix = "PI";
+  const partyLabel = "Vendor Account";
+  const partySearchPlaceholder = "Search vendor name, phone, or code...";
+  const partyEmptyText = "No vendors found";
+  const partyCodeLabel = "Vendor";
   const isEdit = !!invoice && !forceNewMode;
-  const isPurchaseMode = idPrefix === "PI";
+  const isPurchaseMode = true;
+
+  const customers = useMemo<Customer[]>(
+    () =>
+      vendors.map((v) => ({
+        id: String(v.id),
+        name: v.name,
+        customerCode: v.vendorCode || "",
+        phone: v.phone || "",
+        email: v.email || "",
+      })),
+    [vendors]
+  );
 
   const formatInvoiceId = (num: number) => `${idPrefix}-${String(num).padStart(6, "0")}`;
   const getInvoiceNumber = (id?: string) => {
@@ -1794,4 +1801,4 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   );
 };
 
-export default SalesInvoiceFormPage;
+export default PurchaseInvoiceFormPage;
