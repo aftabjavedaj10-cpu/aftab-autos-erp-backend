@@ -13,6 +13,25 @@ const STATUS_FILTERS = [
   "Partial",
 ];
 
+const parseDMYToDate = (value: string): Date | null => {
+  if (!value) return null;
+  const match = value.trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const parsed = new Date(year, month - 1, day);
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null;
+  }
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+};
+
 interface SalesInvoicePageProps {
   invoices: SalesInvoice[];
   onAddClick: () => void;
@@ -56,8 +75,11 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
         (["Paid", "Unpaid", "Partial"].includes(statusFilter) &&
           (inv.paymentStatus === statusFilter || inv.status === statusFilter));
       const invDate = new Date(inv.date);
-      const matchesStart = !startDate || invDate >= new Date(startDate);
-      const matchesEnd = !endDate || invDate <= new Date(endDate);
+      invDate.setHours(0, 0, 0, 0);
+      const startDateObj = parseDMYToDate(startDate);
+      const endDateObj = parseDMYToDate(endDate);
+      const matchesStart = !startDateObj || invDate >= startDateObj;
+      const matchesEnd = !endDateObj || invDate <= endDateObj;
       const matchesProduct =
         !productSearch ||
         inv.items.some(
@@ -217,14 +239,16 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               </div>
               <div className="flex items-center gap-2 flex-1 md:flex-none">
                 <input
-                  type="date"
+                  type="text"
+                  placeholder="dd/mm/yyyy"
                   className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg py-1.5 px-2 text-[10px] font-bold dark:text-white outline-none"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                 />
                 <span className="text-slate-300 font-bold">to</span>
                 <input
-                  type="date"
+                  type="text"
+                  placeholder="dd/mm/yyyy"
                   className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg py-1.5 px-2 text-[10px] font-bold dark:text-white outline-none"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
@@ -266,8 +290,8 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                 <th className="px-4 py-3">Customer Entity</th>
                 <th className="px-4 py-3">Reference / PO</th>
                 <th className="px-4 py-3">Date / Due</th>
-                <th className="px-4 py-3">Items Sum</th>
-                <th className="px-4 py-3">Total Valuation</th>
+                <th className="px-4 py-3">Total Amount</th>
+                <th className="px-4 py-3">Balance Amount</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -321,12 +345,14 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                       {formatDateDMY(inv.date)}
                     </p>
                   </td>
-                  <td className="px-4 py-3 text-[10px] font-black text-slate-500 dark:text-slate-400">
-                    {inv.items.length}
-                  </td>
                   <td className="px-4 py-3">
                     <p className="font-black text-slate-900 dark:text-white text-[10px]">
                       Rs. {inv.totalAmount.toLocaleString()}
+                    </p>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="font-black text-slate-900 dark:text-white text-[10px]">
+                      Rs. {Math.max(0, (inv.totalAmount || 0) - (inv.amountReceived || 0)).toLocaleString()}
                     </p>
                   </td>
                   <td className="px-4 py-3">
