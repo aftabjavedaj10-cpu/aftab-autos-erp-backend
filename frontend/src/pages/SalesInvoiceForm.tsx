@@ -1504,7 +1504,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
             <div className="mt-2 border-t border-b border-black py-1">
               <svg
-                className="w-[72%] h-12 block mx-auto"
+                className="w-[58%] h-12 block mx-auto"
                 viewBox={`0 0 ${buildReceiptBarcodePattern(formData.id).length} 48`}
                 preserveAspectRatio="none"
                 aria-label="Receipt barcode"
@@ -1607,7 +1607,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             page-break-after: always;
           }
           .print-sheet-80mm {
-            width: 72mm !important;
+            width: 70mm !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             background: #fff !important;
