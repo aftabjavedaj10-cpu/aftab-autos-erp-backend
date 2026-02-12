@@ -39,7 +39,7 @@ const isoToDMY = (iso: string): string => {
   return `${day}/${month}/${year}`;
 };
 
-interface SalesInvoicePageProps {
+interface QuotationPageProps {
   invoices: SalesInvoice[];
   onAddClick: () => void;
   onEditClick: (invoice: SalesInvoice) => void;
@@ -49,14 +49,14 @@ interface SalesInvoicePageProps {
   addButtonLabel?: string;
 }
 
-const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
+const QuotationPage: React.FC<QuotationPageProps> = ({
   invoices,
   onAddClick,
   onEditClick,
   onDelete,
-  pageTitle = "Sales Invoices",
-  pageSubtitle = "Accounts Receivable & Audit Trail",
-  addButtonLabel = "Issue New Invoice",
+  pageTitle = "Quotations",
+  pageSubtitle = "Sales Quotations & Customer Estimates",
+  addButtonLabel = "Issue New Quotation",
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [refSearch, setRefSearch] = useState("");
@@ -552,4 +552,4 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
   );
 };
 
-export default SalesInvoicePage;
+export default QuotationPage;

@@ -19,6 +19,8 @@ import AddCategoryPage from "./AddCategory";
 import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
+import QuotationPage from "./Quotation";
+import QuotationFormPage from "./QuotationForm";
 import SalesModulePage, { type SalesModuleDoc } from "./SalesModulePage";
 import AddSalesModulePage from "./AddSalesModulePage";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
@@ -664,7 +666,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "quotation" && (
-          <SalesInvoicePage
+          <QuotationPage
             invoices={quotationInvoices}
             onAddClick={handleAddQuotation}
             onEditClick={handleEditQuotation}
@@ -675,7 +677,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "add_quotation" && (
-          <SalesInvoiceFormPage
+          <QuotationFormPage
             invoice={editingQuotationInvoice}
             invoices={quotationInvoices}
             products={products}

@@ -2,7 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types";
 
-interface SalesInvoiceFormPageProps {
+interface QuotationFormPageProps {
   invoice?: SalesInvoice;
   invoices: SalesInvoice[];
   products: Product[];
@@ -18,7 +18,7 @@ interface SalesInvoiceFormPageProps {
 
 type PrintMode = "invoice" | "receipt" | "a5" | "token";
 
-const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
+const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
   invoice,
   invoices,
   products,
@@ -28,8 +28,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   onSave,
   onNavigate,
   onNavigateNew,
-  formTitleNew = "New Sales Invoice",
-  formTitleEdit = "Edit Invoice",
+  formTitleNew = "New Quotation",
+  formTitleEdit = "Edit Quotation",
 }) => {
   const isEdit = !!invoice;
 
@@ -1716,4 +1716,4 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   );
 };
 
-export default SalesInvoiceFormPage;
+export default QuotationFormPage;
