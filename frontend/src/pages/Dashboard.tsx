@@ -331,6 +331,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_sales_invoice");
   };
 
+  const getNextSalesInvoiceId = () => {
+    const maxNo = salesInvoices.reduce((max, row) => {
+      const match = String(row.id || "").match(/^SI-(\d{6})$/);
+      const value = match ? Number(match[1]) : 0;
+      return value > max ? value : max;
+    }, 0);
+    return `SI-${String(maxNo + 1).padStart(6, "0")}`;
+  };
+
   const upsertSalesModuleDoc = (
     docs: SalesModuleDoc[],
     incoming: SalesModuleDoc
@@ -694,6 +703,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onNavigateNew={() => {
               setEditingQuotationInvoice(undefined);
               setActiveTab("add_quotation");
+            }}
+            onConvertToSalesInvoice={(quotation) => {
+              const converted: SalesInvoice = {
+                ...quotation,
+                id: getNextSalesInvoiceId(),
+                status: "Draft",
+                paymentStatus: "Unpaid",
+                amountReceived: 0,
+                reference: quotation.reference || quotation.id,
+              };
+              setEditingSalesInvoice(converted);
+              setActiveTab("add_sales_invoice");
             }}
             onSave={async (invoiceData, stayOnPage, savePrices) => {
               try {

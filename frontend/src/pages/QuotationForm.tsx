@@ -12,6 +12,7 @@ interface QuotationFormPageProps {
   onSave: (invoice: SalesInvoice, stayOnPage: boolean, savePrices: boolean) => void;
   onNavigate?: (invoice: SalesInvoice) => void;
   onNavigateNew?: () => void;
+  onConvertToSalesInvoice?: (quotation: SalesInvoice) => void;
   formTitleNew?: string;
   formTitleEdit?: string;
 }
@@ -28,6 +29,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
   onSave,
   onNavigate,
   onNavigateNew,
+  onConvertToSalesInvoice,
   formTitleNew = "New Quotation",
   formTitleEdit = "Edit Quotation",
 }) => {
@@ -383,6 +385,16 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
   const isApproved = formData.status === "Approved";
   const isLocked = isApproved && !isRevising;
 
+  const buildQuotationPayload = () => {
+    const customer = customers.find((c) => c.id === formData.customerId);
+    return {
+      ...formData,
+      customerName: customer?.name || "Unknown",
+      totalAmount: totals.netTotal,
+      paymentStatus: "Unpaid",
+    } as SalesInvoice;
+  };
+
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
     if (!formData.customerId) {
       alert("Required: Please select a Customer Account.");
@@ -408,17 +420,29 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
       return;
     }
 
-    const customer = customers.find((c) => c.id === formData.customerId);
     const finalPaymentStatus = "Unpaid";
     const finalStatus = status === "Draft" ? "Draft" : status;
     const invoiceData: SalesInvoice = {
-      ...formData,
+      ...buildQuotationPayload(),
       status: finalStatus,
       paymentStatus: finalPaymentStatus,
-      customerName: customer?.name || "Unknown",
-      totalAmount: totals.netTotal,
     };
     onSave(invoiceData, stayOnPage, false);
+  };
+
+  const handleConvertToSalesInvoice = () => {
+    if (!onConvertToSalesInvoice) return;
+    if (!formData.customerId) {
+      alert("Required: Please select a Customer Account.");
+      customerInputRef.current?.focus();
+      return;
+    }
+    if (formData.items.length === 0) {
+      alert("Empty quotation: Add at least one item.");
+      searchInputRef.current?.focus();
+      return;
+    }
+    onConvertToSalesInvoice(buildQuotationPayload());
   };
 
   const currentCustomer = useMemo(() => {
@@ -1255,18 +1279,38 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                 >
                   Save & Approved
                 </button>
+                {isApproved && (
+                  <button
+                    onClick={() => {
+                      setIsSaveMenuOpen(false);
+                      handleConvertToSalesInvoice();
+                    }}
+                    className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800 border-t border-slate-100 dark:border-slate-800"
+                  >
+                    Convert to Sales Invoice
+                  </button>
+                )}
               </div>
             )}
           </div>
 
           {isApproved && (
-            <button
-              type="button"
-              onClick={() => setIsRevising(true)}
-              className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
-            >
-              Revise
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleConvertToSalesInvoice}
+                className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-[10px] font-black uppercase tracking-widest"
+              >
+                Convert to Sales Invoice
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsRevising(true)}
+                className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
+              >
+                Revise
+              </button>
+            </>
           )}
         </div>
       </div>

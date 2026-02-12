@@ -143,7 +143,7 @@ const QuotationPage: React.FC<QuotationPageProps> = ({
 
   const handleBulkDelete = () => {
     selectedIds.forEach((id) => onDelete(id));
-    setSuccessMsg(`Successfully deleted ${selectedIds.size} invoices.`);
+    setSuccessMsg(`Successfully deleted ${selectedIds.size} quotations.`);
     setSelectedIds(new Set());
     setIsConfirmModalOpen(false);
     setTimeout(() => setSuccessMsg(""), 5000);
@@ -212,7 +212,7 @@ const QuotationPage: React.FC<QuotationPageProps> = ({
               </span>
               <input
                 type="text"
-                placeholder="Invoice # or Customer..."
+                placeholder="Quotation # or Customer..."
                 className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-11 pr-3 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-[11px] dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -342,7 +342,7 @@ const QuotationPage: React.FC<QuotationPageProps> = ({
                     )}
                   </div>
                 </th>
-                <th className="px-4 py-3">Document #</th>
+                <th className="px-4 py-3">Quotation #</th>
                 <th className="px-4 py-3">Customer Entity</th>
                 <th className="px-4 py-3">Reference / PO</th>
                 <th className="px-4 py-3">Date / Due</th>
@@ -459,7 +459,7 @@ const QuotationPage: React.FC<QuotationPageProps> = ({
                     colSpan={9}
                     className="px-8 py-20 text-center text-slate-400 font-bold uppercase tracking-widest italic opacity-40"
                   >
-                    No invoices found.
+                    No quotations found.
                   </td>
                 </tr>
               )}
@@ -486,7 +486,7 @@ const QuotationPage: React.FC<QuotationPageProps> = ({
               </div>
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest leading-none">
-                  Invoices Selected
+                  Quotations Selected
                 </p>
                 <p className="text-[8px] font-bold text-slate-400 uppercase mt-1">Ready to delete</p>
               </div>
@@ -523,11 +523,11 @@ const QuotationPage: React.FC<QuotationPageProps> = ({
                 ⚠️
               </div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">
-                Delete Invoices?
+                Delete Quotations?
               </h3>
               <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 px-4">
                 Are you sure you want to delete{" "}
-                <span className="text-rose-600 font-black">{selectedIds.size} invoices</span>? This
+                <span className="text-rose-600 font-black">{selectedIds.size} quotations</span>? This
                 action will remove ledger entries and cannot be undone.
               </p>
               <div className="flex gap-3">
