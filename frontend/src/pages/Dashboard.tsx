@@ -44,11 +44,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
-  const [quotations, setQuotations] = useState<SalesModuleDoc[]>([]);
+  const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
+  const [editingQuotationInvoice, setEditingQuotationInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [salesOrders, setSalesOrders] = useState<SalesModuleDoc[]>([]);
   const [salesReturns, setSalesReturns] = useState<SalesModuleDoc[]>([]);
   const [receivePayments, setReceivePayments] = useState<SalesModuleDoc[]>([]);
-  const [editingQuotation, setEditingQuotation] = useState<SalesModuleDoc | undefined>(undefined);
   const [editingSalesOrder, setEditingSalesOrder] = useState<SalesModuleDoc | undefined>(undefined);
   const [editingSalesReturn, setEditingSalesReturn] = useState<SalesModuleDoc | undefined>(undefined);
   const [editingReceivePayment, setEditingReceivePayment] = useState<SalesModuleDoc | undefined>(undefined);
@@ -341,12 +341,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   };
 
   const handleAddQuotation = () => {
-    setEditingQuotation(undefined);
+    setEditingQuotationInvoice(undefined);
     setActiveTab("add_quotation");
   };
 
-  const handleEditQuotation = (doc: SalesModuleDoc) => {
-    setEditingQuotation(doc);
+  const handleEditQuotation = (invoice: SalesInvoice) => {
+    setEditingQuotationInvoice(invoice);
     setActiveTab("add_quotation");
   };
 
@@ -664,32 +664,79 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "quotation" && (
-          <SalesModulePage
-            moduleTitle="Quotation"
-            moduleSubtitle="Sales pre-confirmation documents"
-            addButtonLabel="Add Quotation"
-            docs={quotations}
+          <SalesInvoicePage
+            invoices={quotationInvoices}
             onAddClick={handleAddQuotation}
             onEditClick={handleEditQuotation}
-            onDelete={(id) => setQuotations((prev) => prev.filter((d) => d.id !== id))}
+            onDelete={(id) => {
+              setQuotationInvoices((prev) => prev.filter((inv) => inv.id !== id));
+            }}
           />
         )}
 
         {activeTab === "add_quotation" && (
-          <AddSalesModulePage
-            moduleTitle="Quotation"
-            prefix="QT"
-            docs={quotations}
+          <SalesInvoiceFormPage
+            invoice={editingQuotationInvoice}
+            invoices={quotationInvoices}
+            products={products}
             customers={customers}
-            doc={editingQuotation}
+            company={activeCompany || undefined}
             onBack={() => {
-              setEditingQuotation(undefined);
+              setEditingQuotationInvoice(undefined);
               setActiveTab("quotation");
             }}
-            onSave={(doc) => {
-              setQuotations((prev) => upsertSalesModuleDoc(prev, doc));
-              setEditingQuotation(undefined);
-              setActiveTab("quotation");
+            onNavigate={(inv) => {
+              setEditingQuotationInvoice(inv);
+              setActiveTab("add_quotation");
+            }}
+            onNavigateNew={() => {
+              setEditingQuotationInvoice(undefined);
+              setActiveTab("add_quotation");
+            }}
+            onSave={async (invoiceData, stayOnPage, savePrices) => {
+              try {
+                if (savePrices) {
+                  const latestPriceByProduct = new Map<string, number>();
+                  invoiceData.items.forEach((item) => {
+                    latestPriceByProduct.set(String(item.productId), Number(item.unitPrice || 0));
+                  });
+
+                  const productsToUpdate = products.filter((p) =>
+                    latestPriceByProduct.has(String(p.id))
+                  );
+                  await Promise.all(
+                    productsToUpdate.map(async (p) => {
+                      const newPrice = latestPriceByProduct.get(String(p.id));
+                      if (newPrice === undefined) return;
+                      const currentPrice = Number(String(p.price).replace(/[^0-9.-]/g, "")) || 0;
+                      if (Math.abs(currentPrice - newPrice) < 0.0001) return;
+                      await productAPI.update(String(p.id), { ...p, price: newPrice });
+                    })
+                  );
+
+                  setProducts((prev) =>
+                    prev.map((p) => {
+                      const newPrice = latestPriceByProduct.get(String(p.id));
+                      return newPrice === undefined ? p : { ...p, price: newPrice };
+                    })
+                  );
+                }
+
+                setQuotationInvoices((prev) => {
+                  const exists = prev.find((inv) => inv.id === invoiceData.id);
+                  if (exists) {
+                    return prev.map((inv) => (inv.id === invoiceData.id ? invoiceData : inv));
+                  }
+                  return [invoiceData, ...prev];
+                });
+
+                if (!stayOnPage) {
+                  setEditingQuotationInvoice(undefined);
+                  setActiveTab("quotation");
+                }
+              } catch (err: any) {
+                setError(err?.message || "Failed to save quotation");
+              }
             }}
           />
         )}
