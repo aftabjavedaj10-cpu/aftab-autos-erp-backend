@@ -57,6 +57,20 @@ function App() {
     init();
   }, []);
 
+  // Disable ArrowUp/ArrowDown step behavior for all numeric inputs globally.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLInputElement | null;
+      if (!target || target.tagName !== "INPUT") return;
+      if (target.type !== "number") return;
+      if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+        event.preventDefault();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
+  }, []);
+
   const handleLogin = (email: string) => {
     console.log("Logged in user:", email);
     setIsLoggedIn(true);
