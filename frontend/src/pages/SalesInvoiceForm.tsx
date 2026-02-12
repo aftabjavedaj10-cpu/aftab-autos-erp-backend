@@ -87,6 +87,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [savePrices, setSavePrices] = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
+  const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -122,6 +123,16 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPreviewImage(null);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
   const searchableProducts = useMemo(() => {
@@ -1021,7 +1032,16 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                       selectedIndex === idx ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
                                     }`}>
                                       {p.image ? (
-                                        <img src={p.image} alt={p.name} className="w-full h-full object-cover rounded-lg" />
+                                        <img
+                                          src={p.image}
+                                          alt={p.name}
+                                          className="w-full h-full object-cover rounded-lg cursor-zoom-in"
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setPreviewImage({ src: p.image || "", name: p.name });
+                                          }}
+                                        />
                                       ) : (
                                         "PR"
                                       )}
@@ -1362,6 +1382,39 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               >
                 Clear
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[10000] bg-slate-950/75 backdrop-blur-sm flex items-center justify-center p-4 print:hidden"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative w-full max-w-4xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 truncate pr-4">
+                {previewImage.name}
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewImage(null)}
+                className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600"
+                aria-label="Close image preview"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-950/40 p-3">
+              <img
+                src={previewImage.src}
+                alt={previewImage.name}
+                className="w-full max-h-[75vh] object-contain rounded-md"
+              />
             </div>
           </div>
         </div>
