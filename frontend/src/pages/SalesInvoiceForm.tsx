@@ -1454,7 +1454,72 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <p><span className="font-semibold">Payment Type :</span> <span className="font-black">{(formData.amountReceived || 0) > 0 ? "Cash/Card" : "-"}</span></p>
             </div>
 
-            <div className="mb-2 border-t border-b border-black py-2">
+            <table className="w-full text-[10px] border-y border-black mb-2">
+              <thead>
+                <tr className="border-b border-black">
+                  <th className="text-left py-1 font-black">Description</th>
+                  <th className="text-right py-1 font-black w-10">Qty</th>
+                  <th className="text-right py-1 font-black w-12">Price</th>
+                  <th className="text-right py-1 font-black w-10">Dis</th>
+                  <th className="text-right py-1 font-black w-12">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData.items.map((item) => {
+                  const gross = item.quantity * item.unitPrice;
+                  const lineDiscount = item.discountType === "percent"
+                    ? (gross * (item.discountValue || 0)) / 100
+                    : (item.discountValue || 0);
+                  const lineNet = gross - lineDiscount;
+                  return (
+                    <React.Fragment key={item.productId}>
+                      <tr className="border-b border-black/20">
+                        <td className="py-1 font-semibold" colSpan={5}>{item.productName}</td>
+                      </tr>
+                      <tr className="border-b border-black/20">
+                        <td className="py-1" />
+                        <td className="text-right py-1">{item.quantity}</td>
+                        <td className="text-right py-1">{item.unitPrice.toFixed(0)}</td>
+                        <td className="text-right py-1">{lineDiscount.toFixed(0)}</td>
+                        <td className="text-right py-1">{lineNet.toFixed(0)}</td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+
+            <div className="flex justify-between text-[11px] border-b border-black pb-1 mb-1">
+              <span>Item(s) {formData.items.length}</span>
+              <span>Total Qty {totals.totalQty.toFixed(2)}</span>
+            </div>
+
+            <div className="space-y-1 text-[12px]">
+              <div className="flex justify-between">
+                <span className="font-semibold">Gross Total</span>
+                <span className="font-black">{totals.itemsSubtotal.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="font-semibold">Discount</span>
+                <span className="font-black">{(formData.overallDiscount || 0).toFixed(2)}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_auto] items-center text-[14px] border-t border-black pt-1">
+                <span className="font-black text-center">Net Total PKR :</span>
+                <span className="font-black text-right min-w-[72px]">{totals.netTotal.toFixed(2)}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_auto] items-center">
+                <span className="font-semibold text-center">Amount Received :</span>
+                <span className="font-black text-right min-w-[72px]">{(formData.amountReceived || 0).toFixed(2)}</span>
+              </div>
+              <div className="grid grid-cols-[1fr_auto] items-center">
+                <span className="font-semibold text-center">Cash Back PKR :</span>
+                <span className="font-black text-right min-w-[72px]">{Math.max(0, totals.balanceDue * -1).toFixed(2)}</span>
+              </div>
+            </div>
+
+            <p className="text-center mt-3 font-black tracking-wide">*Thanks For Your Visit*</p>
+
+            <div className="mt-2 border-t border-b border-black py-2">
               <div className="flex h-10 items-stretch justify-center gap-0.5 overflow-hidden">
                 {buildReceiptBarcodePattern(formData.id).split("").map((bit, idx) => (
                   <span
@@ -1465,58 +1530,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               </div>
               <p className="text-center text-[10px] tracking-[0.2em] mt-1 font-semibold">{formData.id}</p>
             </div>
-
-            <div className="w-full text-[10px] border-y border-black mb-2">
-              {formData.items.map((item) => {
-                const gross = item.quantity * item.unitPrice;
-                const lineDiscount = item.discountType === "percent"
-                  ? (gross * (item.discountValue || 0)) / 100
-                  : (item.discountValue || 0);
-                const lineNet = gross - lineDiscount;
-                return (
-                  <div key={item.productId} className="border-b border-black/20 py-1">
-                    <div className="font-semibold">{item.productName}</div>
-                    <div className="grid grid-cols-[1fr_34px_44px_34px_52px] gap-1 text-right">
-                      <span className="text-left text-[9px] font-semibold">Qty Price Dis Total</span>
-                      <span>{item.quantity}</span>
-                      <span>{item.unitPrice.toFixed(0)}</span>
-                      <span>{lineDiscount.toFixed(0)}</span>
-                      <span>{lineNet.toFixed(0)}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div className="flex justify-between text-[11px] border-b border-black pb-1 mb-1">
-              <span>Item(s) {formData.items.length}</span>
-              <span>Total Qty {totals.totalQty.toFixed(2)}</span>
-            </div>
-
-            <div className="space-y-1 text-[12px] text-center">
-              <div className="flex justify-between">
-                <span className="font-semibold">Gross Total</span>
-                <span className="font-black">{totals.itemsSubtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">Discount</span>
-                <span className="font-black">{(formData.overallDiscount || 0).toFixed(2)}</span>
-              </div>
-              <div className="text-[14px] border-t border-black pt-1">
-                <span className="font-black">Net Total PKR : </span>
-                <span className="font-black">{totals.netTotal.toFixed(2)}</span>
-              </div>
-              <div>
-                <span className="font-semibold">Amount Received : </span>
-                <span className="font-black">{(formData.amountReceived || 0).toFixed(2)}</span>
-              </div>
-              <div>
-                <span className="font-semibold">Cash Back PKR : </span>
-                <span className="font-black">{Math.max(0, totals.balanceDue * -1).toFixed(2)}</span>
-              </div>
-            </div>
-
-            <p className="text-center mt-3 font-black tracking-wide">*Thanks For Your Visit*</p>
           </div>
         )}
         {printMode === "a5" && (
