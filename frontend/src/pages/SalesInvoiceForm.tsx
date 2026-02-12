@@ -1504,7 +1504,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
             <div className="mt-2 border-t border-b border-black py-1">
               <svg
-                className="w-full h-8 block"
+                className="w-[72%] h-12 block mx-auto"
                 viewBox={`0 0 ${buildReceiptBarcodePattern(formData.id).length} 48`}
                 preserveAspectRatio="none"
                 aria-label="Receipt barcode"
@@ -1518,7 +1518,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <p className="text-center text-[10px] tracking-[0.2em] mt-1 font-semibold">{formData.id}</p>
             </div>
 
-            <div className="mt-auto pt-2">
+            <div className="mt-0 pt-0">
               <p className="text-center font-black tracking-wide">*Thanks For Your Visit*</p>
             </div>
           </div>
