@@ -383,6 +383,79 @@ const mapQuotationItemToDb = (item: any, quotationId: string) =>
     ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
   );
 
+const mapPurchaseInvoiceFromDb = (row: any) => ({
+  id: row.id,
+  customerId: row.vendor_id ?? row.vendorId,
+  customerName: row.vendor_name ?? row.vendorName,
+  reference: row.reference,
+  vehicleNumber: row.vehicle_number ?? row.vehicleNumber,
+  date: row.date,
+  dueDate: row.due_date ?? row.dueDate,
+  status: row.status,
+  paymentStatus: row.payment_status ?? row.paymentStatus,
+  notes: row.notes,
+  overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
+  amountReceived: row.amount_paid ?? row.amountPaid ?? row.amountReceived ?? 0,
+  totalAmount: row.total_amount ?? row.totalAmount ?? 0,
+  items: Array.isArray(row.items) ? row.items.map(mapPurchaseInvoiceItemFromDb) : [],
+});
+
+const mapPurchaseInvoiceItemFromDb = (row: any) => ({
+  id: row.id,
+  invoiceId: row.purchase_invoice_id ?? row.purchaseInvoiceId,
+  productId: row.product_id ?? row.productId,
+  productCode: row.product_code ?? row.productCode,
+  productName: row.product_name ?? row.productName,
+  unit: row.unit,
+  quantity: Number(row.quantity ?? 0),
+  unitPrice: Number(row.unit_cost ?? row.unitCost ?? row.unitPrice ?? 0),
+  discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
+  discountType: row.discount_type ?? row.discountType ?? "fixed",
+  tax: Number(row.tax ?? 0),
+  total: Number(row.total ?? 0),
+});
+
+const mapPurchaseInvoiceToDb = (invoice: any) =>
+  stripClientOnly(
+    {
+      ...invoice,
+      vendor_id: invoice.customerId ?? invoice.vendor_id,
+      vendor_name: invoice.customerName ?? invoice.vendor_name,
+      vehicle_number: invoice.vehicleNumber ?? invoice.vehicle_number,
+      due_date: invoice.dueDate ?? invoice.due_date,
+      payment_status: invoice.paymentStatus ?? invoice.payment_status,
+      overall_discount: invoice.overallDiscount ?? invoice.overall_discount ?? 0,
+      amount_paid: invoice.amountReceived ?? invoice.amount_paid ?? 0,
+      total_amount: invoice.totalAmount ?? invoice.total_amount ?? 0,
+    },
+    [
+      "items",
+      "customerId",
+      "customerName",
+      "vehicleNumber",
+      "dueDate",
+      "paymentStatus",
+      "overallDiscount",
+      "amountReceived",
+      "totalAmount",
+    ]
+  );
+
+const mapPurchaseInvoiceItemToDb = (item: any, invoiceId: string) =>
+  stripClientOnly(
+    {
+      ...item,
+      purchase_invoice_id: invoiceId,
+      product_id: item.productId ?? item.product_id,
+      product_code: item.productCode ?? item.product_code,
+      product_name: item.productName ?? item.product_name,
+      unit_cost: item.unitPrice ?? item.unit_cost ?? 0,
+      discount_value: item.discountValue ?? item.discount_value ?? 0,
+      discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    },
+    ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
+  );
+
 const mapCompanyFromDb = (row: any) => {
   if (!row) return row;
   return {
@@ -445,6 +518,7 @@ const mapStockLedgerFromDb = (row: any) => ({
 
 const SALES_INVOICE_ID_PATTERN = /^SI-(\d{6})$/;
 const QUOTATION_ID_PATTERN = /^QT-(\d{6})$/;
+const PURCHASE_INVOICE_ID_PATTERN = /^PI-(\d{6})$/;
 const STOCK_ADJUSTMENT_ID_PATTERN = /^ADJ-(\d{6})$/;
 
 const parseSalesInvoiceNumber = (id?: string) => {
@@ -481,6 +555,25 @@ const getLatestSalesInvoiceId = async () => {
 
 const getLatestQuotationId = async () => {
   const rows = await apiCall("/quotations?select=id&order=created_at.desc&limit=1");
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0]?.id ?? null;
+};
+
+const parsePurchaseInvoiceNumber = (id?: string) => {
+  if (!id) return -1;
+  const match = id.match(PURCHASE_INVOICE_ID_PATTERN);
+  return match ? Number(match[1]) : -1;
+};
+
+const formatPurchaseInvoiceId = (num: number) => `PI-${String(num).padStart(6, "0")}`;
+
+const isPurchaseInvoiceDuplicateKeyError = (err: unknown) => {
+  if (!(err instanceof Error)) return false;
+  return err.message.includes('duplicate key value violates unique constraint "purchase_invoices_pkey"');
+};
+
+const getLatestPurchaseInvoiceId = async () => {
+  const rows = await apiCall("/purchase_invoices?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows[0]?.id ?? null;
 };
@@ -862,6 +955,83 @@ export const quotationAPI = {
   },
 };
 
+// ============ PURCHASE INVOICES ============
+export const purchaseInvoiceAPI = {
+  getAll: async () => {
+    await ensurePermission("sales_invoices.read");
+    const rows = await apiCall(
+      "/purchase_invoices?select=*,items:purchase_invoice_items(*)&order=created_at.desc"
+    );
+    return Array.isArray(rows) ? rows.map(mapPurchaseInvoiceFromDb) : rows;
+  },
+  getById: async (id: string) => {
+    await ensurePermission("sales_invoices.read");
+    const row = await getFirst(
+      `/purchase_invoices?select=*,items:purchase_invoice_items(*)&id=eq.${id}`
+    );
+    return mapPurchaseInvoiceFromDb(row);
+  },
+  create: async (invoice: any) => {
+    await ensurePermission("sales_invoices.write");
+    const withCompany = attachOwnership(invoice);
+    let header: any = null;
+    let createPayload = mapPurchaseInvoiceToDb(withCompany);
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        header = await apiCall("/purchase_invoices", "POST", createPayload, true).then(firstRow);
+        break;
+      } catch (err) {
+        if (!isPurchaseInvoiceDuplicateKeyError(err) || attempt === 2) {
+          throw err;
+        }
+        const latestId = await getLatestPurchaseInvoiceId();
+        const currentNum = parsePurchaseInvoiceNumber(createPayload?.id);
+        const latestNum = parsePurchaseInvoiceNumber(latestId ?? undefined);
+        const nextNum = Math.max(currentNum, latestNum, 0) + 1;
+        createPayload = { ...createPayload, id: formatPurchaseInvoiceId(nextNum) };
+      }
+    }
+
+    const items = Array.isArray(invoice.items) ? invoice.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/purchase_invoice_items",
+        "POST",
+        items.map((item: any) =>
+          attachCompanyId(mapPurchaseInvoiceItemToDb(item, header.id))
+        ),
+        true
+      );
+    }
+
+    return purchaseInvoiceAPI.getById(header.id);
+  },
+  update: async (id: string, invoice: any) => {
+    await ensurePermission("sales_invoices.write");
+    await apiCall(`/purchase_invoices?id=eq.${id}`, "PATCH", mapPurchaseInvoiceToDb(invoice), true);
+    await apiCall(`/purchase_invoice_items?purchase_invoice_id=eq.${id}`, "DELETE");
+
+    const items = Array.isArray(invoice.items) ? invoice.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/purchase_invoice_items",
+        "POST",
+        items.map((item: any) =>
+          attachCompanyId(mapPurchaseInvoiceItemToDb(item, id))
+        ),
+        true
+      );
+    }
+
+    return purchaseInvoiceAPI.getById(id);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("sales_invoices.delete");
+    return apiCall(`/purchase_invoices?id=eq.${id}`, "DELETE");
+  },
+};
+
 // ============ STOCK LEDGER ============
 export const stockLedgerAPI = {
   listByCompany: async (companyId: string, limit = 2000) => {
@@ -1193,6 +1363,7 @@ export default {
   vendorAPI,
   categoryAPI,
   salesInvoiceAPI,
+  purchaseInvoiceAPI,
   quotationAPI,
   stockLedgerAPI,
   companyAPI,

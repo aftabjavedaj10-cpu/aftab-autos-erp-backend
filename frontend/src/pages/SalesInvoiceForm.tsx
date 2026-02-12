@@ -5,6 +5,11 @@ import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem } from 
 interface SalesInvoiceFormPageProps {
   invoice?: SalesInvoice;
   forceNewMode?: boolean;
+  idPrefix?: string;
+  partyLabel?: string;
+  partySearchPlaceholder?: string;
+  partyEmptyText?: string;
+  partyCodeLabel?: string;
   invoices: SalesInvoice[];
   products: Product[];
   customers: Customer[];
@@ -22,6 +27,11 @@ type PrintMode = "invoice" | "receipt" | "a5" | "token";
 const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   invoice,
   forceNewMode = false,
+  idPrefix = "SI",
+  partyLabel = "Customer Account",
+  partySearchPlaceholder = "Search name, phone, or code...",
+  partyEmptyText = "No customers found",
+  partyCodeLabel = "Code",
   invoices,
   products,
   customers,
@@ -35,10 +45,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 }) => {
   const isEdit = !!invoice && !forceNewMode;
 
-  const formatInvoiceId = (num: number) => `SI-${String(num).padStart(6, "0")}`;
+  const formatInvoiceId = (num: number) => `${idPrefix}-${String(num).padStart(6, "0")}`;
   const getInvoiceNumber = (id?: string) => {
     if (!id) return -1;
-    const match = id.match(/^SI-(\d{6})$/);
+    const match = id.match(new RegExp(`^${idPrefix}-(\\d{6})$`));
     return match ? Number(match[1]) : -1;
   };
 
@@ -398,7 +408,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
     if (!formData.customerId) {
-      alert("Required: Please select a Customer Account.");
+      alert(`Required: Please select a ${partyLabel}.`);
       customerInputRef.current?.focus();
       return;
     }
@@ -608,7 +618,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 value={formData.id}
                 readOnly
                 className="w-32 bg-transparent text-base font-black text-slate-900 dark:text-white outline-none text-center tracking-widest border-y border-slate-200 dark:border-slate-800"
-                placeholder="SI-000001"
+                placeholder={`${idPrefix}-000001`}
               />
                 <button
                   type="button"
@@ -634,7 +644,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
             <div className="md:col-span-5 relative" ref={customerSearchContainerRef}>
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
-                Customer Account
+                {partyLabel}
               </label>
               <div className="relative group">
               <input
@@ -644,7 +654,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-slate-400 ${
                   isLocked ? "opacity-60 cursor-not-allowed" : ""
                 }`}
-                placeholder="Search name, phone, or code..."
+                placeholder={partySearchPlaceholder}
                 value={customerSearchTerm}
                 onChange={(e) => {
                   setCustomerSearchTerm(e.target.value);
@@ -703,7 +713,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                             <p className={`text-[10px] font-black ${customerSelectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"}`}>{c.name}</p>
                             <div className="flex gap-2 mt-0.5">
                               <span className={`text-[7px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
-                                Code: {c.customerCode || "N/A"}
+                                {partyCodeLabel}: {c.customerCode || "N/A"}
                               </span>
                               <span className={`text-[7px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
                                 • {c.category || "General"}
@@ -715,7 +725,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       ))
                     ) : (
                       <div className="p-5 text-center">
-                        <p className="text-[10px] font-bold text-slate-400">No customers found</p>
+                        <p className="text-[10px] font-bold text-slate-400">{partyEmptyText}</p>
                       </div>
                     )}
                   </div>

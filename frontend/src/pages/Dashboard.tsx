@@ -24,7 +24,7 @@ import QuotationFormPage from "./QuotationForm";
 import SalesModulePage, { type SalesModuleDoc } from "./SalesModulePage";
 import AddSalesModulePage from "./AddSalesModulePage";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, quotationAPI, salesInvoiceAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, quotationAPI, salesInvoiceAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -45,7 +45,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
+  const [editingPurchaseInvoice, setEditingPurchaseInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [salesInvoiceForceNewMode, setSalesInvoiceForceNewMode] = useState(false);
   const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
   const [editingQuotationInvoice, setEditingQuotationInvoice] = useState<SalesInvoice | undefined>(undefined);
@@ -163,6 +165,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           vendorsData,
           categoriesData,
           salesInvoicesData,
+          purchaseInvoicesData,
           quotationData,
           ledgerData,
         ] = await Promise.all([
@@ -171,6 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           vendorAPI.getAll().catch(() => []),
           categoryAPI.getAll().catch(() => []),
           salesInvoiceAPI.getAll().catch(() => []),
+          purchaseInvoiceAPI.getAll().catch(() => []),
           quotationAPI.getAll().catch(() => []),
           companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
         ]);
@@ -184,6 +188,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
         setSalesInvoices(
           Array.isArray(salesInvoicesData) ? salesInvoicesData : salesInvoicesData.data || []
+        );
+        setPurchaseInvoices(
+          Array.isArray(purchaseInvoicesData) ? purchaseInvoicesData : purchaseInvoicesData.data || []
         );
         setQuotationInvoices(
           Array.isArray(quotationData) ? quotationData : quotationData.data || []
@@ -344,6 +351,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setEditingSalesInvoice(invoice);
     setSalesInvoiceForceNewMode(false);
     setActiveTab("add_sales_invoice");
+  };
+
+  const handleAddPurchaseInvoice = () => {
+    setEditingPurchaseInvoice(undefined);
+    setActiveTab("add_purchase_invoice");
+  };
+
+  const handleEditPurchaseInvoice = (invoice: SalesInvoice) => {
+    setEditingPurchaseInvoice(invoice);
+    setActiveTab("add_purchase_invoice");
   };
 
   const getNextSalesInvoiceId = () => {
@@ -895,6 +912,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           />
         )}
 
+        {activeTab === "purchase_invoice" && (
+          <SalesInvoicePage
+            invoices={purchaseInvoices}
+            onAddClick={handleAddPurchaseInvoice}
+            onEditClick={handleEditPurchaseInvoice}
+            onDelete={(id) => {
+              purchaseInvoiceAPI.delete(id).then(() => {
+                setPurchaseInvoices(purchaseInvoices.filter((inv) => inv.id !== id));
+              }).catch(err => {
+                setError(err?.message || "Failed to delete purchase invoice");
+                console.error(err);
+              });
+            }}
+            pageTitle="Purchase Invoices"
+            pageSubtitle="Accounts Payable & Stock Intake"
+            addButtonLabel="Create Purchase Invoice"
+          />
+        )}
+
         {activeTab === "reports" && (
           <ReportsPage
             onNavigate={(tab) => setActiveTab(tab)}
@@ -1056,6 +1092,98 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 }
               } catch (err: any) {
                 setError(err?.message || "Failed to save sales invoice");
+              }
+            }}
+          />
+        )}
+
+        {activeTab === "add_purchase_invoice" && (
+          <SalesInvoiceFormPage
+            invoice={editingPurchaseInvoice}
+            idPrefix="PI"
+            partyLabel="Vendor Account"
+            partySearchPlaceholder="Search vendor name, phone, or code..."
+            partyEmptyText="No vendors found"
+            partyCodeLabel="Vendor"
+            invoices={purchaseInvoices}
+            products={products}
+            customers={vendors.map((v) => ({
+              id: String(v.id),
+              name: v.name,
+              customerCode: v.vendorCode || "",
+              phone: v.phone || "",
+              email: v.email || "",
+            }))}
+            company={activeCompany || undefined}
+            formTitleNew="New Purchase Invoice"
+            formTitleEdit="Edit Purchase Invoice"
+            onBack={() => {
+              setEditingPurchaseInvoice(undefined);
+              setActiveTab("purchase_invoice");
+            }}
+            onNavigate={(inv) => {
+              setEditingPurchaseInvoice(inv);
+              setActiveTab("add_purchase_invoice");
+            }}
+            onNavigateNew={() => {
+              setEditingPurchaseInvoice(undefined);
+              setActiveTab("add_purchase_invoice");
+            }}
+            onSave={async (invoiceData, stayOnPage, savePrices) => {
+              try {
+                if (savePrices) {
+                  const latestCostByProduct = new Map<string, number>();
+                  invoiceData.items.forEach((item) => {
+                    latestCostByProduct.set(String(item.productId), Number(item.unitPrice || 0));
+                  });
+
+                  const productsToUpdate = products.filter((p) => latestCostByProduct.has(String(p.id)));
+                  await Promise.all(
+                    productsToUpdate.map(async (p) => {
+                      const newCost = latestCostByProduct.get(String(p.id));
+                      if (newCost === undefined) return;
+                      const currentCost = Number(String(p.costPrice).replace(/[^0-9.-]/g, "")) || 0;
+                      if (Math.abs(currentCost - newCost) < 0.0001) return;
+                      await productAPI.update(String(p.id), { ...p, costPrice: newCost });
+                    })
+                  );
+
+                  setProducts((prev) =>
+                    prev.map((p) => {
+                      const newCost = latestCostByProduct.get(String(p.id));
+                      return newCost === undefined ? p : { ...p, costPrice: newCost };
+                    })
+                  );
+                }
+
+                const saved = editingPurchaseInvoice
+                  ? await purchaseInvoiceAPI.update(invoiceData.id, invoiceData)
+                  : await purchaseInvoiceAPI.create(invoiceData);
+
+                setPurchaseInvoices((prev) => {
+                  const exists = prev.find((inv) => inv.id === saved.id);
+                  if (exists) {
+                    return prev.map((inv) => (inv.id === saved.id ? saved : inv));
+                  }
+                  return [saved, ...prev];
+                });
+
+                const companyId = getActiveCompanyId();
+                const ledgerData = companyId
+                  ? await stockLedgerAPI.listRecent(companyId, 5000)
+                  : [];
+                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+                setStockLedger(normalizedLedger);
+                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+
+                if (stayOnPage) {
+                  setEditingPurchaseInvoice(saved);
+                } else {
+                  setEditingPurchaseInvoice(undefined);
+                  setActiveTab("purchase_invoice");
+                }
+              } catch (err: any) {
+                setError(err?.message || "Failed to save purchase invoice");
               }
             }}
           />
