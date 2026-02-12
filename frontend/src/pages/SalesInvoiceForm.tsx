@@ -1427,7 +1427,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         )}
         {printMode === "receipt" && (
-          <div className="receipt-print print-sheet-80mm px-1 py-2 text-[11px] leading-tight">
+          <div className="receipt-print print-sheet-80mm px-1 py-2 text-[11px] leading-tight flex flex-col min-h-[250mm]">
             <div className="text-center border-b border-black pb-2 mb-2">
               {company?.logoUrl ? (
                 <img
@@ -1494,41 +1494,31 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <span>Total Qty {totals.totalQty.toFixed(2)}</span>
             </div>
 
-            <div className="space-y-1 text-[12px]">
-              <div className="flex justify-between">
-                <span className="font-semibold">Gross Total</span>
-                <span className="font-black">{totals.itemsSubtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-semibold">Discount</span>
-                <span className="font-black">{(formData.overallDiscount || 0).toFixed(2)}</span>
-              </div>
-              <div className="grid grid-cols-[1fr_auto] items-center text-[14px] border-t border-black pt-1">
-                <span className="font-black text-center">Net Total PKR :</span>
-                <span className="font-black text-right min-w-[72px]">{totals.netTotal.toFixed(2)}</span>
-              </div>
-              <div className="grid grid-cols-[1fr_auto] items-center">
-                <span className="font-semibold text-center">Amount Received :</span>
-                <span className="font-black text-right min-w-[72px]">{(formData.amountReceived || 0).toFixed(2)}</span>
-              </div>
-              <div className="grid grid-cols-[1fr_auto] items-center">
-                <span className="font-semibold text-center">Cash Back PKR :</span>
-                <span className="font-black text-right min-w-[72px]">{Math.max(0, totals.balanceDue * -1).toFixed(2)}</span>
-              </div>
+            <div className="space-y-1 text-[12px] text-center">
+              <p><span className="font-semibold">Gross Total : </span><span className="font-black">{totals.itemsSubtotal.toFixed(2)}</span></p>
+              <p><span className="font-semibold">Discount : </span><span className="font-black">{(formData.overallDiscount || 0).toFixed(2)}</span></p>
+              <p className="text-[14px] border-t border-black pt-1"><span className="font-black">Net Total PKR : </span><span className="font-black">{totals.netTotal.toFixed(2)}</span></p>
+              <p><span className="font-semibold">Amount Received : </span><span className="font-black">{(formData.amountReceived || 0).toFixed(2)}</span></p>
+              <p><span className="font-semibold">Cash Back PKR : </span><span className="font-black">{Math.max(0, totals.balanceDue * -1).toFixed(2)}</span></p>
             </div>
 
-            <p className="text-center mt-3 font-black tracking-wide">*Thanks For Your Visit*</p>
-
-            <div className="mt-2 border-t border-b border-black py-2">
-              <div className="flex h-10 items-stretch justify-center gap-0.5 overflow-hidden">
-                {buildReceiptBarcodePattern(formData.id).split("").map((bit, idx) => (
-                  <span
-                    key={`${formData.id}-bar-${idx}`}
-                    className={bit === "1" ? "bg-black w-[2px]" : "w-[2px]"}
-                  />
-                ))}
+            <div className="mt-auto pt-2 border-t border-black">
+              <p className="text-center font-black tracking-wide mb-2">*Thanks For Your Visit*</p>
+              <div className="border-t border-b border-black py-2">
+                <svg
+                  className="w-full h-12 block"
+                  viewBox={`0 0 ${buildReceiptBarcodePattern(formData.id).length} 48`}
+                  preserveAspectRatio="none"
+                  aria-label="Receipt barcode"
+                >
+                  {buildReceiptBarcodePattern(formData.id)
+                    .split("")
+                    .map((bit, idx) =>
+                      bit === "1" ? <rect key={`${formData.id}-bar-${idx}`} x={idx} y={0} width={1} height={48} fill="black" /> : null
+                    )}
+                </svg>
+                <p className="text-center text-[10px] tracking-[0.2em] mt-1 font-semibold">{formData.id}</p>
               </div>
-              <p className="text-center text-[10px] tracking-[0.2em] mt-1 font-semibold">{formData.id}</p>
             </div>
           </div>
         )}
