@@ -84,13 +84,18 @@ declare
 begin
   if tg_op = 'INSERT' then
     if public.purchase_invoice_is_effective(new.status) then
+      delete from public.stock_ledger
+      where source = 'purchase_invoices'
+        and source_id = new.id
+        and direction = 'IN';
+
       insert into public.stock_ledger (
         company_id, product_id, qty, direction, reason, source, source_id, source_ref
       )
       select
         new.company_id,
         item.product_id,
-        item.quantity,
+        sum(item.quantity)::integer,
         'IN',
         case when new.status = 'Pending' then 'purchase_pending' else 'purchase_approved' end,
         'purchase_invoices',
@@ -99,6 +104,7 @@ begin
       from public.purchase_invoice_items item
       where item.purchase_invoice_id = new.id
         and item.product_id is not null;
+      group by item.product_id;
     end if;
     return new;
   end if;
@@ -107,14 +113,20 @@ begin
     was_effective := public.purchase_invoice_is_effective(old.status);
     is_effective := public.purchase_invoice_is_effective(new.status);
 
-    if (not was_effective and is_effective) then
+    -- Any effective state should reflect the latest line items exactly.
+    if is_effective then
+      delete from public.stock_ledger
+      where source = 'purchase_invoices'
+        and source_id = new.id
+        and direction = 'IN';
+
       insert into public.stock_ledger (
         company_id, product_id, qty, direction, reason, source, source_id, source_ref
       )
       select
         new.company_id,
         item.product_id,
-        item.quantity,
+        sum(item.quantity)::integer,
         'IN',
         case when new.status = 'Pending' then 'purchase_pending' else 'purchase_approved' end,
         'purchase_invoices',
@@ -123,6 +135,7 @@ begin
       from public.purchase_invoice_items item
       where item.purchase_invoice_id = new.id
         and item.product_id is not null;
+      group by item.product_id;
     end if;
 
     if (was_effective and not is_effective) then
@@ -132,7 +145,7 @@ begin
       select
         old.company_id,
         item.product_id,
-        item.quantity,
+        sum(item.quantity)::integer,
         'OUT',
         'purchase_reversal',
         'purchase_invoices',
@@ -141,6 +154,13 @@ begin
       from public.purchase_invoice_items item
       where item.purchase_invoice_id = old.id
         and item.product_id is not null;
+      group by item.product_id
+      on conflict (source, source_id, product_id, direction)
+      do update set
+        qty = excluded.qty,
+        reason = excluded.reason,
+        source_ref = excluded.source_ref,
+        created_at = now();
     end if;
 
     return new;
@@ -153,16 +173,23 @@ begin
       )
       select
         old.company_id,
-        item.product_id,
-        item.quantity,
+        led.product_id,
+        led.qty,
         'OUT',
         'purchase_delete',
         'purchase_invoices',
         old.id,
         old.id
-      from public.purchase_invoice_items item
-      where item.purchase_invoice_id = old.id
-        and item.product_id is not null;
+      from public.stock_ledger led
+      where led.source = 'purchase_invoices'
+        and led.source_id = old.id
+        and led.direction = 'IN'
+      on conflict (source, source_id, product_id, direction)
+      do update set
+        qty = excluded.qty,
+        reason = excluded.reason,
+        source_ref = excluded.source_ref,
+        created_at = now();
     end if;
     return old;
   end if;
@@ -177,110 +204,7 @@ after insert or update or delete on public.purchase_invoices
 for each row
 execute function public.purchase_invoices_apply_stock();
 
-create or replace function public.purchase_invoice_items_apply_stock()
-returns trigger
-language plpgsql
-security definer
-as $$
-declare
-  inv record;
-begin
-  if tg_op = 'INSERT' then
-    select id, company_id, status into inv
-    from public.purchase_invoices
-    where id = new.purchase_invoice_id;
-
-    if public.purchase_invoice_is_effective(inv.status) and new.product_id is not null then
-      insert into public.stock_ledger (
-        company_id, product_id, qty, direction, reason, source, source_id, source_ref
-      )
-      values (
-        inv.company_id,
-        new.product_id,
-        new.quantity,
-        'IN',
-        case when inv.status = 'Pending' then 'purchase_pending' else 'purchase_approved' end,
-        'purchase_invoices',
-        inv.id,
-        inv.id
-      );
-    end if;
-    return new;
-  end if;
-
-  if tg_op = 'UPDATE' then
-    select id, company_id, status into inv
-    from public.purchase_invoices
-    where id = new.purchase_invoice_id;
-
-    if public.purchase_invoice_is_effective(inv.status) then
-      if old.product_id is not null then
-        insert into public.stock_ledger (
-          company_id, product_id, qty, direction, reason, source, source_id, source_ref
-        )
-        values (
-          inv.company_id,
-          old.product_id,
-          old.quantity,
-          'OUT',
-          'purchase_line_reversal',
-          'purchase_invoices',
-          inv.id,
-          inv.id
-        );
-      end if;
-
-      if new.product_id is not null then
-        insert into public.stock_ledger (
-          company_id, product_id, qty, direction, reason, source, source_id, source_ref
-        )
-        values (
-          inv.company_id,
-          new.product_id,
-          new.quantity,
-          'IN',
-          case when inv.status = 'Pending' then 'purchase_pending' else 'purchase_approved' end,
-          'purchase_invoices',
-          inv.id,
-          inv.id
-        );
-      end if;
-    end if;
-    return new;
-  end if;
-
-  if tg_op = 'DELETE' then
-    select id, company_id, status into inv
-    from public.purchase_invoices
-    where id = old.purchase_invoice_id;
-
-    if public.purchase_invoice_is_effective(inv.status) and old.product_id is not null then
-      insert into public.stock_ledger (
-        company_id, product_id, qty, direction, reason, source, source_id, source_ref
-      )
-      values (
-        inv.company_id,
-        old.product_id,
-        old.quantity,
-        'OUT',
-        'purchase_line_delete',
-        'purchase_invoices',
-        inv.id,
-        inv.id
-      );
-    end if;
-    return old;
-  end if;
-
-  return null;
-end;
-$$;
-
 drop trigger if exists trg_purchase_invoice_items_apply_stock on public.purchase_invoice_items;
-create trigger trg_purchase_invoice_items_apply_stock
-after insert or update or delete on public.purchase_invoice_items
-for each row
-execute function public.purchase_invoice_items_apply_stock();
 
 alter table public.purchase_invoices enable row level security;
 alter table public.purchase_invoice_items enable row level security;

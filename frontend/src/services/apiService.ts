@@ -1005,11 +1005,19 @@ export const purchaseInvoiceAPI = {
       );
     }
 
+    // Re-apply header once items are in place so header-level stock trigger
+    // posts the effective IN rows from current lines.
+    await apiCall(
+      `/purchase_invoices?id=eq.${header.id}`,
+      "PATCH",
+      mapPurchaseInvoiceToDb(withCompany),
+      true
+    );
+
     return purchaseInvoiceAPI.getById(header.id);
   },
   update: async (id: string, invoice: any) => {
     await ensurePermission("sales_invoices.write");
-    await apiCall(`/purchase_invoices?id=eq.${id}`, "PATCH", mapPurchaseInvoiceToDb(invoice), true);
     await apiCall(`/purchase_invoice_items?purchase_invoice_id=eq.${id}`, "DELETE");
 
     const items = Array.isArray(invoice.items) ? invoice.items : [];
@@ -1023,6 +1031,8 @@ export const purchaseInvoiceAPI = {
         true
       );
     }
+    // Patch header last so stock trigger rebuilds from the latest item rows.
+    await apiCall(`/purchase_invoices?id=eq.${id}`, "PATCH", mapPurchaseInvoiceToDb(invoice), true);
 
     return purchaseInvoiceAPI.getById(id);
   },
