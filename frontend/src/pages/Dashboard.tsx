@@ -24,7 +24,7 @@ import QuotationFormPage from "./QuotationForm";
 import SalesModulePage, { type SalesModuleDoc } from "./SalesModulePage";
 import AddSalesModulePage from "./AddSalesModulePage";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, salesInvoiceAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, quotationAPI, salesInvoiceAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -156,12 +156,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           const company = await companyAPI.getById(companyId).catch(() => null);
           setActiveCompany(company);
         }
-        const [productsData, customersData, vendorsData, categoriesData, salesInvoicesData, ledgerData] = await Promise.all([
+        const [
+          productsData,
+          customersData,
+          vendorsData,
+          categoriesData,
+          salesInvoicesData,
+          quotationData,
+          ledgerData,
+        ] = await Promise.all([
           productAPI.getAll().catch(() => []),
           customerAPI.getAll().catch(() => []),
           vendorAPI.getAll().catch(() => []),
           categoryAPI.getAll().catch(() => []),
           salesInvoiceAPI.getAll().catch(() => []),
+          quotationAPI.getAll().catch(() => []),
           companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
         ]);
 
@@ -174,6 +183,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
         setSalesInvoices(
           Array.isArray(salesInvoicesData) ? salesInvoicesData : salesInvoicesData.data || []
+        );
+        setQuotationInvoices(
+          Array.isArray(quotationData) ? quotationData : quotationData.data || []
         );
       } catch (err) {
         console.error("Failed to fetch data:", err);
@@ -680,7 +692,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onAddClick={handleAddQuotation}
             onEditClick={handleEditQuotation}
             onDelete={(id) => {
-              setQuotationInvoices((prev) => prev.filter((inv) => inv.id !== id));
+              quotationAPI.delete(id).then(() => {
+                setQuotationInvoices((prev) => prev.filter((inv) => inv.id !== id));
+              }).catch((err) => {
+                setError(err?.message || "Failed to delete quotation");
+                console.error(err);
+              });
             }}
           />
         )}
@@ -745,12 +762,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   );
                 }
 
+                const saved = editingQuotationInvoice?.id
+                  ? await quotationAPI.update(invoiceData.id, invoiceData)
+                  : await quotationAPI.create(invoiceData);
+
                 setQuotationInvoices((prev) => {
-                  const exists = prev.find((inv) => inv.id === invoiceData.id);
+                  const exists = prev.find((inv) => inv.id === saved.id);
                   if (exists) {
-                    return prev.map((inv) => (inv.id === invoiceData.id ? invoiceData : inv));
+                    return prev.map((inv) => (inv.id === saved.id ? saved : inv));
                   }
-                  return [invoiceData, ...prev];
+                  return [saved, ...prev];
                 });
 
                 if (!stayOnPage) {

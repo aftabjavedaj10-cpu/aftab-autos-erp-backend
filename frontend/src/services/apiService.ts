@@ -279,6 +279,38 @@ const mapSalesInvoiceItemFromDb = (row: any) => ({
   total: Number(row.total ?? 0),
 });
 
+const mapQuotationFromDb = (row: any) => ({
+  id: row.id,
+  customerId: row.customer_id ?? row.customerId,
+  customerName: row.customer_name ?? row.customerName,
+  reference: row.reference,
+  vehicleNumber: row.vehicle_number ?? row.vehicleNumber,
+  date: row.date,
+  dueDate: row.due_date ?? row.dueDate,
+  status: row.status,
+  paymentStatus: row.payment_status ?? row.paymentStatus,
+  notes: row.notes,
+  overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
+  amountReceived: row.amount_received ?? row.amountReceived ?? 0,
+  totalAmount: row.total_amount ?? row.totalAmount ?? 0,
+  items: Array.isArray(row.items) ? row.items.map(mapQuotationItemFromDb) : [],
+});
+
+const mapQuotationItemFromDb = (row: any) => ({
+  id: row.id,
+  invoiceId: row.quotation_id ?? row.quotationId,
+  productId: row.product_id ?? row.productId,
+  productCode: row.product_code ?? row.productCode,
+  productName: row.product_name ?? row.productName,
+  unit: row.unit,
+  quantity: Number(row.quantity ?? 0),
+  unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
+  discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
+  discountType: row.discount_type ?? row.discountType ?? "fixed",
+  tax: Number(row.tax ?? 0),
+  total: Number(row.total ?? 0),
+});
+
 const mapSalesInvoiceToDb = (invoice: any) =>
   stripClientOnly(
     {
@@ -300,6 +332,47 @@ const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) =>
     {
       ...item,
       invoice_id: invoiceId,
+      product_id: item.productId ?? item.product_id,
+      product_code: item.productCode ?? item.product_code,
+      product_name: item.productName ?? item.product_name,
+      unit_price: item.unitPrice ?? item.unit_price ?? 0,
+      discount_value: item.discountValue ?? item.discount_value ?? 0,
+      discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    },
+    ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
+  );
+
+const mapQuotationToDb = (quotation: any) =>
+  stripClientOnly(
+    {
+      ...quotation,
+      customer_id: quotation.customerId ?? quotation.customer_id,
+      customer_name: quotation.customerName ?? quotation.customer_name,
+      vehicle_number: quotation.vehicleNumber ?? quotation.vehicle_number,
+      due_date: quotation.dueDate ?? quotation.due_date,
+      payment_status: quotation.paymentStatus ?? quotation.payment_status,
+      overall_discount: quotation.overallDiscount ?? quotation.overall_discount ?? 0,
+      amount_received: quotation.amountReceived ?? quotation.amount_received ?? 0,
+      total_amount: quotation.totalAmount ?? quotation.total_amount ?? 0,
+    },
+    [
+      "items",
+      "customerId",
+      "customerName",
+      "vehicleNumber",
+      "dueDate",
+      "paymentStatus",
+      "overallDiscount",
+      "amountReceived",
+      "totalAmount",
+    ]
+  );
+
+const mapQuotationItemToDb = (item: any, quotationId: string) =>
+  stripClientOnly(
+    {
+      ...item,
+      quotation_id: quotationId,
       product_id: item.productId ?? item.product_id,
       product_code: item.productCode ?? item.product_code,
       product_name: item.productName ?? item.product_name,
@@ -371,6 +444,7 @@ const mapStockLedgerFromDb = (row: any) => ({
 });
 
 const SALES_INVOICE_ID_PATTERN = /^SI-(\d{6})$/;
+const QUOTATION_ID_PATTERN = /^QT-(\d{6})$/;
 const STOCK_ADJUSTMENT_ID_PATTERN = /^ADJ-(\d{6})$/;
 
 const parseSalesInvoiceNumber = (id?: string) => {
@@ -381,13 +455,32 @@ const parseSalesInvoiceNumber = (id?: string) => {
 
 const formatSalesInvoiceId = (num: number) => `SI-${String(num).padStart(6, "0")}`;
 
+const parseQuotationNumber = (id?: string) => {
+  if (!id) return -1;
+  const match = id.match(QUOTATION_ID_PATTERN);
+  return match ? Number(match[1]) : -1;
+};
+
+const formatQuotationId = (num: number) => `QT-${String(num).padStart(6, "0")}`;
+
 const isSalesInvoiceDuplicateKeyError = (err: unknown) => {
   if (!(err instanceof Error)) return false;
   return err.message.includes('duplicate key value violates unique constraint "sales_invoices_pkey"');
 };
 
+const isQuotationDuplicateKeyError = (err: unknown) => {
+  if (!(err instanceof Error)) return false;
+  return err.message.includes('duplicate key value violates unique constraint "quotations_pkey"');
+};
+
 const getLatestSalesInvoiceId = async () => {
   const rows = await apiCall("/sales_invoices?select=id&order=created_at.desc&limit=1");
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0]?.id ?? null;
+};
+
+const getLatestQuotationId = async () => {
+  const rows = await apiCall("/quotations?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows[0]?.id ?? null;
 };
@@ -697,6 +790,75 @@ export const salesInvoiceAPI = {
   delete: async (id: string) => {
     await ensurePermission("sales_invoices.delete");
     return apiCall(`/sales_invoices?id=eq.${id}`, "DELETE");
+  },
+};
+
+// ============ QUOTATIONS ============
+export const quotationAPI = {
+  getAll: async () => {
+    await ensurePermission("sales_invoices.read");
+    const rows = await apiCall(
+      "/quotations?select=*,items:quotation_items(*)&order=created_at.desc"
+    );
+    return Array.isArray(rows) ? rows.map(mapQuotationFromDb) : rows;
+  },
+  getById: async (id: string) => {
+    await ensurePermission("sales_invoices.read");
+    const row = await getFirst(`/quotations?select=*,items:quotation_items(*)&id=eq.${id}`);
+    return mapQuotationFromDb(row);
+  },
+  create: async (quotation: any) => {
+    await ensurePermission("sales_invoices.write");
+    const withCompany = attachOwnership(quotation);
+    let header: any = null;
+    let createPayload = mapQuotationToDb(withCompany);
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        header = await apiCall("/quotations", "POST", createPayload, true).then(firstRow);
+        break;
+      } catch (err) {
+        if (!isQuotationDuplicateKeyError(err) || attempt === 2) {
+          throw err;
+        }
+        const latestId = await getLatestQuotationId();
+        const currentNum = parseQuotationNumber(createPayload?.id);
+        const latestNum = parseQuotationNumber(latestId ?? undefined);
+        const nextNum = Math.max(currentNum, latestNum, 0) + 1;
+        createPayload = { ...createPayload, id: formatQuotationId(nextNum) };
+      }
+    }
+
+    const items = Array.isArray(quotation.items) ? quotation.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/quotation_items",
+        "POST",
+        items.map((item: any) => attachCompanyId(mapQuotationItemToDb(item, header.id))),
+        true
+      );
+    }
+
+    return quotationAPI.getById(header.id);
+  },
+  update: async (id: string, quotation: any) => {
+    await ensurePermission("sales_invoices.write");
+    await apiCall(`/quotations?id=eq.${id}`, "PATCH", mapQuotationToDb(quotation), true);
+    await apiCall(`/quotation_items?quotation_id=eq.${id}`, "DELETE");
+    const items = Array.isArray(quotation.items) ? quotation.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/quotation_items",
+        "POST",
+        items.map((item: any) => attachCompanyId(mapQuotationItemToDb(item, id))),
+        true
+      );
+    }
+    return quotationAPI.getById(id);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("sales_invoices.delete");
+    return apiCall(`/quotations?id=eq.${id}`, "DELETE");
   },
 };
 
@@ -1031,6 +1193,7 @@ export default {
   vendorAPI,
   categoryAPI,
   salesInvoiceAPI,
+  quotationAPI,
   stockLedgerAPI,
   companyAPI,
   profileAPI,
