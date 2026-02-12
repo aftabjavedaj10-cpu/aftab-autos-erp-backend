@@ -721,28 +721,52 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setEditingSalesInvoice(undefined);
               setActiveTab("add_sales_invoice");
             }}
-            onSave={(invoiceData, stayOnPage) => {
-              const action = editingSalesInvoice
-                ? salesInvoiceAPI.update(invoiceData.id, invoiceData)
-                : salesInvoiceAPI.create(invoiceData);
-
-              action
-                .then((saved) => {
-                  setSalesInvoices((prev) => {
-                    const exists = prev.find((inv) => inv.id === saved.id);
-                    if (exists) {
-                      return prev.map((inv) => (inv.id === saved.id ? saved : inv));
-                    }
-                    return [saved, ...prev];
+            onSave={async (invoiceData, stayOnPage, savePrices) => {
+              try {
+                if (savePrices) {
+                  const latestPriceByProduct = new Map<string, number>();
+                  invoiceData.items.forEach((item) => {
+                    latestPriceByProduct.set(String(item.productId), Number(item.unitPrice || 0));
                   });
-                  if (!stayOnPage) {
-                    setEditingSalesInvoice(undefined);
-                    setActiveTab("sales_invoice");
+
+                  const productsToUpdate = products.filter((p) => latestPriceByProduct.has(String(p.id)));
+                  await Promise.all(
+                    productsToUpdate.map(async (p) => {
+                      const newPrice = latestPriceByProduct.get(String(p.id));
+                      if (newPrice === undefined) return;
+                      const currentPrice = Number(String(p.price).replace(/[^0-9.-]/g, "")) || 0;
+                      if (Math.abs(currentPrice - newPrice) < 0.0001) return;
+                      await productAPI.update(String(p.id), { ...p, price: newPrice });
+                    })
+                  );
+
+                  setProducts((prev) =>
+                    prev.map((p) => {
+                      const newPrice = latestPriceByProduct.get(String(p.id));
+                      return newPrice === undefined ? p : { ...p, price: newPrice };
+                    })
+                  );
+                }
+
+                const saved = editingSalesInvoice
+                  ? await salesInvoiceAPI.update(invoiceData.id, invoiceData)
+                  : await salesInvoiceAPI.create(invoiceData);
+
+                setSalesInvoices((prev) => {
+                  const exists = prev.find((inv) => inv.id === saved.id);
+                  if (exists) {
+                    return prev.map((inv) => (inv.id === saved.id ? saved : inv));
                   }
-                })
-                .catch((err) => {
-                  setError(err?.message || "Failed to save sales invoice");
+                  return [saved, ...prev];
                 });
+
+                if (!stayOnPage) {
+                  setEditingSalesInvoice(undefined);
+                  setActiveTab("sales_invoice");
+                }
+              } catch (err: any) {
+                setError(err?.message || "Failed to save sales invoice");
+              }
             }}
           />
         )}

@@ -9,7 +9,7 @@ interface SalesInvoiceFormPageProps {
   customers: Customer[];
   company?: Company;
   onBack: () => void;
-  onSave: (invoice: SalesInvoice, stayOnPage: boolean) => void;
+  onSave: (invoice: SalesInvoice, stayOnPage: boolean, savePrices: boolean) => void;
   onNavigate?: (invoice: SalesInvoice) => void;
   onNavigateNew?: () => void;
 }
@@ -84,6 +84,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
   const [isRevising, setIsRevising] = useState(false);
+  const [savePrices, setSavePrices] = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
 
@@ -413,7 +414,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       customerName: customer?.name || "Unknown",
       totalAmount: totals.netTotal,
     };
-    onSave(invoiceData, stayOnPage);
+    onSave(invoiceData, stayOnPage, savePrices);
   };
 
   const currentCustomer = useMemo(() => {
@@ -505,7 +506,27 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <label className="inline-flex items-center gap-2">
+            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Save Prices</span>
+            <button
+              type="button"
+              onClick={() => setSavePrices((prev) => !prev)}
+              className={`relative w-10 h-6 rounded-full border transition-colors ${
+                savePrices
+                  ? "bg-orange-500 border-orange-500"
+                  : "bg-slate-200 border-slate-300 dark:bg-slate-700 dark:border-slate-600"
+              }`}
+              aria-pressed={savePrices}
+              title="When enabled, edited item prices will update product sale prices."
+            >
+              <span
+                className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                  savePrices ? "translate-x-5" : "translate-x-0.5"
+                }`}
+              />
+            </button>
+          </label>
           <span
             className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
               formData.status === "Draft"
@@ -1607,7 +1628,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             page-break-after: always;
           }
           .print-sheet-80mm {
-            width: 70mm !important;
+            width: 72mm !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             background: #fff !important;
