@@ -208,6 +208,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (!error) return;
+    const timer = window.setTimeout(() => setError(null), 5000);
+    return () => window.clearTimeout(timer);
+  }, [error]);
+
   const handleAddProduct = () => {
     setEditingProduct(undefined);
     setActiveTab('add_product');
@@ -504,8 +510,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           </div>
         )}
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
-            {error}
+          <div className="fixed top-20 right-6 z-[12000] max-w-md w-full">
+            <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 shadow-2xl rounded-2xl overflow-hidden">
+              <div className="h-1.5 bg-rose-600" />
+              <div className="p-4 flex items-start gap-3">
+                <div className="w-7 h-7 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 flex items-center justify-center text-xs font-black">
+                  !
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-1">
+                    Action Failed
+                  </p>
+                  <p className="text-[12px] font-bold text-slate-700 dark:text-slate-200 break-words">{error}</p>
+                </div>
+                <button
+                  onClick={() => setError(null)}
+                  className="w-7 h-7 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600 text-sm"
+                  aria-label="Dismiss error popup"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

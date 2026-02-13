@@ -118,6 +118,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [salesPriceByProductId, setSalesPriceByProductId] = useState<Record<string, number>>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -452,20 +453,20 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
     if (!formData.customerId) {
-      alert(`Required: Please select a ${partyLabel}.`);
+      setFormError(`Required: Please select a ${partyLabel}.`);
       customerInputRef.current?.focus();
       return;
     }
 
     if (formData.items.length === 0) {
-      alert("Empty invoice: Add at least one item.");
+      setFormError("Empty invoice: Add at least one item.");
       searchInputRef.current?.focus();
       return;
     }
 
     const zeroQtyItems = formData.items.filter((item) => item.quantity <= 0);
     if (zeroQtyItems.length > 0) {
-      alert("Invalid quantity: There are items with 0 qty.");
+      setFormError("Invalid quantity: There are items with 0 qty.");
       const firstInvalidId = zeroQtyItems[0].productId;
       const qtyInput = document.getElementById(`qty-${firstInvalidId}`) as HTMLInputElement;
       if (qtyInput) {
@@ -557,6 +558,12 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
     }
   }, [invoice, nextInvoiceId, formData.id]);
 
+  useEffect(() => {
+    if (!formError) return;
+    const timer = window.setTimeout(() => setFormError(null), 4500);
+    return () => window.clearTimeout(timer);
+  }, [formError]);
+
   const sortedInvoices = useMemo(() => {
     return [...invoices].sort((a, b) => {
       const aNum = getInvoiceNumber(a.id);
@@ -592,6 +599,31 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 
   return (
     <div className="invoice-editor-root max-w-7xl mx-auto animate-in fade-in duration-300 pb-12 relative">
+      {formError && (
+        <div className="fixed top-20 right-6 z-[12000] max-w-md w-full">
+          <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 shadow-2xl rounded-2xl overflow-hidden">
+            <div className="h-1.5 bg-rose-600" />
+            <div className="p-4 flex items-start gap-3">
+              <div className="w-7 h-7 rounded-full bg-rose-100 dark:bg-rose-900/40 text-rose-600 flex items-center justify-center text-xs font-black">
+                !
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-1">
+                  Validation Error
+                </p>
+                <p className="text-[12px] font-bold text-slate-700 dark:text-slate-200 break-words">{formError}</p>
+              </div>
+              <button
+                onClick={() => setFormError(null)}
+                className="w-7 h-7 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600 text-sm"
+                aria-label="Dismiss validation popup"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <div className="flex items-center gap-3">
           <button
