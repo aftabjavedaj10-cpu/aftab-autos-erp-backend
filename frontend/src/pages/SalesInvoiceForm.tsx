@@ -437,6 +437,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   };
 
   const isApproved = formData.status === "Approved";
+  const isPending = formData.status === "Pending";
+  const isVoid = formData.status === "Void";
+  const isDeleted = formData.status === "Deleted";
   const isLocked = isApproved && !isRevising;
   const canVoid = !isPurchaseMode && isEdit && (formData.status === "Pending" || formData.status === "Approved");
 
@@ -648,10 +651,20 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
       <div className="space-y-4">
         <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 space-y-6">
-          {isApproved && (
+          {(isApproved || isPending || isVoid || isDeleted) && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="text-[56px] sm:text-[72px] font-black uppercase tracking-[0.2em] text-emerald-600/15 rotate-[-12deg]">
-                Approved
+              <div
+                className={`text-[56px] sm:text-[72px] font-black uppercase tracking-[0.2em] rotate-[-12deg] ${
+                  isDeleted
+                    ? "text-slate-600/20"
+                    : isVoid
+                    ? "text-rose-600/15"
+                    : isPending
+                    ? "text-amber-600/15"
+                    : "text-emerald-600/15"
+                }`}
+              >
+                {isDeleted ? "Void Deleted" : isVoid ? "Void" : isPending ? "Pending" : "Approved"}
               </div>
             </div>
           )}

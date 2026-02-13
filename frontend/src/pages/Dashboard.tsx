@@ -910,6 +910,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               try {
                 const current = salesInvoices.find((inv) => inv.id === id);
                 if (!current) return;
+                if (current.status !== "Void") {
+                  setError("Invoice must be set to Void before marking as Deleted.");
+                  return;
+                }
                 const softDeleted = { ...current, status: "Deleted" as const };
                 const updated = await salesInvoiceAPI.update(id, softDeleted);
                 setSalesInvoices((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
@@ -937,6 +941,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               try {
                 const current = purchaseInvoices.find((inv) => inv.id === id);
                 if (!current) return;
+                if (current.status !== "Void") {
+                  setError("Purchase invoice must be set to Void before marking as Deleted.");
+                  return;
+                }
                 const softDeleted = { ...current, status: "Deleted" as const };
                 const updated = await purchaseInvoiceAPI.update(id, softDeleted);
                 setPurchaseInvoices((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));

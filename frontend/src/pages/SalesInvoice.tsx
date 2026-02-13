@@ -80,6 +80,9 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
+      if (statusFilter !== "Deleted" && inv.status === "Deleted") {
+        return false;
+      }
       const matchesSearch =
         inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         inv.customerName.toLowerCase().includes(searchQuery.toLowerCase());
