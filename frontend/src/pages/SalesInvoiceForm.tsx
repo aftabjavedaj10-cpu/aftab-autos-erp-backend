@@ -49,7 +49,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   formTitleEdit = "Edit Invoice",
 }) => {
   const isEdit = !!invoice && !forceNewMode;
-  const isPurchaseMode = idPrefix === "PI";
 
   const formatInvoiceId = (num: number) => `${idPrefix}-${String(num).padStart(6, "0")}`;
   const getInvoiceNumber = (id?: string) => {
@@ -110,7 +109,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
-  const [salesPriceByProductId, setSalesPriceByProductId] = useState<Record<string, number>>({});
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -240,7 +238,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   }, [formData.items, formData.overallDiscount, formData.amountReceived]);
 
   const handleAddItem = (product: Product) => {
-    const sourceUnitPrice = isPurchaseMode ? product.costPrice : product.price;
+    const sourceUnitPrice = product.price;
     const rawUnitPrice =
       typeof sourceUnitPrice === "string" ? sourceUnitPrice : `${sourceUnitPrice ?? 0}`;
     const cleanUnitPrice = rawUnitPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
@@ -266,13 +264,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
         total: unitPrice,
       };
       setFormData({ ...formData, items: [...formData.items, newItem] });
-    }
-
-    if (isPurchaseMode) {
-      const rawSalesPrice = typeof product.price === "string" ? product.price : `${product.price ?? 0}`;
-      const cleanSalesPrice = rawSalesPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
-      const parsedSalesPrice = parseFloat(cleanSalesPrice) || 0;
-      setSalesPriceByProductId((prev) => ({ ...prev, [String(product.id)]: parsedSalesPrice }));
     }
 
     setSearchTerm("");
@@ -383,13 +374,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       next.delete(id);
       setSelectedItemIds(next);
     }
-    if (isPurchaseMode) {
-      setSalesPriceByProductId((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    }
   };
 
   const handleDeleteSelected = () => {
@@ -398,15 +382,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       ...formData,
       items: formData.items.filter((i) => !selectedItemIds.has(i.productId)),
     });
-    if (isPurchaseMode) {
-      setSalesPriceByProductId((prev) => {
-        const next = { ...prev };
-        selectedItemIds.forEach((id) => {
-          delete next[id];
-        });
-        return next;
-      });
-    }
     setSelectedItemIds(new Set());
   };
 
@@ -478,14 +453,13 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       customerName: customer?.name || "Unknown",
       totalAmount: totals.netTotal,
     };
-    onSave(invoiceData, stayOnPage, savePrices, isPurchaseMode ? salesPriceByProductId : undefined);
+    onSave(invoiceData, stayOnPage, savePrices);
   };
 
   const handleVoid = () => {
     if (!canVoid) return;
-    const docLabel = isPurchaseMode ? "purchase invoice" : "invoice";
     const confirmed = window.confirm(
-      `Void ${docLabel} ${formData.id}? This will reverse stock effect and keep document for audit.`
+      `Void invoice ${formData.id}? This will reverse stock effect and keep document for audit.`
     );
     if (!confirmed) return;
     handleSubmit("Void", true);
@@ -531,19 +505,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       });
     }
   }, [invoice]);
-
-  useEffect(() => {
-    if (!isPurchaseMode) return;
-    const nextSalesPriceMap: Record<string, number> = {};
-    formData.items.forEach((item) => {
-      const product = products.find((p) => String(p.id) === String(item.productId));
-      if (!product) return;
-      const rawSalesPrice = typeof product.price === "string" ? product.price : `${product.price ?? 0}`;
-      const cleanSalesPrice = rawSalesPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
-      nextSalesPriceMap[String(item.productId)] = parseFloat(cleanSalesPrice) || 0;
-    });
-    setSalesPriceByProductId(nextSalesPriceMap);
-  }, [isPurchaseMode, formData.items, products]);
 
   useEffect(() => {
     if (!invoice && formData.id !== nextInvoiceId) {
@@ -925,8 +886,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   <th className="px-3 py-3">Product</th>
                   <th className="px-3 py-3 w-16 text-center">Unit</th>
                   <th className="px-3 py-3 w-16 text-center">Qty</th>
-                  <th className="px-3 py-3 w-24 text-right">{isPurchaseMode ? "Unit Cost" : "Unit Price"}</th>
-                  {isPurchaseMode && <th className="px-3 py-3 w-24 text-right">Sales Price</th>}
+                  <th className="px-3 py-3 w-24 text-right">Unit Price</th>
                   <th className="px-3 py-3 w-32 text-right">Discount</th>
                   <th className="px-3 py-3 w-28 text-right">Net</th>
                   <th className="px-3 py-3 w-12 text-center">Move</th>
@@ -1033,25 +993,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                           }
                         />
                       </td>
-                      {isPurchaseMode && (
-                        <td className="px-3 py-2 text-right">
-                          <input
-                            id={`sale-price-${item.productId}`}
-                            type="number"
-                            disabled={isLocked}
-                            className={`w-16 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all ${
-                              isLocked ? "opacity-60 cursor-not-allowed" : ""
-                            }`}
-                            value={salesPriceByProductId[String(item.productId)] ?? 0}
-                            onChange={(e) =>
-                              setSalesPriceByProductId((prev) => ({
-                                ...prev,
-                                [String(item.productId)]: Math.max(0, parseFloat(e.target.value) || 0),
-                              }))
-                            }
-                          />
-                        </td>
-                      )}
                       <td className="px-3 py-2 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <input
@@ -1109,7 +1050,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 })}
                 <tr className="bg-orange-50/10 dark:bg-orange-950/10 border-t border-slate-200 dark:border-slate-700">
                   <td className="px-4 py-3 text-center">+</td>
-                  <td colSpan={isPurchaseMode ? 11 : 10} className="px-3 py-3">
+                  <td colSpan={10} className="px-3 py-3">
                     <div className="relative z-[120]" ref={searchContainerRef}>
                       <input
                         ref={searchInputRef}
@@ -1189,7 +1130,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                     <div className={`text-[10px] font-black ${
                                       selectedIndex === idx ? "text-white" : "text-orange-600"
                                     }`}>
-                                      {isPurchaseMode ? p.costPrice : p.price}
+                                      {p.price}
                                     </div>
                                     <div className={`text-[9px] ${
                                       selectedIndex === idx ? "text-orange-100" : "text-slate-400"
