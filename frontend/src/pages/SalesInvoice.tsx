@@ -8,6 +8,8 @@ const STATUS_FILTERS = [
   "Draft",
   "Pending",
   "Approved",
+  "Void",
+  "Deleted",
   "Paid",
   "Unpaid",
   "Partial",
@@ -86,7 +88,8 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
         (inv.reference?.toLowerCase() || "").includes(refSearch.toLowerCase());
       const matchesStatus =
         statusFilter === "All Status" ||
-        (["Draft", "Pending", "Approved"].includes(statusFilter) && inv.status === statusFilter) ||
+        (["Draft", "Pending", "Approved", "Void", "Deleted"].includes(statusFilter) &&
+          inv.status === statusFilter) ||
         (["Paid", "Unpaid", "Partial"].includes(statusFilter) &&
           (inv.paymentStatus === statusFilter || inv.status === statusFilter));
       const invDate = new Date(inv.date);
@@ -143,7 +146,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
 
   const handleBulkDelete = () => {
     selectedIds.forEach((id) => onDelete(id));
-    setSuccessMsg(`Successfully deleted ${selectedIds.size} invoices.`);
+    setSuccessMsg(`Moved ${selectedIds.size} invoices to Deleted status.`);
     setSelectedIds(new Set());
     setIsConfirmModalOpen(false);
     setTimeout(() => setSuccessMsg(""), 5000);
@@ -414,7 +417,11 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                   <td className="px-4 py-3">
                     <span
                       className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
-                        inv.status === "Paid"
+                        inv.status === "Deleted"
+                          ? "bg-slate-200 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-300"
+                          : inv.status === "Void"
+                          ? "bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-900/20"
+                          : inv.status === "Paid"
                           ? "bg-emerald-50 text-emerald-600 border-emerald-100 dark:bg-emerald-900/20"
                           : "bg-slate-100 text-slate-600"
                       }`}
@@ -523,12 +530,12 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                 ⚠️
               </div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">
-                Delete Invoices?
+                Mark As Deleted?
               </h3>
               <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 px-4">
-                Are you sure you want to delete{" "}
-                <span className="text-rose-600 font-black">{selectedIds.size} invoices</span>? This
-                action will remove ledger entries and cannot be undone.
+                Are you sure you want to set{" "}
+                <span className="text-rose-600 font-black">{selectedIds.size} invoices</span> to
+                Deleted status? They will remain in database and can be filtered by status.
               </p>
               <div className="flex gap-3">
                 <button
@@ -541,7 +548,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                   onClick={handleBulkDelete}
                   className="flex-1 py-3.5 bg-rose-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-rose-600/20 hover:bg-rose-700 transition-all"
                 >
-                  Delete Now
+                  Set Deleted
                 </button>
               </div>
             </div>

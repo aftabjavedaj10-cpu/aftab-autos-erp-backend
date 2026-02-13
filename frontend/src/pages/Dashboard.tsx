@@ -906,10 +906,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={salesInvoices}
             onAddClick={handleAddSalesInvoice}
             onEditClick={handleEditSalesInvoice}
-            onDelete={(id) => {
-              salesInvoiceAPI.delete(id).then(() => {
-                setSalesInvoices((prev) => prev.filter((inv) => inv.id !== id));
-              });
+            onDelete={async (id) => {
+              try {
+                const current = salesInvoices.find((inv) => inv.id === id);
+                if (!current) return;
+                const softDeleted = { ...current, status: "Deleted" as const };
+                const updated = await salesInvoiceAPI.update(id, softDeleted);
+                setSalesInvoices((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
+                const companyId = getActiveCompanyId();
+                const ledgerData = companyId
+                  ? await stockLedgerAPI.listRecent(companyId, 5000)
+                  : [];
+                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+                setStockLedger(normalizedLedger);
+                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+              } catch (err: any) {
+                setError(err?.message || "Failed to set sales invoice as deleted");
+                console.error(err);
+              }
             }}
           />
         )}
@@ -919,13 +933,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={purchaseInvoices}
             onAddClick={handleAddPurchaseInvoice}
             onEditClick={handleEditPurchaseInvoice}
-            onDelete={(id) => {
-              purchaseInvoiceAPI.delete(id).then(() => {
-                setPurchaseInvoices(purchaseInvoices.filter((inv) => inv.id !== id));
-              }).catch(err => {
-                setError(err?.message || "Failed to delete purchase invoice");
+            onDelete={async (id) => {
+              try {
+                const current = purchaseInvoices.find((inv) => inv.id === id);
+                if (!current) return;
+                const softDeleted = { ...current, status: "Deleted" as const };
+                const updated = await purchaseInvoiceAPI.update(id, softDeleted);
+                setPurchaseInvoices((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
+                const companyId = getActiveCompanyId();
+                const ledgerData = companyId
+                  ? await stockLedgerAPI.listRecent(companyId, 5000)
+                  : [];
+                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+                setStockLedger(normalizedLedger);
+                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+              } catch (err: any) {
+                setError(err?.message || "Failed to set purchase invoice as deleted");
                 console.error(err);
-              });
+              }
             }}
           />
         )}
