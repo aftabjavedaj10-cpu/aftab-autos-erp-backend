@@ -441,7 +441,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const isVoid = formData.status === "Void";
   const isDeleted = formData.status === "Deleted";
   const isLocked = isApproved && !isRevising;
-  const canVoid = !isPurchaseMode && isEdit && (formData.status === "Pending" || formData.status === "Approved");
+  const canVoid = isEdit && (formData.status === "Pending" || formData.status === "Approved");
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
     if (!formData.customerId) {
@@ -483,11 +483,22 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
   const handleVoid = () => {
     if (!canVoid) return;
+    const docLabel = isPurchaseMode ? "purchase invoice" : "invoice";
     const confirmed = window.confirm(
-      `Void ${formData.id}? This will reverse stock effect and keep document for audit.`
+      `Void ${docLabel} ${formData.id}? This will reverse stock effect and keep document for audit.`
     );
     if (!confirmed) return;
     handleSubmit("Void", true);
+  };
+
+  const handleReviseAction = () => {
+    if (!isApproved) return;
+    if (!isRevising) {
+      setIsRevising(true);
+      return;
+    }
+    handleSubmit("Approved", true);
+    setIsRevising(false);
   };
 
   const currentCustomer = useMemo(() => {
@@ -650,7 +661,11 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       </div>
 
       <div className="space-y-4">
-        <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 space-y-6">
+        <div
+          className={`bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-20 space-y-6 transition-all ${
+            isLocked ? "blur-[1.2px] opacity-75" : ""
+          }`}
+        >
           {(isApproved || isPending || isVoid || isDeleted) && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div
@@ -1401,60 +1416,62 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             )}
           </div>
 
-          <div className="relative" ref={saveMenuRef}>
-            <div className="inline-flex">
-              <button
-                type="button"
-                onClick={() => setIsSaveMenuOpen((prev) => !prev)}
-                disabled={isLocked}
-                className={`px-4 py-2 bg-orange-600 border border-orange-500 rounded-l-lg text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all ${
-                  isLocked ? "opacity-60 cursor-not-allowed" : ""
-                }`}
-              >
-                Save
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsSaveMenuOpen((prev) => !prev)}
-                disabled={isLocked}
-                className={`w-8 h-8 flex items-center justify-center bg-orange-600 border border-l-0 border-orange-500 rounded-r-lg text-white text-[10px] font-black ${
-                  isLocked ? "opacity-60 cursor-not-allowed" : ""
-                }`}
-              >
-                ▴
-              </button>
-            </div>
-            {isSaveMenuOpen && (
-              <div className="absolute bottom-full right-0 mb-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-lg overflow-hidden z-[300]">
+          {!isApproved && (
+            <div className="relative" ref={saveMenuRef}>
+              <div className="inline-flex">
                 <button
-                  onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Draft", true); }}
-                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                  type="button"
+                  onClick={() => setIsSaveMenuOpen((prev) => !prev)}
+                  disabled={isLocked}
+                  className={`px-4 py-2 bg-orange-600 border border-orange-500 rounded-l-lg text-white font-black text-[10px] uppercase tracking-widest hover:bg-orange-700 transition-all ${
+                    isLocked ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
                 >
-                  Save & Edit
+                  Save
                 </button>
                 <button
-                  onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Pending", false); }}
-                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                  type="button"
+                  onClick={() => setIsSaveMenuOpen((prev) => !prev)}
+                  disabled={isLocked}
+                  className={`w-8 h-8 flex items-center justify-center bg-orange-600 border border-l-0 border-orange-500 rounded-r-lg text-white text-[10px] font-black ${
+                    isLocked ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
                 >
-                  Save & Pending
-                </button>
-                <button
-                  onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Approved", false); }}
-                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
-                >
-                  Save & Approved
+                  ▴
                 </button>
               </div>
-            )}
-          </div>
+              {isSaveMenuOpen && (
+                <div className="absolute bottom-full right-0 mb-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-lg overflow-hidden z-[300]">
+                  <button
+                    onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Draft", true); }}
+                    className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                  >
+                    Save & Edit
+                  </button>
+                  <button
+                    onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Pending", false); }}
+                    className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                  >
+                    Save & Pending
+                  </button>
+                  <button
+                    onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Approved", false); }}
+                    className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                  >
+                    Save & Approved
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
           {isApproved && (
             <button
               type="button"
-              onClick={() => setIsRevising(true)}
+              onClick={handleReviseAction}
               className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
             >
-              Revise
+              {isRevising ? "Save Revision" : "Revise"}
             </button>
           )}
           {canVoid && (
