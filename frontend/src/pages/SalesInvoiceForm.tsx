@@ -898,7 +898,11 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-10 overflow-visible">
+        <div
+          className={`bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm relative z-10 overflow-visible transition-all ${
+            isLocked ? "blur-[1.2px] opacity-75" : ""
+          }`}
+        >
           <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight border-b border-slate-200 dark:border-slate-700">
@@ -1215,7 +1219,11 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </table>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-0">
+        <div
+          className={`grid grid-cols-1 lg:grid-cols-3 gap-4 relative z-0 transition-all ${
+            isLocked ? "blur-[1.2px] opacity-75" : ""
+          }`}
+        >
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white dark:bg-slate-900 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between gap-6">
               <div>
