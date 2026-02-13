@@ -22,6 +22,43 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 
 const REST_BASE_URL = `${SUPABASE_URL}/rest/v1`;
 const FUNCTIONS_BASE_URL = `${SUPABASE_URL}/functions/v1`;
+const GLOBAL_LOADING_EVENT = "app:global-loading";
+
+let inFlightRequestCount = 0;
+
+const emitGlobalLoading = () => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(GLOBAL_LOADING_EVENT, {
+      detail: { isLoading: inFlightRequestCount > 0, count: inFlightRequestCount },
+    })
+  );
+};
+
+const startGlobalLoading = () => {
+  inFlightRequestCount += 1;
+  emitGlobalLoading();
+};
+
+const endGlobalLoading = () => {
+  inFlightRequestCount = Math.max(0, inFlightRequestCount - 1);
+  emitGlobalLoading();
+};
+
+export const subscribeGlobalLoading = (
+  callback: (state: { isLoading: boolean; count: number }) => void
+) => {
+  if (typeof window === "undefined") return () => {};
+
+  const handler = (event: Event) => {
+    const custom = event as CustomEvent<{ isLoading: boolean; count: number }>;
+    callback(custom.detail || { isLoading: false, count: 0 });
+  };
+
+  window.addEventListener(GLOBAL_LOADING_EVENT, handler as EventListener);
+  callback({ isLoading: inFlightRequestCount > 0, count: inFlightRequestCount });
+  return () => window.removeEventListener(GLOBAL_LOADING_EVENT, handler as EventListener);
+};
 
 const buildUrl = (path: string) => `${REST_BASE_URL}${path}`;
 const buildFunctionUrl = (path: string) =>
@@ -33,99 +70,114 @@ const apiCall = async (
   body?: any,
   preferReturn = false
 ) => {
-  const token = await getAccessToken();
-  const headers: Record<string, string> = {
-    apikey: SUPABASE_ANON_KEY || "",
-    Authorization: `Bearer ${token}`,
-  };
-
-  if (method !== "GET") {
-    headers["Content-Type"] = "application/json";
-  }
-
-  if (preferReturn) {
-    headers["Prefer"] = "return=representation";
-  }
-
-  const options: RequestInit = {
-    method,
-    headers,
-  };
-
-  if (body !== undefined) {
-    options.body = JSON.stringify(body);
-  }
-
-  const response = await fetch(buildUrl(path), options);
-
-  if (!response.ok) {
-    let errorMessage = `API Error: ${response.status}`;
-    try {
-      const error = await response.json();
-      errorMessage = error?.message || error?.error || errorMessage;
-    } catch {
-      // ignore json parse errors
-    }
-    if (errorMessage.includes("products_product_code_key")) {
-      errorMessage = "Product code already exists. Use a unique product code.";
-    }
-    throw new Error(errorMessage);
-  }
-
-  if (response.status === 204) {
-    return null;
-  }
-  const raw = await response.text();
-  if (!raw || !raw.trim()) {
-    return null;
-  }
+  startGlobalLoading();
   try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
+    const token = await getAccessToken();
+    const headers: Record<string, string> = {
+      apikey: SUPABASE_ANON_KEY || "",
+      Authorization: `Bearer ${token}`,
+    };
+
+    if (method !== "GET") {
+      headers["Content-Type"] = "application/json";
+    }
+
+    if (preferReturn) {
+      headers["Prefer"] = "return=representation";
+    }
+
+    const options: RequestInit = {
+      method,
+      headers,
+    };
+
+    if (body !== undefined) {
+      options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(buildUrl(path), options);
+
+    if (!response.ok) {
+      let errorMessage = `API Error: ${response.status}`;
+      try {
+        const error = await response.json();
+        errorMessage = error?.message || error?.error || errorMessage;
+      } catch {
+        // ignore json parse errors
+      }
+      if (errorMessage.includes("products_product_code_key")) {
+        errorMessage = "Product code already exists. Use a unique product code.";
+      }
+      throw new Error(errorMessage);
+    }
+
+    if (response.status === 204) {
+      return null;
+    }
+    const raw = await response.text();
+    if (!raw || !raw.trim()) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  } finally {
+    endGlobalLoading();
   }
 };
 
 const functionCall = async (path: string, body: any) => {
-  const token = await getAccessToken();
-  const response = await fetch(buildFunctionUrl(path), {
-    method: "POST",
-    headers: {
-      apikey: SUPABASE_ANON_KEY || "",
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data?.error || "Function call failed");
-  }
-  return data;
-};
-
-const uploadToStorage = async (bucket: string, path: string, file: File) => {
-  const token = await getAccessToken();
-  const response = await fetch(
-    `${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`,
-    {
+  startGlobalLoading();
+  try {
+    const token = await getAccessToken();
+    const response = await fetch(buildFunctionUrl(path), {
       method: "POST",
       headers: {
         apikey: SUPABASE_ANON_KEY || "",
         Authorization: `Bearer ${token}`,
-        "Content-Type": file.type || "application/octet-stream",
-        "x-upsert": "true",
+        "Content-Type": "application/json",
       },
-      body: file,
-    }
-  );
+      body: JSON.stringify(body),
+    });
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data?.message || data?.error || "Upload failed");
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.error || "Function call failed");
+    }
+    return data;
+  } finally {
+    endGlobalLoading();
   }
-  return data;
+};
+
+const uploadToStorage = async (bucket: string, path: string, file: File) => {
+  startGlobalLoading();
+  try {
+    const token = await getAccessToken();
+    const response = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`,
+      {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY || "",
+          Authorization: `Bearer ${token}`,
+          "Content-Type": file.type || "application/octet-stream",
+          "x-upsert": "true",
+        },
+        body: file,
+      }
+    );
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.message || data?.error || "Upload failed");
+    }
+    return data;
+  } finally {
+    endGlobalLoading();
+  }
 };
 
 const getFirst = async (path: string) => {

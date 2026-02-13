@@ -12,12 +12,13 @@ import {
   setProfile,
   signOut,
 } from "./services/supabaseAuth";
-import { companyAPI, profileAPI } from "./services/apiService";
+import { companyAPI, profileAPI, subscribeGlobalLoading } from "./services/apiService";
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAuthReady, setIsAuthReady] = useState(false);
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
 
   // Apply dark mode to document
   useEffect(() => {
@@ -57,6 +58,12 @@ function App() {
     init();
   }, []);
 
+  useEffect(() => {
+    return subscribeGlobalLoading(({ isLoading }) => {
+      setIsGlobalLoading(isLoading);
+    });
+  }, []);
+
   // Disable ArrowUp/ArrowDown step behavior for all numeric inputs globally.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -91,6 +98,16 @@ function App() {
 
   return (
     <BrowserRouter>
+      {isGlobalLoading && (
+        <div className="fixed inset-0 z-[20000] bg-slate-950/25 backdrop-blur-[1px] flex items-center justify-center">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl px-5 py-4 flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full border-2 border-orange-200 border-t-orange-600 animate-spin" />
+            <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-200">
+              Loading...
+            </span>
+          </div>
+        </div>
+      )}
       <Routes>
         {!isLoggedIn ? (
           <>
