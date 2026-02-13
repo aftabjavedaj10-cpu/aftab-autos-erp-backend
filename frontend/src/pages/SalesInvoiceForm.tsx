@@ -1305,20 +1305,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   setIsPrintMenuOpen(false);
                   handlePrintMode("invoice");
                 }}
-                disabled={isLocked}
-                className={`px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors ${
-                  isLocked ? "opacity-60 cursor-not-allowed" : ""
-                }`}
+                className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
               >
                 Print
               </button>
               <button
                 type="button"
                 onClick={() => setIsPrintMenuOpen((prev) => !prev)}
-                disabled={isLocked}
-                className={`w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-lg text-[10px] font-black text-slate-500 hover:text-orange-600 ${
-                  isLocked ? "opacity-60 cursor-not-allowed" : ""
-                }`}
+                className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-lg text-[10px] font-black text-slate-500 hover:text-orange-600"
               >
                 ▴
               </button>

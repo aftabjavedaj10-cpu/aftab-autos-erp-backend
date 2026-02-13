@@ -54,8 +54,8 @@ const TopBar: React.FC<TopBarProps> = ({
         w-full
         flex items-center justify-between
         px-4
-        bg-white/70 backdrop-blur-xl
-        border-b border-white/60
+        bg-white/70 dark:bg-slate-950/85 backdrop-blur-xl
+        border-b border-white/60 dark:border-slate-800/80
         shadow-sm
       "
     >
@@ -67,7 +67,7 @@ const TopBar: React.FC<TopBarProps> = ({
             w-9 h-9
             rounded-lg
             flex items-center justify-center
-            text-slate-600
+            text-slate-600 dark:text-slate-300
             hover:bg-orange-500 hover:text-white
             transition-all
           "
@@ -75,18 +75,18 @@ const TopBar: React.FC<TopBarProps> = ({
           <FiMenu />
         </button>
 
-        <h1 className="font-black text-sm uppercase text-slate-800 tracking-wide">
+        <h1 className="font-black text-sm uppercase text-slate-800 dark:text-slate-100 tracking-wide">
           {title || "Dashboard"}
         </h1>
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="hidden md:flex items-center bg-slate-100 rounded-lg px-3 py-1 gap-2">
-          <FiSearch className="text-slate-400" />
+        <div className="hidden md:flex items-center bg-slate-100 dark:bg-slate-900 rounded-lg px-3 py-1 gap-2 border border-transparent dark:border-slate-800">
+          <FiSearch className="text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             placeholder="Search..."
-            className="bg-transparent outline-none text-sm text-slate-600 placeholder-slate-400 w-40"
+            className="bg-transparent outline-none text-sm text-slate-600 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 w-40"
           />
         </div>
 
@@ -94,7 +94,7 @@ const TopBar: React.FC<TopBarProps> = ({
           className="
             w-9 h-9 rounded-lg
             flex items-center justify-center
-            text-slate-600
+            text-slate-600 dark:text-slate-300
             hover:bg-orange-500 hover:text-white
             transition-all
           "
@@ -108,7 +108,7 @@ const TopBar: React.FC<TopBarProps> = ({
             className="
               w-9 h-9 rounded-lg
               flex items-center justify-center
-              text-slate-600
+              text-slate-600 dark:text-slate-300
               hover:bg-orange-500 hover:text-white
               transition-all
             "
@@ -121,17 +121,17 @@ const TopBar: React.FC<TopBarProps> = ({
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 rounded-full px-2.5 py-1 transition-all"
+            className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full px-2.5 py-1 transition-all border border-transparent dark:border-slate-800"
           >
             <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-white font-black text-sm">
               <FiMail />
             </div>
-            <FiChevronDown className="text-slate-500" />
+            <FiChevronDown className="text-slate-500 dark:text-slate-400" />
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 mt-3 w-56 bg-white border border-slate-100 rounded-2xl shadow-2xl p-2 z-[60]">
-              <div className="px-3 py-2 text-xs text-slate-500 flex items-center gap-2 border-b border-slate-100">
+            <div className="absolute right-0 mt-3 w-56 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-[60]">
+              <div className="px-3 py-2 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-2 border-b border-slate-100 dark:border-slate-800">
                 <FiUser />
                 <span className="truncate">{userLabel || "Admin"}</span>
               </div>
@@ -140,7 +140,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   setMenuOpen(false);
                   onOpenProfile?.();
                 }}
-                className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-slate-800 hover:text-orange-600 transition-colors"
               >
                 <FiUser />
                 Profile
@@ -150,7 +150,7 @@ const TopBar: React.FC<TopBarProps> = ({
                   setMenuOpen(false);
                   onOpenSettings?.();
                 }}
-                className="w-full mt-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                className="w-full mt-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-slate-800 hover:text-orange-600 transition-colors"
               >
                 <FiSettings />
                 Settings
@@ -161,7 +161,7 @@ const TopBar: React.FC<TopBarProps> = ({
                     setMenuOpen(false);
                     onLogout();
                   }}
-                  className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-orange-50 hover:text-orange-600 transition-colors"
+                  className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-slate-800 hover:text-orange-600 transition-colors"
                 >
                   <FiLogOut />
                   Logout
