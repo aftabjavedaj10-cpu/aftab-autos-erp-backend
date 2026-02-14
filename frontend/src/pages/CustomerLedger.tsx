@@ -172,9 +172,18 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       });
     });
 
+    const parseRefNumber = (value: string) => {
+      const match = String(value || "").match(/(\d+)\s*$/);
+      return match ? Number(match[1]) : -1;
+    };
+
+    // Oldest at top, newest appended at bottom.
     entries.sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
-      return String(a.reference).localeCompare(String(b.reference));
+      const aNum = parseRefNumber(a.reference || a.id);
+      const bNum = parseRefNumber(b.reference || b.id);
+      if (aNum !== bNum) return aNum - bNum;
+      return String(a.reference || a.id).localeCompare(String(b.reference || b.id));
     });
 
     return entries;
