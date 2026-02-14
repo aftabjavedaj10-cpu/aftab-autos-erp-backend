@@ -1138,12 +1138,19 @@ export const salesReturnAPI = {
       );
     }
 
+    // Re-apply header once items are in place so header-level stock trigger
+    // posts the effective IN rows from current lines.
+    await apiCall(
+      `/sales_returns?id=eq.${header.id}`,
+      "PATCH",
+      mapSalesReturnToDb(withCompany),
+      true
+    );
+
     return salesReturnAPI.getById(header.id);
   },
   update: async (id: string, salesReturn: any) => {
     await ensurePermission("sales_invoices.write");
-    await apiCall(`/sales_returns?id=eq.${id}`, "PATCH", mapSalesReturnToDb(salesReturn), true);
-
     await apiCall(`/sales_return_items?sales_return_id=eq.${id}`, "DELETE");
     const items = Array.isArray(salesReturn.items) ? salesReturn.items : [];
     if (items.length > 0) {
@@ -1156,6 +1163,9 @@ export const salesReturnAPI = {
         true
       );
     }
+
+    // Patch header last so stock trigger rebuilds from the latest item rows.
+    await apiCall(`/sales_returns?id=eq.${id}`, "PATCH", mapSalesReturnToDb(salesReturn), true);
 
     return salesReturnAPI.getById(id);
   },
