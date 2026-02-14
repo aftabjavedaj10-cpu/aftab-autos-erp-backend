@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
-import type { Vendor } from "../types";
+import type { SalesInvoice, Vendor } from "../types";
 import Pagination from "../components/Pagination";
 import { formatDateDMY } from "../services/dateFormat";
 
@@ -24,9 +24,14 @@ const TRANSACTION_TYPES = ["All Types", "Bill", "Payment", "Return"];
 interface VendorLedgerPageProps {
   onBack: () => void;
   vendors: Vendor[];
+  purchaseInvoices: SalesInvoice[];
 }
 
-const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) => {
+const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
+  onBack,
+  vendors,
+  purchaseInvoices,
+}) => {
   const [selectedVendorId, setSelectedVendorId] = useState<string>("");
   const [vendorSearch, setVendorSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
@@ -74,11 +79,12 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
 
   const rawEntries = useMemo(() => {
     const entries: LedgerEntry[] = [];
-    const vendor = vendors.find((v) => v.id === selectedVendorId);
+    const vendorId = selectedVendorId;
+    const vendor = vendors.find((v) => v.id === vendorId);
     const opening = Number(vendor?.balance || 0);
     if (!Number.isNaN(opening) && opening !== 0) {
       entries.push({
-        id: `open-${selectedVendorId}`,
+        id: `open-${vendorId}`,
         date: "2023-10-01",
         description: "Opening Balance",
         reference: "-",
@@ -87,8 +93,40 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({ onBack, vendors }) 
         credit: opening < 0 ? Math.abs(opening) : 0,
       });
     }
+
+    const vendorInvoices = purchaseInvoices
+      .filter((inv) => String(inv.customerId || "") === String(vendorId))
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return String(a.id || "").localeCompare(String(b.id || ""));
+      });
+
+    vendorInvoices.forEach((inv) => {
+      entries.push({
+        id: `bill-${inv.id}`,
+        date: inv.date,
+        description: `Purchase Bill - ${inv.id}`,
+        reference: inv.id,
+        type: "Bill",
+        debit: Number(inv.totalAmount || 0),
+        credit: 0,
+      });
+      const paid = Number(inv.amountReceived || 0);
+      if (paid > 0) {
+        entries.push({
+          id: `pay-${inv.id}`,
+          date: inv.date,
+          description: "Payment Made",
+          reference: `PAY-${inv.id}`,
+          type: "Payment",
+          debit: 0,
+          credit: paid,
+        });
+      }
+    });
+
     return entries.sort(compareLedgerEntries);
-  }, [vendors, selectedVendorId]);
+  }, [vendors, selectedVendorId, purchaseInvoices]);
 
   const filteredEntries = useMemo(() => {
     return rawEntries.filter((entry) => {

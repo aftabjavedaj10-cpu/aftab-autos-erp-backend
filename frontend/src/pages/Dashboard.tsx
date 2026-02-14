@@ -1073,6 +1073,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           <VendorLedgerPage
             onBack={() => setActiveTab("reports")}
             vendors={vendors}
+            purchaseInvoices={purchaseInvoices}
           />
         )}
 
