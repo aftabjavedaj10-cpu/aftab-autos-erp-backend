@@ -83,6 +83,9 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
       if (statusFilter !== "Deleted" && inv.status === "Deleted") {
         return false;
       }
+      if (statusFilter !== "Void" && inv.status === "Void") {
+        return false;
+      }
       const matchesSearch =
         inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         inv.customerName.toLowerCase().includes(searchQuery.toLowerCase());

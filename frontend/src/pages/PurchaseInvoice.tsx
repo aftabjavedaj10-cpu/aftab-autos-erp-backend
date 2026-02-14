@@ -8,6 +8,8 @@ const STATUS_FILTERS = [
   "Draft",
   "Pending",
   "Approved",
+  "Void",
+  "Deleted",
   "Paid",
   "Unpaid",
   "Partial",
@@ -72,6 +74,12 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter((inv) => {
+      if (statusFilter !== "Deleted" && inv.status === "Deleted") {
+        return false;
+      }
+      if (statusFilter !== "Void" && inv.status === "Void") {
+        return false;
+      }
       const matchesSearch =
         inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
         inv.customerName.toLowerCase().includes(searchQuery.toLowerCase());
@@ -80,7 +88,8 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
         (inv.reference?.toLowerCase() || "").includes(refSearch.toLowerCase());
       const matchesStatus =
         statusFilter === "All Status" ||
-        (["Draft", "Pending", "Approved"].includes(statusFilter) && inv.status === statusFilter) ||
+        (["Draft", "Pending", "Approved", "Void", "Deleted"].includes(statusFilter) &&
+          inv.status === statusFilter) ||
         (["Paid", "Unpaid", "Partial"].includes(statusFilter) &&
           (inv.paymentStatus === statusFilter || inv.status === statusFilter));
       const invDate = new Date(inv.date);

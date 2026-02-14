@@ -105,11 +105,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
   const [isRevising, setIsRevising] = useState(false);
+  const [voidPreviousStatus, setVoidPreviousStatus] = useState<"Pending" | "Approved" | null>(null);
   const [savePrices, setSavePrices] = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const getVoidRestoreStorageKey = (invoiceId: string) => `sales-invoice-void-restore:${invoiceId}`;
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -418,6 +421,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const isDeleted = formData.status === "Deleted";
   const isLocked = (isApproved && !isRevising) || isVoid || isDeleted;
   const canVoid = isEdit && (formData.status === "Pending" || formData.status === "Approved");
+  const canReviseVoid = isVoid && !!voidPreviousStatus;
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
     if (!formData.customerId) {
@@ -463,10 +467,21 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       `Void invoice ${formData.id}? This will reverse stock effect and keep document for audit.`
     );
     if (!confirmed) return;
+    const previousStatus = formData.status === "Pending" ? "Pending" : "Approved";
+    setVoidPreviousStatus(previousStatus);
+    try {
+      window.localStorage.setItem(getVoidRestoreStorageKey(formData.id), previousStatus);
+    } catch {
+      // Ignore local storage errors
+    }
     handleSubmit("Void", true);
   };
 
   const handleReviseAction = () => {
+    if (canReviseVoid) {
+      handleSubmit(voidPreviousStatus, true);
+      return;
+    }
     if (!isApproved) return;
     if (!isRevising) {
       setIsRevising(true);
@@ -488,6 +503,25 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 
   useEffect(() => {
     if (invoice) {
+      const possiblePreviousStatus =
+        (invoice as any)?.voided_from_status ??
+        (invoice as any)?.voidedFromStatus ??
+        (invoice as any)?.previous_status ??
+        (invoice as any)?.previousStatus;
+      let nextVoidPreviousStatus: "Pending" | "Approved" | null = null;
+      if (possiblePreviousStatus === "Pending" || possiblePreviousStatus === "Approved") {
+        nextVoidPreviousStatus = possiblePreviousStatus;
+      } else if ((invoice.status || "") === "Void") {
+        try {
+          const storedStatus = window.localStorage.getItem(getVoidRestoreStorageKey(invoice.id));
+          if (storedStatus === "Pending" || storedStatus === "Approved") {
+            nextVoidPreviousStatus = storedStatus;
+          }
+        } catch {
+          // Ignore local storage errors
+        }
+      }
+      setVoidPreviousStatus(nextVoidPreviousStatus);
       setFormData({
         id: invoice.id,
         customerId: invoice.customerId || "",
@@ -504,7 +538,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
         amountReceived: invoice.amountReceived || 0,
         items: (invoice.items || []) as SalesInvoiceItem[],
       });
+      return;
     }
+    setVoidPreviousStatus(null);
   }, [invoice]);
 
   useEffect(() => {
@@ -1440,13 +1476,13 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </div>
           )}
 
-          {isApproved && (
+          {(isApproved || canReviseVoid) && (
             <button
               type="button"
               onClick={handleReviseAction}
               className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
             >
-              {isRevising ? "Save Revision" : "Revise"}
+              {isApproved && isRevising ? "Save Revision" : "Revise"}
             </button>
           )}
           {canVoid && (
