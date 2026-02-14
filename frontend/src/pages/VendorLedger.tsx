@@ -7,6 +7,7 @@ interface LedgerEntry {
   date: string;
   postedAt?: string;
   orderHint?: number;
+  viewId?: string;
   description: string;
   reference: string;
   type: "Bill" | "Payment" | "Return";
@@ -51,12 +52,14 @@ interface VendorLedgerPageProps {
   onBack: () => void;
   vendors: Vendor[];
   purchaseInvoices: SalesInvoice[];
+  onViewPurchaseInvoice?: (id: string) => void;
 }
 
 const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   onBack,
   vendors,
   purchaseInvoices,
+  onViewPurchaseInvoice,
 }) => {
   const defaultEndDate = new Date().toISOString().split("T")[0];
   const defaultStartDate = (() => {
@@ -138,6 +141,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         date: inv.date,
         postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
         orderHint: 10,
+        viewId: String(inv.id || ""),
         description: `Purchase Bill - ${inv.id}`,
         reference: manualRef,
         type: "Bill",
@@ -151,6 +155,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
           date: inv.date,
           postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
           orderHint: 20,
+          viewId: String(inv.id || ""),
           description: "Payment Made",
           reference: manualRef,
           type: "Payment",
@@ -222,6 +227,11 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
     if (e.key === "Escape") {
       setShowResults(false);
     }
+  };
+
+  const handleViewEntry = (entry: LedgerEntry) => {
+    if (!entry.viewId) return;
+    onViewPurchaseInvoice?.(entry.viewId);
   };
 
   return (
@@ -346,35 +356,46 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
                 <th className="px-4 py-3 text-right w-32 bg-slate-100/30">
                   Balance
                 </th>
+                <th className="px-4 py-3 text-center w-20">View</th>
               </tr>
             </thead>
             <tbody>
               {filteredEntries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-slate-50 text-[11px]">
-                  <td className="px-4 py-1 font-bold text-slate-500 italic">
+                  <td className="px-4 py-1.5 font-bold text-slate-500 italic">
                     {formatDateDMY(entry.date)}
                   </td>
-                  <td className="px-4 py-1 font-black uppercase text-slate-900">
+                  <td className="px-4 py-1.5 font-black uppercase text-slate-900">
                     {entry.description}
                   </td>
-                  <td className="px-4 py-1 text-[10px] font-black text-indigo-600 dark:text-indigo-300 uppercase">
+                  <td className="px-4 py-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-300 uppercase">
                     {entry.reference || ""}
                   </td>
-                  <td className="px-4 py-1 text-right font-black text-orange-600">
+                  <td className="px-4 py-1.5 text-right font-black text-orange-600">
                     {entry.debit > 0 ? entry.debit.toLocaleString() : "-"}
                   </td>
-                  <td className="px-4 py-1 text-right font-black text-emerald-600">
+                  <td className="px-4 py-1.5 text-right font-black text-emerald-600">
                     {entry.credit > 0 ? entry.credit.toLocaleString() : "-"}
                   </td>
-                  <td className="px-4 py-1 text-right font-black bg-slate-50/20 italic text-slate-400 tracking-tighter">
+                  <td className="px-4 py-1.5 text-right font-black bg-slate-50/20 italic text-slate-400 tracking-tighter">
                     {(runningBalances.get(entry.id) || 0).toLocaleString()}
+                  </td>
+                  <td className="px-4 py-1.5 text-center">
+                    <button
+                      type="button"
+                      onClick={() => handleViewEntry(entry)}
+                      disabled={!entry.viewId}
+                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      View
+                    </button>
                   </td>
                 </tr>
               ))}
               {filteredEntries.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest"
                   >
                     No ledger entries.
@@ -383,24 +404,25 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
               )}
             </tbody>
             <tfoot>
-              <tr className="border-t bg-slate-50/40 text-[9px] font-black uppercase">
+              <tr className="border-t bg-slate-50/40 text-[11px] font-black uppercase">
                 <td className="px-4 py-2" />
                 <td className="px-4 py-2" />
                 <td className="px-4 py-2 text-slate-500">Totals</td>
                 <td className="px-4 py-2 text-right">
-                  <p className="text-[8px] tracking-widest text-slate-400">Total Bills (Dr)</p>
+                  <p className="text-[9px] tracking-widest text-slate-400">Total Bills (Dr)</p>
                   <p className="text-orange-600">Rs. {totals.debit.toLocaleString()}</p>
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <p className="text-[8px] tracking-widest text-slate-400">Total Payments (Cr)</p>
+                  <p className="text-[9px] tracking-widest text-slate-400">Total Payments (Cr)</p>
                   <p className="text-emerald-600">Rs. {totals.credit.toLocaleString()}</p>
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <p className="text-[8px] tracking-widest text-slate-400">Closing Balance</p>
+                  <p className="text-[9px] tracking-widest text-slate-400">Closing Balance</p>
                   <p className="text-slate-900">
                     Rs. {Math.abs(closingBalance).toLocaleString()} {closingBalance >= 0 ? "DR" : "CR"}
                   </p>
                 </td>
+                <td className="px-4 py-2" />
               </tr>
             </tfoot>
           </table>
