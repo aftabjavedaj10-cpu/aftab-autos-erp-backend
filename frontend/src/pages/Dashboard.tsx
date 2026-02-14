@@ -953,8 +953,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setEditingReceivePayment(undefined);
               setActiveTab("receive_payment");
             }}
-            onSave={(doc) => {
+            onSave={(doc, stayOnPage) => {
               setReceivePayments((prev) => upsertSalesModuleDoc(prev, doc));
+              if (stayOnPage) {
+                setEditingReceivePayment(undefined);
+                setActiveTab("add_receive_payment");
+                return;
+              }
               setEditingReceivePayment(undefined);
               setActiveTab("receive_payment");
             }}

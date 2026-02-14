@@ -9,14 +9,14 @@ interface ReceivePaymentFormPageProps {
   company?: Company;
   doc?: ReceivePaymentDoc;
   onBack: () => void;
-  onSave: (doc: ReceivePaymentDoc) => void;
+  onSave: (doc: ReceivePaymentDoc, stayOnPage?: boolean) => void;
 }
 
 const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   docs,
   customers,
   products: _products,
-  company,
+  company: _company,
   doc,
   onBack,
   onSave,
@@ -26,14 +26,15 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   const [paymentDate, setPaymentDate] = useState(
     doc?.date || new Date().toISOString().slice(0, 10)
   );
-  const [status, setStatus] = useState(doc?.status || "Approved");
   const [customerSearch, setCustomerSearch] = useState(doc?.customerName || "");
   const [selectedCustomerName, setSelectedCustomerName] = useState(doc?.customerName || "");
   const [showCustomerList, setShowCustomerList] = useState(false);
+  const [showSaveMenu, setShowSaveMenu] = useState(false);
   const [amount, setAmount] = useState(Number(doc?.totalAmount || 0));
   const [notes, setNotes] = useState(doc?.notes || "");
   const [error, setError] = useState<string | null>(null);
   const customerBoxRef = useRef<HTMLDivElement>(null);
+  const saveMenuRef = useRef<HTMLDivElement>(null);
 
   const nextPaymentNo = useMemo(() => {
     const maxNo = docs.reduce((max, row) => {
@@ -53,6 +54,17 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
       if (!customerBoxRef.current) return;
       if (!customerBoxRef.current.contains(event.target as Node)) {
         setShowCustomerList(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, []);
+
+  useEffect(() => {
+    const onDocClick = (event: MouseEvent) => {
+      if (!saveMenuRef.current) return;
+      if (!saveMenuRef.current.contains(event.target as Node)) {
+        setShowSaveMenu(false);
       }
     };
     document.addEventListener("mousedown", onDocClick);
@@ -84,7 +96,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
     return { todayTotal, monthTotal };
   }, [docs]);
 
-  const handleSave = () => {
+  const handleSave = (stayOnPage = false) => {
     if (!paymentNo.trim()) {
       setError("Payment number is required.");
       return;
@@ -106,15 +118,23 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
       id: paymentNo.trim(),
       customerName: selectedCustomerName.trim(),
       date: paymentDate,
-      status: status || "Approved",
+      status: doc?.status || "Approved",
       totalAmount: Number(amount),
       notes: notes.trim(),
-    });
+    }, stayOnPage);
   };
 
   return (
     <div className="animate-in fade-in duration-500 pb-10">
-      <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+      <div className="mb-5 flex items-start gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          className="rounded-xl border border-slate-200 bg-white p-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+          title="Back"
+        >
+          <span className="text-sm">←</span>
+        </button>
         <div className="space-y-1">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
             Payment Desk
@@ -124,14 +144,6 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
           </h1>
           <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
             Capture incoming customer payment with a fast, focused entry screen.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 shadow-sm dark:border-emerald-900/50 dark:bg-emerald-950/30">
-          <p className="text-[9px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-300">
-            Company
-          </p>
-          <p className="text-sm font-black text-emerald-900 dark:text-emerald-100">
-            {company?.name || "Active Company"}
           </p>
         </div>
       </div>
@@ -148,7 +160,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                   type="text"
                   value={paymentNo}
                   onChange={(e) => setPaymentNo(e.target.value.toUpperCase())}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black uppercase tracking-wide text-slate-900 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black uppercase tracking-wide text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   placeholder="RP-000001"
                 />
               </label>
@@ -161,7 +173,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                   type="date"
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black text-slate-900 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </label>
 
@@ -178,7 +190,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                     setSelectedCustomerName("");
                     setShowCustomerList(true);
                   }}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-bold text-slate-900 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-bold text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   placeholder="Type customer name, code, or phone..."
                 />
                 {showCustomerList && (
@@ -197,7 +209,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                           setSelectedCustomerName(c.name);
                           setShowCustomerList(false);
                         }}
-                        className="block w-full border-b border-slate-100 px-4 py-2 text-left last:border-0 hover:bg-emerald-50 dark:border-slate-800 dark:hover:bg-slate-800"
+                        className="block w-full border-b border-slate-100 px-4 py-2 text-left last:border-0 hover:bg-orange-50 dark:border-slate-800 dark:hover:bg-slate-800"
                       >
                         <p className="text-[12px] font-black uppercase text-slate-900 dark:text-white">
                           {c.name}
@@ -220,24 +232,9 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                   value={Number.isFinite(amount) ? amount : 0}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
                   onChange={(e) => setAmount(Number(e.target.value || 0))}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[14px] font-black text-slate-900 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[14px] font-black text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   placeholder="0"
                 />
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
-                  Status
-                </span>
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black uppercase text-slate-900 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                >
-                  <option value="Draft">Draft</option>
-                  <option value="Pending">Pending</option>
-                  <option value="Approved">Approved</option>
-                </select>
               </label>
 
               <label className="block md:col-span-2">
@@ -247,7 +244,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                 <textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="h-28 w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[12px] font-semibold text-slate-900 outline-none focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  className="h-28 w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[12px] font-semibold text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   placeholder="Optional memo for this payment..."
                 />
               </label>
@@ -267,26 +264,64 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
               >
                 Cancel
               </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                className="rounded-xl bg-emerald-600 px-5 py-2 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-700"
-              >
-                Save Payment
-              </button>
+              <div className="relative" ref={saveMenuRef}>
+                <div className="inline-flex">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSaveMenu(false);
+                      handleSave(false);
+                    }}
+                    className="rounded-l-xl bg-orange-600 px-5 py-2 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-orange-600/30 hover:bg-orange-700"
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSaveMenu((prev) => !prev)}
+                    className="rounded-r-xl border-l border-orange-500 bg-orange-600 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-orange-600/30 hover:bg-orange-700"
+                  >
+                    ▼
+                  </button>
+                </div>
+                {showSaveMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSaveMenu(false);
+                        handleSave(true);
+                      }}
+                      className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      Save and New
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSaveMenu(false);
+                        handleSave(false);
+                      }}
+                      className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      Save and Back
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-700 p-4 text-white shadow-xl dark:border-slate-700">
-            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-100/80">
+          <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-orange-600 p-4 text-white shadow-xl dark:border-slate-700">
+            <p className="text-[10px] font-black uppercase tracking-widest text-orange-100/80">
               Current Entry
             </p>
             <p className="mt-1 text-2xl font-black tracking-tight">
               Rs. {Number(amount || 0).toLocaleString()}
             </p>
-            <p className="mt-2 text-[11px] font-semibold text-emerald-100/90">
+            <p className="mt-2 text-[11px] font-semibold text-orange-100/90">
               {selectedCustomerName || "No customer selected"}
             </p>
           </div>
@@ -320,7 +355,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                     <p className="text-[11px] font-black uppercase text-slate-900 dark:text-white">
                       {item.id}
                     </p>
-                    <p className="text-[11px] font-black text-emerald-600 dark:text-emerald-400">
+                    <p className="text-[11px] font-black text-orange-600 dark:text-orange-400">
                       Rs. {Number(item.totalAmount || 0).toLocaleString()}
                     </p>
                   </div>
