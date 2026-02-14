@@ -381,20 +381,19 @@ const mapSalesInvoiceToDb = (invoice: any) =>
     ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "paymentStatus", "overallDiscount", "amountReceived", "totalAmount"]
   );
 
-const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) =>
-  stripClientOnly(
-    {
-      ...item,
-      invoice_id: invoiceId,
-      product_id: item.productId ?? item.product_id,
-      product_code: item.productCode ?? item.product_code,
-      product_name: item.productName ?? item.product_name,
-      unit_price: item.unitPrice ?? item.unit_price ?? 0,
-      discount_value: item.discountValue ?? item.discount_value ?? 0,
-      discount_type: item.discountType ?? item.discount_type ?? "fixed",
-    },
-    ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
-  );
+const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) => ({
+  invoice_id: invoiceId,
+  product_id: item.productId ?? item.product_id ?? null,
+  product_code: item.productCode ?? item.product_code ?? "",
+  product_name: item.productName ?? item.product_name ?? "",
+  unit: item.unit ?? "",
+  quantity: Number(item.quantity ?? 0),
+  unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
+  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+  discount_type: item.discountType ?? item.discount_type ?? "fixed",
+  tax: Number(item.tax ?? 0),
+  total: Number(item.total ?? 0),
+});
 
 const mapQuotationToDb = (quotation: any) =>
   stripClientOnly(
@@ -422,20 +421,19 @@ const mapQuotationToDb = (quotation: any) =>
     ]
   );
 
-const mapQuotationItemToDb = (item: any, quotationId: string) =>
-  stripClientOnly(
-    {
-      ...item,
-      quotation_id: quotationId,
-      product_id: item.productId ?? item.product_id,
-      product_code: item.productCode ?? item.product_code,
-      product_name: item.productName ?? item.product_name,
-      unit_price: item.unitPrice ?? item.unit_price ?? 0,
-      discount_value: item.discountValue ?? item.discount_value ?? 0,
-      discount_type: item.discountType ?? item.discount_type ?? "fixed",
-    },
-    ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
-  );
+const mapQuotationItemToDb = (item: any, quotationId: string) => ({
+  quotation_id: quotationId,
+  product_id: item.productId ?? item.product_id ?? null,
+  product_code: item.productCode ?? item.product_code ?? "",
+  product_name: item.productName ?? item.product_name ?? "",
+  unit: item.unit ?? "",
+  quantity: Number(item.quantity ?? 0),
+  unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
+  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+  discount_type: item.discountType ?? item.discount_type ?? "fixed",
+  tax: Number(item.tax ?? 0),
+  total: Number(item.total ?? 0),
+});
 
 const mapSalesReturnFromDb = (row: any) => ({
   id: row.id,
@@ -487,20 +485,19 @@ const mapSalesReturnToDb = (invoice: any) =>
     ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "paymentStatus", "overallDiscount", "amountReceived", "totalAmount"]
   );
 
-const mapSalesReturnItemToDb = (item: any, salesReturnId: string) =>
-  stripClientOnly(
-    {
-      ...item,
-      sales_return_id: salesReturnId,
-      product_id: item.productId ?? item.product_id,
-      product_code: item.productCode ?? item.product_code,
-      product_name: item.productName ?? item.product_name,
-      unit_price: item.unitPrice ?? item.unit_price ?? 0,
-      discount_value: item.discountValue ?? item.discount_value ?? 0,
-      discount_type: item.discountType ?? item.discount_type ?? "fixed",
-    },
-    ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
-  );
+const mapSalesReturnItemToDb = (item: any, salesReturnId: string) => ({
+  sales_return_id: salesReturnId,
+  product_id: item.productId ?? item.product_id ?? null,
+  product_code: item.productCode ?? item.product_code ?? "",
+  product_name: item.productName ?? item.product_name ?? "",
+  unit: item.unit ?? "",
+  quantity: Number(item.quantity ?? 0),
+  unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
+  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+  discount_type: item.discountType ?? item.discount_type ?? "fixed",
+  tax: Number(item.tax ?? 0),
+  total: Number(item.total ?? 0),
+});
 
 const mapReceivePaymentFromDb = (row: any) => ({
   id: row.id,
@@ -587,20 +584,19 @@ const mapPurchaseInvoiceToDb = (invoice: any) =>
     ]
   );
 
-const mapPurchaseInvoiceItemToDb = (item: any, invoiceId: string) =>
-  stripClientOnly(
-    {
-      ...item,
-      purchase_invoice_id: invoiceId,
-      product_id: item.productId ?? item.product_id,
-      product_code: item.productCode ?? item.product_code,
-      product_name: item.productName ?? item.product_name,
-      unit_cost: item.unitPrice ?? item.unit_cost ?? 0,
-      discount_value: item.discountValue ?? item.discount_value ?? 0,
-      discount_type: item.discountType ?? item.discount_type ?? "fixed",
-    },
-    ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
-  );
+const mapPurchaseInvoiceItemToDb = (item: any, invoiceId: string) => ({
+  purchase_invoice_id: invoiceId,
+  product_id: item.productId ?? item.product_id ?? null,
+  product_code: item.productCode ?? item.product_code ?? "",
+  product_name: item.productName ?? item.product_name ?? "",
+  unit: item.unit ?? "",
+  quantity: Number(item.quantity ?? 0),
+  unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
+  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+  discount_type: item.discountType ?? item.discount_type ?? "fixed",
+  tax: Number(item.tax ?? 0),
+  total: Number(item.total ?? 0),
+});
 
 const mapCompanyFromDb = (row: any) => {
   if (!row) return row;
