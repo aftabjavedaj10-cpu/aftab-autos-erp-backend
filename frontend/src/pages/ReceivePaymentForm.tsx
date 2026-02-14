@@ -132,7 +132,6 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
         customerId &&
         String(customerId) === String(selectedCustomerId);
       const byName =
-        !selectedCustomerId &&
         String(customerName || "").toLowerCase() ===
           String(selectedCustomerName || "").toLowerCase();
       return Boolean(byId || byName);

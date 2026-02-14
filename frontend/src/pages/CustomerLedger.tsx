@@ -151,9 +151,8 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
           pay.customerId &&
           String(pay.customerId) === String(selectedCustomerId);
         const byName =
-          !selectedCustomerId &&
           String(pay.customerName || "").toLowerCase() ===
-            String(selectedCustomer?.name || "").toLowerCase();
+          String(selectedCustomer?.name || "").toLowerCase();
         return Boolean(byId || byName);
       })
       .sort((a, b) => {
