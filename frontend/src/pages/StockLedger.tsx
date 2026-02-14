@@ -19,6 +19,9 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
   const [showResults, setShowResults] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [direction, setDirection] = useState("all");
+  const [invoiceSearch, setInvoiceSearch] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const searchRef = useRef<HTMLDivElement>(null);
@@ -92,13 +95,25 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
   const filteredRows = useMemo(() => {
     if (!selectedProductId) return [];
     const dir = direction.toLowerCase();
+    const invoiceQuery = invoiceSearch.trim().toLowerCase();
+    const startDate = fromDate ? new Date(fromDate) : null;
+    const endDate = toDate ? new Date(toDate) : null;
+    if (startDate) startDate.setHours(0, 0, 0, 0);
+    if (endDate) endDate.setHours(23, 59, 59, 999);
+
     return stockLedger.filter((entry) => {
       const matchesProduct = String(entry.productId) === String(selectedProductId);
       const matchesDirection =
         dir === "all" || String(entry.direction || "").toLowerCase() === dir;
-      return matchesProduct && matchesDirection;
+      const invoiceText = String(entry.sourceRef || entry.sourceId || "").toLowerCase();
+      const matchesInvoice = !invoiceQuery || invoiceText.includes(invoiceQuery);
+
+      const entryDate = entry.createdAt ? new Date(entry.createdAt) : null;
+      const matchesFrom = !startDate || (!!entryDate && entryDate >= startDate);
+      const matchesTo = !endDate || (!!entryDate && entryDate <= endDate);
+      return matchesProduct && matchesDirection && matchesInvoice && matchesFrom && matchesTo;
     });
-  }, [stockLedger, selectedProductId, direction]);
+  }, [stockLedger, selectedProductId, direction, invoiceSearch, fromDate, toDate]);
 
   const stockSummary = useMemo(() => {
     if (!selectedProductId) {
@@ -129,7 +144,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedProductId, direction]);
+  }, [selectedProductId, direction, invoiceSearch, fromDate, toDate]);
 
   const paginatedRows = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
@@ -159,7 +174,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 mb-4">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <div className="relative w-full md:w-80" ref={searchRef}>
+          <div className="relative w-full md:w-72" ref={searchRef}>
             <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 text-[11px]">
               Search
             </span>
@@ -228,6 +243,32 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
               <option value="in">IN</option>
               <option value="out">OUT</option>
             </select>
+          </div>
+          <div className="w-full md:w-48">
+            <input
+              type="text"
+              placeholder="Search Invoice #..."
+              value={invoiceSearch}
+              onChange={(e) => setInvoiceSearch(e.target.value)}
+              className="w-full bg-slate-50 border rounded-xl py-2 px-3 text-[11px] font-bold outline-none"
+            />
+          </div>
+          <div className="w-full md:w-auto flex items-center gap-2">
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="bg-slate-50 border rounded-xl py-2 px-3 text-[11px] font-bold outline-none"
+              title="From date"
+            />
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">to</span>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="bg-slate-50 border rounded-xl py-2 px-3 text-[11px] font-bold outline-none"
+              title="To date"
+            />
           </div>
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             {selectedProductId ? "Selected product entries" : "Select a product to view ledger"}:{" "}
