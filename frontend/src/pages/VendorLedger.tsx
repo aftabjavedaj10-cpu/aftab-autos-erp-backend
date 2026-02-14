@@ -28,9 +28,16 @@ const buildItemsNarration = (items: any[] = []) => {
       const name = String(it.productName || it.name || "Item").trim();
       const qty = Number(it.quantity || 0);
       const rate = Number(it.unitPrice || 0);
-      return `${name} x${qty}${rate ? ` @ ${rate.toLocaleString()}` : ""}`;
+      const discountValue = Number(it.discountValue || 0);
+      const discountType = String(it.discountType || "fixed").toLowerCase();
+      const total = Number(it.total ?? rate * qty);
+      const discountPart =
+        discountValue > 0
+          ? ` (discount ${discountType === "percent" ? `${discountValue}%` : discountValue.toLocaleString()})`
+          : "";
+      return `${name} ${rate.toLocaleString()} x ${qty}${discountPart} = ${total.toLocaleString()}`;
     });
-  return cleaned.join(", ");
+  return cleaned.join("\n");
 };
 
 const ledgerTypePriority: Record<LedgerEntry["type"], number> = {
@@ -395,7 +402,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
                   <td className="px-4 py-1.5 font-black uppercase text-slate-900">
                     <p>{entry.description}</p>
                     {showDetailedNarration && entry.detailNarration && (
-                      <p className="mt-0.5 text-[9px] normal-case font-semibold text-slate-500">
+                      <p className="mt-0.5 whitespace-pre-line text-[9px] normal-case font-semibold text-slate-500">
                         {entry.detailNarration}
                       </p>
                     )}
