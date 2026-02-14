@@ -37,8 +37,8 @@ const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
   const aHint = Number.isFinite(a.orderHint) ? Number(a.orderHint) : 0;
   const bHint = Number.isFinite(b.orderHint) ? Number(b.orderHint) : 0;
   if (aHint !== bHint) return aHint - bHint;
-  const aRefNum = parseRefNumber(a.reference || a.id);
-  const bRefNum = parseRefNumber(b.reference || b.id);
+  const aRefNum = parseRefNumber(a.reference || "");
+  const bRefNum = parseRefNumber(b.reference || "");
   if (aRefNum !== bRefNum) return aRefNum - bRefNum;
   const aType = ledgerTypePriority[a.type] ?? 99;
   const bType = ledgerTypePriority[b.type] ?? 99;
@@ -132,14 +132,13 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
 
     vendorInvoices.forEach((inv) => {
       const manualRef = String(inv.reference || "").trim();
-      const baseRef = manualRef || String(inv.id || "");
       entries.push({
         id: `bill-${inv.id}`,
         date: inv.date,
         postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
         orderHint: 10,
         description: `Purchase Bill - ${inv.id}`,
-        reference: baseRef,
+        reference: manualRef,
         type: "Bill",
         debit: Number(inv.totalAmount || 0),
         credit: 0,
@@ -152,7 +151,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
           postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
           orderHint: 20,
           description: "Payment Made",
-          reference: baseRef,
+          reference: manualRef,
           type: "Payment",
           debit: 0,
           credit: paid,
@@ -349,7 +348,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
               <tr className="bg-slate-50/80 text-[9px] font-black uppercase text-slate-500 tracking-widest border-b">
                 <th className="px-4 py-3 w-24">Date</th>
                 <th className="px-4 py-3">Narration</th>
-                <th className="px-4 py-3 w-24">Ref</th>
+                <th className="px-4 py-3 w-56">Reference</th>
                 <th className="px-4 py-3 text-right w-28">Debit</th>
                 <th className="px-4 py-3 text-right w-28">Credit</th>
                 <th className="px-4 py-3 text-right w-32 bg-slate-100/30">
@@ -366,8 +365,8 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
                   <td className="px-4 py-2 font-black uppercase text-slate-900">
                     {entry.description}
                   </td>
-                  <td className="px-4 py-2 font-mono text-[9px] font-black text-slate-400 uppercase">
-                    {entry.reference}
+                  <td className="px-4 py-2 text-[10px] font-black text-indigo-600 dark:text-indigo-300 uppercase">
+                    {entry.reference || ""}
                   </td>
                   <td className="px-4 py-2 text-right font-black text-orange-600">
                     {entry.debit > 0 ? entry.debit.toLocaleString() : "-"}
