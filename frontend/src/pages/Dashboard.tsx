@@ -23,8 +23,12 @@ import PurchaseInvoicePage from "./PurchaseInvoice";
 import PurchaseInvoiceFormPage from "./PurchaseInvoiceForm";
 import QuotationPage from "./Quotation";
 import QuotationFormPage from "./QuotationForm";
-import SalesModulePage, { type SalesModuleDoc } from "./SalesModulePage";
-import AddSalesModulePage from "./AddSalesModulePage";
+import SalesOrderPage, { type SalesOrderDoc } from "./SalesOrder";
+import SalesOrderFormPage from "./SalesOrderForm";
+import SalesReturnPage, { type SalesReturnDoc } from "./SalesReturn";
+import SalesReturnFormPage from "./SalesReturnForm";
+import ReceivePaymentPage, { type ReceivePaymentDoc } from "./ReceivePayment";
+import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, quotationAPI, salesInvoiceAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
@@ -53,12 +57,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [salesInvoiceForceNewMode, setSalesInvoiceForceNewMode] = useState(false);
   const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
   const [editingQuotationInvoice, setEditingQuotationInvoice] = useState<SalesInvoice | undefined>(undefined);
-  const [salesOrders, setSalesOrders] = useState<SalesModuleDoc[]>([]);
-  const [salesReturns, setSalesReturns] = useState<SalesModuleDoc[]>([]);
-  const [receivePayments, setReceivePayments] = useState<SalesModuleDoc[]>([]);
-  const [editingSalesOrder, setEditingSalesOrder] = useState<SalesModuleDoc | undefined>(undefined);
-  const [editingSalesReturn, setEditingSalesReturn] = useState<SalesModuleDoc | undefined>(undefined);
-  const [editingReceivePayment, setEditingReceivePayment] = useState<SalesModuleDoc | undefined>(undefined);
+  const [salesOrders, setSalesOrders] = useState<SalesOrderDoc[]>([]);
+  const [salesReturns, setSalesReturns] = useState<SalesReturnDoc[]>([]);
+  const [receivePayments, setReceivePayments] = useState<ReceivePaymentDoc[]>([]);
+  const [editingSalesOrder, setEditingSalesOrder] = useState<SalesOrderDoc | undefined>(undefined);
+  const [editingSalesReturn, setEditingSalesReturn] = useState<SalesReturnDoc | undefined>(undefined);
+  const [editingReceivePayment, setEditingReceivePayment] = useState<ReceivePaymentDoc | undefined>(undefined);
   const [stockLedger, setStockLedger] = useState<StockLedgerEntry[]>([]);
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
   const [pinnedReportIds, setPinnedReportIds] = useState<number[]>(() => {
@@ -380,10 +384,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     return `SI-${String(maxNo + 1).padStart(6, "0")}`;
   };
 
-  const upsertSalesModuleDoc = (
-    docs: SalesModuleDoc[],
-    incoming: SalesModuleDoc
-  ): SalesModuleDoc[] => {
+  const upsertSalesModuleDoc = <T extends { id: string }>(
+    docs: T[],
+    incoming: T
+  ): T[] => {
     const exists = docs.some((d) => d.id === incoming.id);
     if (exists) {
       return docs.map((d) => (d.id === incoming.id ? incoming : d));
@@ -406,7 +410,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_sales_order");
   };
 
-  const handleEditSalesOrder = (doc: SalesModuleDoc) => {
+  const handleEditSalesOrder = (doc: SalesOrderDoc) => {
     setEditingSalesOrder(doc);
     setActiveTab("add_sales_order");
   };
@@ -416,7 +420,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_sales_return");
   };
 
-  const handleEditSalesReturn = (doc: SalesModuleDoc) => {
+  const handleEditSalesReturn = (doc: SalesReturnDoc) => {
     setEditingSalesReturn(doc);
     setActiveTab("add_sales_return");
   };
@@ -426,7 +430,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_receive_payment");
   };
 
-  const handleEditReceivePayment = (doc: SalesModuleDoc) => {
+  const handleEditReceivePayment = (doc: ReceivePaymentDoc) => {
     setEditingReceivePayment(doc);
     setActiveTab("add_receive_payment");
   };
@@ -835,10 +839,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "sales_order" && (
-          <SalesModulePage
-            moduleTitle="Sales Order"
-            moduleSubtitle="Confirmed customer orders"
-            addButtonLabel="Add Sales Order"
+          <SalesOrderPage
             docs={salesOrders}
             onAddClick={handleAddSalesOrder}
             onEditClick={handleEditSalesOrder}
@@ -847,9 +848,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "add_sales_order" && (
-          <AddSalesModulePage
-            moduleTitle="Sales Order"
-            prefix="SO"
+          <SalesOrderFormPage
             docs={salesOrders}
             customers={customers}
             doc={editingSalesOrder}
@@ -866,10 +865,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "sales_return" && (
-          <SalesModulePage
-            moduleTitle="Sales Return"
-            moduleSubtitle="Customer return records"
-            addButtonLabel="Add Sales Return"
+          <SalesReturnPage
             docs={salesReturns}
             onAddClick={handleAddSalesReturn}
             onEditClick={handleEditSalesReturn}
@@ -878,9 +874,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "add_sales_return" && (
-          <AddSalesModulePage
-            moduleTitle="Sales Return"
-            prefix="SR"
+          <SalesReturnFormPage
             docs={salesReturns}
             customers={customers}
             doc={editingSalesReturn}
@@ -897,10 +891,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "receive_payment" && (
-          <SalesModulePage
-            moduleTitle="Receive Payment"
-            moduleSubtitle="Customer payment entries"
-            addButtonLabel="Add Payment"
+          <ReceivePaymentPage
             docs={receivePayments}
             onAddClick={handleAddReceivePayment}
             onEditClick={handleEditReceivePayment}
@@ -909,9 +900,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "add_receive_payment" && (
-          <AddSalesModulePage
-            moduleTitle="Receive Payment"
-            prefix="RP"
+          <ReceivePaymentFormPage
             docs={receivePayments}
             customers={customers}
             doc={editingReceivePayment}

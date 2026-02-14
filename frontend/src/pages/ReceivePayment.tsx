@@ -1,0 +1,68 @@
+import React, { useMemo } from "react";
+import type { SalesInvoice } from "../types";
+import SalesInvoicePage from "./SalesInvoice";
+
+export interface ReceivePaymentDoc {
+  id: string;
+  customerName: string;
+  date: string;
+  status: string;
+  totalAmount: number;
+  notes?: string;
+}
+
+interface ReceivePaymentPageProps {
+  docs: ReceivePaymentDoc[];
+  onAddClick: () => void;
+  onEditClick: (doc: ReceivePaymentDoc) => void;
+  onDelete: (id: string) => void;
+}
+
+const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
+  docs,
+  onAddClick,
+  onEditClick,
+  onDelete,
+}) => {
+  const mappedInvoices = useMemo<SalesInvoice[]>(
+    () =>
+      docs.map((doc) => ({
+        id: doc.id,
+        customerName: doc.customerName,
+        date: doc.date,
+        dueDate: doc.date,
+        status: doc.status,
+        paymentStatus: "Paid",
+        reference: "",
+        notes: doc.notes || "",
+        items: [],
+        totalAmount: Number(doc.totalAmount || 0),
+        amountReceived: Number(doc.totalAmount || 0),
+      })),
+    [docs]
+  );
+
+  const mapBack = (invoice: SalesInvoice): ReceivePaymentDoc => ({
+    id: invoice.id,
+    customerName: invoice.customerName,
+    date: invoice.date,
+    status: String(invoice.status || "Draft"),
+    totalAmount: Number(invoice.totalAmount || 0),
+    notes: invoice.notes || "",
+  });
+
+  return (
+    <SalesInvoicePage
+      invoices={mappedInvoices}
+      onAddClick={onAddClick}
+      onEditClick={(invoice) => onEditClick(mapBack(invoice))}
+      onDelete={onDelete}
+      pageTitle="Receive Payment"
+      pageSubtitle="Customer payment entries"
+      addButtonLabel="Add Payment"
+    />
+  );
+};
+
+export default ReceivePaymentPage;
+
