@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { Company, Customer, Product } from "../types";
+import type { Company, Customer, Product, SalesInvoice } from "../types";
 import type { ReceivePaymentDoc } from "./ReceivePayment";
 
 interface ReceivePaymentFormPageProps {
   docs: ReceivePaymentDoc[];
   customers: Customer[];
   products: Product[];
+  salesInvoices: SalesInvoice[];
+  salesReturns: SalesInvoice[];
   company?: Company;
   doc?: ReceivePaymentDoc;
   onBack: () => void;
@@ -19,6 +21,8 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   docs,
   customers,
   products: _products,
+  salesInvoices,
+  salesReturns,
   company: _company,
   doc,
   onBack,
@@ -67,11 +71,19 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   }, [isEdit, nextPaymentNo]);
 
   useEffect(() => {
+    if (doc?.customerId) {
+      setSelectedCustomerId(String(doc.customerId));
+    }
+  }, [doc?.customerId]);
+
+  useEffect(() => {
     if (!selectedCustomerName) {
       setSelectedCustomerId("");
       return;
     }
-    const match = customers.find((c) => c.name === selectedCustomerName);
+    const match = customers.find(
+      (c) => String(c.name || "").toLowerCase() === String(selectedCustomerName || "").toLowerCase()
+    );
     setSelectedCustomerId(String(match?.id || ""));
   }, [selectedCustomerName, customers]);
 
@@ -113,10 +125,35 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   );
 
   const ledgerBalance = useMemo(() => {
-    const raw = selectedCustomer?.balance ?? selectedCustomer?.openingBalance ?? 0;
-    const val = parseNumber(raw);
-    return { amount: Math.abs(val), side: val >= 0 ? "DR" : "CR" };
-  }, [selectedCustomer]);
+    const opening = parseNumber(selectedCustomer?.openingBalance ?? selectedCustomer?.balance ?? 0);
+    const matchByCustomer = (customerId?: string, customerName?: string) => {
+      const byId =
+        selectedCustomerId &&
+        customerId &&
+        String(customerId) === String(selectedCustomerId);
+      const byName =
+        !selectedCustomerId &&
+        String(customerName || "").toLowerCase() ===
+          String(selectedCustomerName || "").toLowerCase();
+      return Boolean(byId || byName);
+    };
+
+    const invoiceDebit = salesInvoices
+      .filter((inv) => matchByCustomer(inv.customerId, inv.customerName))
+      .reduce((sum, inv) => sum + parseNumber(inv.totalAmount), 0);
+    const invoiceCredits = salesInvoices
+      .filter((inv) => matchByCustomer(inv.customerId, inv.customerName))
+      .reduce((sum, inv) => sum + parseNumber(inv.amountReceived), 0);
+    const returnCredits = salesReturns
+      .filter((ret) => matchByCustomer(ret.customerId, ret.customerName))
+      .reduce((sum, ret) => sum + parseNumber(ret.totalAmount), 0);
+    const paymentCredits = docs
+      .filter((p) => matchByCustomer(p.customerId, p.customerName))
+      .reduce((sum, p) => sum + parseNumber(p.totalAmount), 0);
+
+    const net = opening + invoiceDebit - invoiceCredits - returnCredits - paymentCredits;
+    return { amount: Math.abs(net), side: net >= 0 ? "DR" : "CR" };
+  }, [selectedCustomer, selectedCustomerId, selectedCustomerName, salesInvoices, salesReturns, docs]);
 
   const quickTotals = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -150,6 +187,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
     setError(null);
     onSave({
       id: paymentNo.trim(),
+      customerId: selectedCustomerId || undefined,
       customerName: selectedCustomerName.trim(),
       date: paymentDate,
       status,
@@ -437,4 +475,3 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
 };
 
 export default ReceivePaymentFormPage;
-

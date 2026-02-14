@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import type { Customer, SalesInvoice } from "../types";
+import type { ReceivePaymentDoc } from "./ReceivePayment";
 import Pagination from "../components/Pagination";
 import { formatDateDMY } from "../services/dateFormat";
 
@@ -20,6 +21,7 @@ interface CustomerLedgerPageProps {
   customers: Customer[];
   salesInvoices: SalesInvoice[];
   salesReturns: SalesInvoice[];
+  receivePayments: ReceivePaymentDoc[];
 }
 
 const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
@@ -27,6 +29,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
   customers,
   salesInvoices,
   salesReturns,
+  receivePayments,
 }) => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -141,13 +144,42 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       });
     });
 
+    const customerPayments = receivePayments
+      .filter((pay) => {
+        const byId =
+          selectedCustomerId &&
+          pay.customerId &&
+          String(pay.customerId) === String(selectedCustomerId);
+        const byName =
+          !selectedCustomerId &&
+          String(pay.customerName || "").toLowerCase() ===
+            String(selectedCustomer?.name || "").toLowerCase();
+        return Boolean(byId || byName);
+      })
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return String(a.id).localeCompare(String(b.id));
+      });
+
+    customerPayments.forEach((pay) => {
+      entries.push({
+        id: `pay-${pay.id}`,
+        date: pay.date,
+        description: "Payment Received",
+        reference: pay.id,
+        type: "Receipt",
+        debit: 0,
+        credit: Number(pay.totalAmount || 0),
+      });
+    });
+
     entries.sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       return String(a.reference).localeCompare(String(b.reference));
     });
 
     return entries;
-  }, [customers, salesInvoices, salesReturns, selectedCustomerId]);
+  }, [customers, salesInvoices, salesReturns, receivePayments, selectedCustomerId, selectedCustomer]);
 
   const filteredEntries = useMemo(() => {
     return rawEntries.filter((entry) => {

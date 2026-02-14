@@ -30,7 +30,7 @@ import SalesReturnFormPage from "./SalesReturnForm";
 import ReceivePaymentPage, { type ReceivePaymentDoc } from "./ReceivePayment";
 import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, quotationAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, quotationAPI, receivePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -174,6 +174,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           purchaseInvoicesData,
           quotationData,
           salesReturnData,
+          receivePaymentData,
           ledgerData,
         ] = await Promise.all([
           productAPI.getAll().catch(() => []),
@@ -184,6 +185,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           purchaseInvoiceAPI.getAll().catch(() => []),
           quotationAPI.getAll().catch(() => []),
           salesReturnAPI.getAll().catch(() => []),
+          receivePaymentAPI.getAll().catch(() => []),
           companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
         ]);
 
@@ -205,6 +207,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         );
         setSalesReturns(
           Array.isArray(salesReturnData) ? salesReturnData : salesReturnData.data || []
+        );
+        setReceivePayments(
+          Array.isArray(receivePaymentData) ? receivePaymentData : receivePaymentData.data || []
         );
       } catch (err) {
         console.error("Failed to fetch data:", err);
@@ -938,7 +943,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             docs={receivePayments}
             onAddClick={handleAddReceivePayment}
             onEditClick={handleEditReceivePayment}
-            onDelete={(id) => setReceivePayments((prev) => prev.filter((d) => d.id !== id))}
+            onDelete={async (id) => {
+              try {
+                await receivePaymentAPI.delete(id);
+                setReceivePayments((prev) => prev.filter((d) => d.id !== id));
+              } catch (err: any) {
+                setError(err?.message || "Failed to delete receive payment");
+              }
+            }}
           />
         )}
 
@@ -947,21 +959,30 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             docs={receivePayments}
             customers={customers}
             products={products}
+            salesInvoices={salesInvoices}
+            salesReturns={salesReturns}
             company={activeCompany || undefined}
             doc={editingReceivePayment}
             onBack={() => {
               setEditingReceivePayment(undefined);
               setActiveTab("receive_payment");
             }}
-            onSave={(doc, stayOnPage) => {
-              setReceivePayments((prev) => upsertSalesModuleDoc(prev, doc));
-              if (stayOnPage) {
+            onSave={async (doc, stayOnPage) => {
+              try {
+                const saved = editingReceivePayment?.id
+                  ? await receivePaymentAPI.update(doc.id, doc)
+                  : await receivePaymentAPI.create(doc);
+                setReceivePayments((prev) => upsertSalesModuleDoc(prev, saved));
+                if (stayOnPage) {
+                  setEditingReceivePayment(undefined);
+                  setActiveTab("add_receive_payment");
+                  return;
+                }
                 setEditingReceivePayment(undefined);
-                setActiveTab("add_receive_payment");
-                return;
+                setActiveTab("receive_payment");
+              } catch (err: any) {
+                setError(err?.message || "Failed to save receive payment");
               }
-              setEditingReceivePayment(undefined);
-              setActiveTab("receive_payment");
             }}
           />
         )}
@@ -1106,6 +1127,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             customers={customers}
             salesInvoices={salesInvoices}
             salesReturns={salesReturns}
+            receivePayments={receivePayments}
           />
         )}
 

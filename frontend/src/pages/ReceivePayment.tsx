@@ -4,6 +4,7 @@ import SalesInvoicePage from "./SalesInvoice";
 
 export interface ReceivePaymentDoc {
   id: string;
+  customerId?: string;
   customerName: string;
   date: string;
   status: string;
@@ -28,6 +29,7 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
     () =>
       docs.map((doc) => ({
         id: doc.id,
+        customerId: doc.customerId,
         customerName: doc.customerName,
         date: doc.date,
         dueDate: doc.date,
@@ -44,6 +46,7 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
 
   const mapBack = (invoice: SalesInvoice): ReceivePaymentDoc => ({
     id: invoice.id,
+    customerId: invoice.customerId,
     customerName: invoice.customerName,
     date: invoice.date,
     status: String(invoice.status || "Draft"),
@@ -65,4 +68,3 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
 };
 
 export default ReceivePaymentPage;
-

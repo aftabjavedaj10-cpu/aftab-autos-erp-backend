@@ -498,6 +498,27 @@ const mapSalesReturnItemToDb = (item: any, salesReturnId: string) =>
     ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
   );
 
+const mapReceivePaymentFromDb = (row: any) => ({
+  id: row.id,
+  customerId: row.customer_id ?? row.customerId,
+  customerName: row.customer_name ?? row.customerName,
+  date: row.date,
+  status: row.status,
+  totalAmount: Number(row.total_amount ?? row.totalAmount ?? 0),
+  notes: row.notes ?? "",
+});
+
+const mapReceivePaymentToDb = (payment: any) =>
+  stripClientOnly(
+    {
+      ...payment,
+      customer_id: payment.customerId ?? payment.customer_id,
+      customer_name: payment.customerName ?? payment.customer_name,
+      total_amount: payment.totalAmount ?? payment.total_amount ?? 0,
+    },
+    ["customerId", "customerName", "totalAmount"]
+  );
+
 const mapPurchaseInvoiceFromDb = (row: any) => ({
   id: row.id,
   customerId: row.vendor_id ?? row.vendorId,
@@ -635,6 +656,7 @@ const SALES_INVOICE_ID_PATTERN = /^SI-(\d{6})$/;
 const SALES_RETURN_ID_PATTERN = /^SR-(\d{6})$/;
 const QUOTATION_ID_PATTERN = /^QT-(\d{6})$/;
 const PURCHASE_INVOICE_ID_PATTERN = /^PI-(\d{6})$/;
+const RECEIVE_PAYMENT_ID_PATTERN = /^RP-(\d{6})$/;
 const STOCK_ADJUSTMENT_ID_PATTERN = /^ADJ-(\d{6})$/;
 
 const parseSalesInvoiceNumber = (id?: string) => {
@@ -652,6 +674,14 @@ const parseSalesReturnNumber = (id?: string) => {
 };
 
 const formatSalesReturnId = (num: number) => `SR-${String(num).padStart(6, "0")}`;
+
+const parseReceivePaymentNumber = (id?: string) => {
+  if (!id) return -1;
+  const match = id.match(RECEIVE_PAYMENT_ID_PATTERN);
+  return match ? Number(match[1]) : -1;
+};
+
+const formatReceivePaymentId = (num: number) => `RP-${String(num).padStart(6, "0")}`;
 
 const parseQuotationNumber = (id?: string) => {
   if (!id) return -1;
@@ -676,6 +706,11 @@ const isSalesReturnDuplicateKeyError = (err: unknown) => {
   return err.message.includes('duplicate key value violates unique constraint "sales_returns_pkey"');
 };
 
+const isReceivePaymentDuplicateKeyError = (err: unknown) => {
+  if (!(err instanceof Error)) return false;
+  return err.message.includes('duplicate key value violates unique constraint "receive_payments_pkey"');
+};
+
 const getLatestSalesInvoiceId = async () => {
   const rows = await apiCall("/sales_invoices?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
@@ -690,6 +725,12 @@ const getLatestQuotationId = async () => {
 
 const getLatestSalesReturnId = async () => {
   const rows = await apiCall("/sales_returns?select=id&order=created_at.desc&limit=1");
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0]?.id ?? null;
+};
+
+const getLatestReceivePaymentId = async () => {
+  const rows = await apiCall("/receive_payments?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows[0]?.id ?? null;
 };
@@ -1175,6 +1216,56 @@ export const salesReturnAPI = {
   },
 };
 
+// ============ RECEIVE PAYMENTS ============
+export const receivePaymentAPI = {
+  getAll: async () => {
+    await ensurePermission("sales_invoices.read");
+    const rows = await apiCall("/receive_payments?select=*&order=created_at.desc");
+    return Array.isArray(rows) ? rows.map(mapReceivePaymentFromDb) : rows;
+  },
+  getById: async (id: string) => {
+    await ensurePermission("sales_invoices.read");
+    const row = await getFirst(`/receive_payments?select=*&id=eq.${id}`);
+    return mapReceivePaymentFromDb(row);
+  },
+  create: async (payment: any) => {
+    await ensurePermission("sales_invoices.write");
+    const withCompany = attachOwnership(payment);
+    let payload = mapReceivePaymentToDb(withCompany);
+    let created: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        created = await apiCall("/receive_payments", "POST", payload, true).then(firstRow);
+        break;
+      } catch (err) {
+        if (!isReceivePaymentDuplicateKeyError(err) || attempt === 2) {
+          throw err;
+        }
+        const latestId = await getLatestReceivePaymentId();
+        const currentNum = parseReceivePaymentNumber(payload?.id);
+        const latestNum = parseReceivePaymentNumber(latestId ?? undefined);
+        const nextNum = Math.max(currentNum, latestNum, 0) + 1;
+        payload = { ...payload, id: formatReceivePaymentId(nextNum) };
+      }
+    }
+    return mapReceivePaymentFromDb(created);
+  },
+  update: async (id: string, payment: any) => {
+    await ensurePermission("sales_invoices.write");
+    const row = await apiCall(
+      `/receive_payments?id=eq.${id}`,
+      "PATCH",
+      mapReceivePaymentToDb(payment),
+      true
+    ).then(firstRow);
+    return mapReceivePaymentFromDb(row);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("sales_invoices.delete");
+    return apiCall(`/receive_payments?id=eq.${id}`, "DELETE");
+  },
+};
+
 // ============ PURCHASE INVOICES ============
 export const purchaseInvoiceAPI = {
   getAll: async () => {
@@ -1594,6 +1685,7 @@ export default {
   categoryAPI,
   salesInvoiceAPI,
   salesReturnAPI,
+  receivePaymentAPI,
   purchaseInvoiceAPI,
   quotationAPI,
   stockLedgerAPI,
