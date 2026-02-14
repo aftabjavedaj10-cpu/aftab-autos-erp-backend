@@ -12,6 +12,9 @@ interface ReceivePaymentFormPageProps {
   onSave: (doc: ReceivePaymentDoc, stayOnPage?: boolean) => void;
 }
 
+type SaveStatus = "Draft" | "Pending" | "Approved";
+type PrintMode = "invoice" | "receipt" | "a5" | "token";
+
 const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   docs,
   customers,
@@ -28,13 +31,27 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   );
   const [customerSearch, setCustomerSearch] = useState(doc?.customerName || "");
   const [selectedCustomerName, setSelectedCustomerName] = useState(doc?.customerName || "");
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [showCustomerList, setShowCustomerList] = useState(false);
   const [showSaveMenu, setShowSaveMenu] = useState(false);
-  const [amount, setAmount] = useState(Number(doc?.totalAmount || 0));
+  const [showPrintMenu, setShowPrintMenu] = useState(false);
+  const [amountInput, setAmountInput] = useState(
+    doc?.totalAmount !== undefined ? String(doc.totalAmount) : "0"
+  );
   const [notes, setNotes] = useState(doc?.notes || "");
   const [error, setError] = useState<string | null>(null);
   const customerBoxRef = useRef<HTMLDivElement>(null);
   const saveMenuRef = useRef<HTMLDivElement>(null);
+  const printMenuRef = useRef<HTMLDivElement>(null);
+
+  const parseNumber = (value?: string | number) => {
+    if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+    const normalized = String(value || "").replace(/[^0-9.-]/g, "");
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
+  const amountValue = useMemo(() => parseNumber(amountInput), [amountInput]);
 
   const nextPaymentNo = useMemo(() => {
     const maxNo = docs.reduce((max, row) => {
@@ -50,21 +67,24 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   }, [isEdit, nextPaymentNo]);
 
   useEffect(() => {
-    const onDocClick = (event: MouseEvent) => {
-      if (!customerBoxRef.current) return;
-      if (!customerBoxRef.current.contains(event.target as Node)) {
-        setShowCustomerList(false);
-      }
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, []);
+    if (!selectedCustomerName) {
+      setSelectedCustomerId("");
+      return;
+    }
+    const match = customers.find((c) => c.name === selectedCustomerName);
+    setSelectedCustomerId(String(match?.id || ""));
+  }, [selectedCustomerName, customers]);
 
   useEffect(() => {
     const onDocClick = (event: MouseEvent) => {
-      if (!saveMenuRef.current) return;
-      if (!saveMenuRef.current.contains(event.target as Node)) {
+      if (customerBoxRef.current && !customerBoxRef.current.contains(event.target as Node)) {
+        setShowCustomerList(false);
+      }
+      if (saveMenuRef.current && !saveMenuRef.current.contains(event.target as Node)) {
         setShowSaveMenu(false);
+      }
+      if (printMenuRef.current && !printMenuRef.current.contains(event.target as Node)) {
+        setShowPrintMenu(false);
       }
     };
     document.addEventListener("mousedown", onDocClick);
@@ -84,6 +104,20 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
       .slice(0, 30);
   }, [customerSearch, customers]);
 
+  const selectedCustomer = useMemo(
+    () =>
+      customers.find(
+        (c) => String(c.id || "") === selectedCustomerId || c.name === selectedCustomerName
+      ),
+    [customers, selectedCustomerId, selectedCustomerName]
+  );
+
+  const ledgerBalance = useMemo(() => {
+    const raw = selectedCustomer?.balance ?? selectedCustomer?.openingBalance ?? 0;
+    const val = parseNumber(raw);
+    return { amount: Math.abs(val), side: val >= 0 ? "DR" : "CR" };
+  }, [selectedCustomer]);
+
   const quickTotals = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const todayTotal = docs
@@ -96,7 +130,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
     return { todayTotal, monthTotal };
   }, [docs]);
 
-  const handleSave = (stayOnPage = false) => {
+  const handleSave = (status: SaveStatus) => {
     if (!paymentNo.trim()) {
       setError("Payment number is required.");
       return;
@@ -109,7 +143,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
       setError("Payment date is required.");
       return;
     }
-    if (!Number.isFinite(amount) || amount <= 0) {
+    if (!Number.isFinite(amountValue) || amountValue <= 0) {
       setError("Amount must be greater than zero.");
       return;
     }
@@ -118,10 +152,42 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
       id: paymentNo.trim(),
       customerName: selectedCustomerName.trim(),
       date: paymentDate,
-      status: doc?.status || "Approved",
-      totalAmount: Number(amount),
+      status,
+      totalAmount: amountValue,
       notes: notes.trim(),
-    }, stayOnPage);
+    });
+  };
+
+  const printHtml = (mode: PrintMode) => {
+    const modeTitle =
+      mode === "receipt" ? "Payment Receipt" : mode === "a5" ? "A5 Payment Slip" : mode === "token" ? "Payment Token" : "Payment Invoice";
+    return `<!doctype html>
+<html><head><meta charset="utf-8"/><title>${modeTitle}</title>
+<style>
+body{font-family:Arial,sans-serif;padding:14px;color:#111}
+.box{max-width:${mode === "receipt" || mode === "token" ? "72mm" : mode === "a5" ? "148mm" : "190mm"};margin:0 auto}
+.line{display:flex;justify-content:space-between;margin:4px 0}
+.head{font-size:20px;font-weight:700;text-align:center;margin-bottom:8px}
+.small{font-size:12px}
+.row{border-top:1px solid #ddd;padding-top:8px;margin-top:8px}
+</style></head>
+<body><div class="box">
+<div class="head">${modeTitle}</div>
+<div class="line"><span>No</span><span>${paymentNo}</span></div>
+<div class="line"><span>Date</span><span>${paymentDate}</span></div>
+<div class="line"><span>Customer</span><span>${selectedCustomerName || "-"}</span></div>
+<div class="line"><span>Ledger Balance</span><span>Rs. ${ledgerBalance.amount.toLocaleString()} ${ledgerBalance.side}</span></div>
+<div class="line"><span>Amount</span><span>Rs. ${amountValue.toLocaleString()}</span></div>
+<div class="row small"><strong>Notes:</strong> ${notes || "-"}</div>
+</div><script>window.onload=()=>window.print();</script></body></html>`;
+  };
+
+  const handlePrint = (mode: PrintMode) => {
+    const w = window.open("", "_blank", "width=900,height=700");
+    if (!w) return;
+    w.document.open();
+    w.document.write(printHtml(mode));
+    w.document.close();
   };
 
   return (
@@ -142,9 +208,6 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
           <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white">
             {isEdit ? "Edit Receive Payment" : "New Receive Payment"}
           </h1>
-          <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            Capture incoming customer payment with a fast, focused entry screen.
-          </p>
         </div>
       </div>
 
@@ -188,6 +251,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                   onChange={(e) => {
                     setCustomerSearch(e.target.value);
                     setSelectedCustomerName("");
+                    setSelectedCustomerId("");
                     setShowCustomerList(true);
                   }}
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-bold text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -207,6 +271,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                         onClick={() => {
                           setCustomerSearch(c.name);
                           setSelectedCustomerName(c.name);
+                          setSelectedCustomerId(String(c.id || ""));
                           setShowCustomerList(false);
                         }}
                         className="block w-full border-b border-slate-100 px-4 py-2 text-left last:border-0 hover:bg-orange-50 dark:border-slate-800 dark:hover:bg-slate-800"
@@ -223,15 +288,26 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                 )}
               </div>
 
+              <div className="block">
+                <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  Ledger Balance
+                </span>
+                <div className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black text-slate-900 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                  {selectedCustomerName
+                    ? `Rs. ${ledgerBalance.amount.toLocaleString()} ${ledgerBalance.side}`
+                    : "Select customer"}
+                </div>
+              </div>
+
               <label className="block">
                 <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
                   Received Amount
                 </span>
                 <input
                   type="number"
-                  value={Number.isFinite(amount) ? amount : 0}
+                  value={amountInput}
                   onWheel={(e) => (e.target as HTMLInputElement).blur()}
-                  onChange={(e) => setAmount(Number(e.target.value || 0))}
+                  onChange={(e) => setAmountInput(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[14px] font-black text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   placeholder="0"
                 />
@@ -264,17 +340,48 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
               >
                 Cancel
               </button>
+
+              <div className="relative" ref={printMenuRef}>
+                <div className="inline-flex">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPrintMenu(false);
+                      handlePrint("receipt");
+                    }}
+                    className="rounded-l-xl border border-slate-300 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    Print
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowPrintMenu((prev) => !prev)}
+                    className="rounded-r-xl border border-l-0 border-slate-300 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    ▼
+                  </button>
+                </div>
+                {showPrintMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 w-40 rounded-xl border border-slate-200 bg-white p-1 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+                    <button type="button" onClick={() => { setShowPrintMenu(false); handlePrint("invoice"); }} className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800">Invoice</button>
+                    <button type="button" onClick={() => { setShowPrintMenu(false); handlePrint("receipt"); }} className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800">Receipt</button>
+                    <button type="button" onClick={() => { setShowPrintMenu(false); handlePrint("a5"); }} className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800">A5</button>
+                    <button type="button" onClick={() => { setShowPrintMenu(false); handlePrint("token"); }} className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800">Token</button>
+                  </div>
+                )}
+              </div>
+
               <div className="relative" ref={saveMenuRef}>
                 <div className="inline-flex">
                   <button
                     type="button"
                     onClick={() => {
                       setShowSaveMenu(false);
-                      handleSave(false);
+                      handleSave("Approved");
                     }}
                     className="rounded-l-xl bg-orange-600 px-5 py-2 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-orange-600/30 hover:bg-orange-700"
                   >
-                    Save
+                    Save & Approved
                   </button>
                   <button
                     type="button"
@@ -285,27 +392,10 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                   </button>
                 </div>
                 {showSaveMenu && (
-                  <div className="absolute bottom-full right-0 mb-2 w-44 rounded-xl border border-slate-200 bg-white p-1 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowSaveMenu(false);
-                        handleSave(true);
-                      }}
-                      className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      Save and New
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowSaveMenu(false);
-                        handleSave(false);
-                      }}
-                      className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      Save and Back
-                    </button>
+                  <div className="absolute bottom-full right-0 mb-2 w-48 rounded-xl border border-slate-200 bg-white p-1 shadow-2xl dark:border-slate-700 dark:bg-slate-900">
+                    <button type="button" onClick={() => { setShowSaveMenu(false); handleSave("Draft"); }} className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800">Save & Draft</button>
+                    <button type="button" onClick={() => { setShowSaveMenu(false); handleSave("Pending"); }} className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800">Save & Pending</button>
+                    <button type="button" onClick={() => { setShowSaveMenu(false); handleSave("Approved"); }} className="w-full rounded-lg px-3 py-2 text-left text-[10px] font-black uppercase tracking-wider text-slate-700 hover:bg-orange-50 dark:text-slate-200 dark:hover:bg-slate-800">Save & Approved</button>
                   </div>
                 )}
               </div>
@@ -319,7 +409,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
               Current Entry
             </p>
             <p className="mt-1 text-2xl font-black tracking-tight">
-              Rs. {Number(amount || 0).toLocaleString()}
+              Rs. {amountValue.toLocaleString()}
             </p>
             <p className="mt-2 text-[11px] font-semibold text-orange-100/90">
               {selectedCustomerName || "No customer selected"}
@@ -340,37 +430,6 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
               </p>
             </div>
           </div>
-
-          <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-slate-500">
-              Recent Payments
-            </p>
-            <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
-              {docs.slice(0, 8).map((item) => (
-                <div
-                  key={item.id}
-                  className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 dark:border-slate-800 dark:bg-slate-800/50"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[11px] font-black uppercase text-slate-900 dark:text-white">
-                      {item.id}
-                    </p>
-                    <p className="text-[11px] font-black text-orange-600 dark:text-orange-400">
-                      Rs. {Number(item.totalAmount || 0).toLocaleString()}
-                    </p>
-                  </div>
-                  <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">
-                    {item.customerName} • {item.date}
-                  </p>
-                </div>
-              ))}
-              {docs.length === 0 && (
-                <p className="rounded-xl border border-dashed border-slate-200 px-3 py-6 text-center text-[11px] font-bold text-slate-400 dark:border-slate-700">
-                  No payment entries yet.
-                </p>
-              )}
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -378,3 +437,4 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
 };
 
 export default ReceivePaymentFormPage;
+
