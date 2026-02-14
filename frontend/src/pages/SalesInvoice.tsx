@@ -538,7 +538,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 px-4">
                 Are you sure you want to set{" "}
                 <span className="text-rose-600 font-black">{selectedIds.size} invoices</span> to
-                Deleted status? They will remain in database and can be filtered by status.
+                Deleted status? Invoices must be Void first and will remain in database.
               </p>
               <div className="flex gap-3">
                 <button

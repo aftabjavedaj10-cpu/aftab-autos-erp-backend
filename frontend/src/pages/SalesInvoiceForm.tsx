@@ -416,7 +416,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const isPending = formData.status === "Pending";
   const isVoid = formData.status === "Void";
   const isDeleted = formData.status === "Deleted";
-  const isLocked = isApproved && !isRevising;
+  const isLocked = (isApproved && !isRevising) || isVoid || isDeleted;
   const canVoid = isEdit && (formData.status === "Pending" || formData.status === "Approved");
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {

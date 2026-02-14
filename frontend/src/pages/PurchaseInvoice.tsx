@@ -137,7 +137,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
 
   const handleBulkDelete = () => {
     selectedIds.forEach((id) => onDelete(id));
-    setSuccessMsg(`Successfully deleted ${selectedIds.size} purchase invoices.`);
+    setSuccessMsg(`Moved ${selectedIds.size} purchase invoices to Deleted status.`);
     setSelectedIds(new Set());
     setIsConfirmModalOpen(false);
     setTimeout(() => setSuccessMsg(""), 5000);
@@ -517,12 +517,12 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                 ⚠️
               </div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">
-                Delete Invoices?
+                Mark As Deleted?
               </h3>
               <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 px-4">
-                Are you sure you want to delete{" "}
-                <span className="text-rose-600 font-black">{selectedIds.size} invoices</span>? This
-                action will remove ledger entries and cannot be undone.
+                Are you sure you want to set{" "}
+                <span className="text-rose-600 font-black">{selectedIds.size} invoices</span> to
+                Deleted status? Invoices must be Void first and will remain in database.
               </p>
               <div className="flex gap-3">
                 <button
@@ -535,7 +535,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                   onClick={handleBulkDelete}
                   className="flex-1 py-3.5 bg-rose-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-rose-600/20 hover:bg-rose-700 transition-all"
                 >
-                  Delete Now
+                  Set Deleted
                 </button>
               </div>
             </div>
