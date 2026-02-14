@@ -6,6 +6,7 @@ interface SalesInvoiceFormPageProps {
   invoice?: SalesInvoice;
   forceNewMode?: boolean;
   idPrefix?: string;
+  showSavePrices?: boolean;
   partyLabel?: string;
   partySearchPlaceholder?: string;
   partyEmptyText?: string;
@@ -33,6 +34,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   invoice,
   forceNewMode = false,
   idPrefix = "SI",
+  showSavePrices = true,
   partyLabel = "Customer Account",
   partySearchPlaceholder = "Search name, phone, or code...",
   partyEmptyText = "No customers found",
@@ -456,7 +458,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       customerName: customer?.name || "Unknown",
       totalAmount: totals.netTotal,
     };
-    onSave(invoiceData, stayOnPage, savePrices);
+    onSave(invoiceData, stayOnPage, showSavePrices ? savePrices : false);
   };
 
   const handleVoid = () => {
@@ -640,33 +642,35 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Save Prices</span>
-            <button
-              type="button"
-              onClick={() => setSavePrices((prev) => !prev)}
-              className={`relative w-10 h-6 rounded-full border overflow-hidden transition-colors ${
-                savePrices
-                  ? "bg-orange-500 border-orange-500"
-                  : "bg-slate-200 border-slate-300 dark:bg-slate-700 dark:border-slate-600"
-              }`}
-              aria-pressed={savePrices}
-              title="When enabled, edited item prices will update product sale prices."
-            >
-              <span
-                className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                  savePrices ? "translate-x-5" : "translate-x-0"
+          {showSavePrices && (
+            <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1">
+              <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Save Prices</span>
+              <button
+                type="button"
+                onClick={() => setSavePrices((prev) => !prev)}
+                className={`relative w-10 h-6 rounded-full border overflow-hidden transition-colors ${
+                  savePrices
+                    ? "bg-orange-500 border-orange-500"
+                    : "bg-slate-200 border-slate-300 dark:bg-slate-700 dark:border-slate-600"
                 }`}
-              />
-            </button>
-            <span
-              className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                savePrices ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-              }`}
-            >
-              {savePrices ? "On" : "Off"}
-            </span>
-          </div>
+                aria-pressed={savePrices}
+                title="When enabled, edited item prices will update product sale prices."
+              >
+                <span
+                  className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+                    savePrices ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+              <span
+                className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                  savePrices ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
+                }`}
+              >
+                {savePrices ? "On" : "Off"}
+              </span>
+            </div>
+          )}
             <span
               className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
                 formData.status === "Draft"

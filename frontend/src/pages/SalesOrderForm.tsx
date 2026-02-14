@@ -61,6 +61,7 @@ const SalesOrderFormPage: React.FC<SalesOrderFormPageProps> = ({
     <SalesInvoiceFormPage
       invoice={editingInvoice}
       idPrefix="SO"
+      showSavePrices={false}
       invoices={invoices}
       products={products}
       customers={customers}
@@ -83,4 +84,3 @@ const SalesOrderFormPage: React.FC<SalesOrderFormPageProps> = ({
 };
 
 export default SalesOrderFormPage;
-

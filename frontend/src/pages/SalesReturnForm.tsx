@@ -61,6 +61,7 @@ const SalesReturnFormPage: React.FC<SalesReturnFormPageProps> = ({
     <SalesInvoiceFormPage
       invoice={editingInvoice}
       idPrefix="SR"
+      showSavePrices={false}
       invoices={invoices}
       products={products}
       customers={customers}
@@ -83,4 +84,3 @@ const SalesReturnFormPage: React.FC<SalesReturnFormPageProps> = ({
 };
 
 export default SalesReturnFormPage;
-

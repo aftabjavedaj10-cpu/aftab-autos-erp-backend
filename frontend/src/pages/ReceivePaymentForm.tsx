@@ -61,6 +61,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
     <SalesInvoiceFormPage
       invoice={editingInvoice}
       idPrefix="RP"
+      showSavePrices={false}
       invoices={invoices}
       products={products}
       customers={customers}
@@ -83,4 +84,3 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
 };
 
 export default ReceivePaymentFormPage;
-
