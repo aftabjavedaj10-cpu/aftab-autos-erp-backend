@@ -851,6 +851,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           <SalesOrderFormPage
             docs={salesOrders}
             customers={customers}
+            products={products}
+            company={activeCompany || undefined}
             doc={editingSalesOrder}
             onBack={() => {
               setEditingSalesOrder(undefined);
@@ -877,6 +879,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           <SalesReturnFormPage
             docs={salesReturns}
             customers={customers}
+            products={products}
+            company={activeCompany || undefined}
             doc={editingSalesReturn}
             onBack={() => {
               setEditingSalesReturn(undefined);
@@ -903,6 +907,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           <ReceivePaymentFormPage
             docs={receivePayments}
             customers={customers}
+            products={products}
+            company={activeCompany || undefined}
             doc={editingReceivePayment}
             onBack={() => {
               setEditingReceivePayment(undefined);
