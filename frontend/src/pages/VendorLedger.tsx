@@ -6,6 +6,8 @@ import { formatDateDMY } from "../services/dateFormat";
 interface LedgerEntry {
   id: string;
   date: string;
+  postedAt?: string;
+  orderHint?: number;
   description: string;
   reference: string;
   type: "Bill" | "Payment" | "Return";
@@ -29,6 +31,12 @@ const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
   const bOpen = b.description === "Opening Balance";
   if (aOpen !== bOpen) return aOpen ? -1 : 1;
   if (a.date !== b.date) return a.date.localeCompare(b.date);
+  const aPosted = String(a.postedAt || "");
+  const bPosted = String(b.postedAt || "");
+  if (aPosted !== bPosted) return aPosted.localeCompare(bPosted);
+  const aHint = Number.isFinite(a.orderHint) ? Number(a.orderHint) : 0;
+  const bHint = Number.isFinite(b.orderHint) ? Number(b.orderHint) : 0;
+  if (aHint !== bHint) return aHint - bHint;
   const aRefNum = parseRefNumber(a.reference || a.id);
   const bRefNum = parseRefNumber(b.reference || b.id);
   if (aRefNum !== bRefNum) return aRefNum - bRefNum;
@@ -105,6 +113,8 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
       entries.push({
         id: `open-${vendorId}`,
         date: "2023-10-01",
+        postedAt: "2023-10-01T00:00:00.000Z",
+        orderHint: -100,
         description: "Opening Balance",
         reference: "-",
         type: "Bill",
@@ -121,11 +131,15 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
       });
 
     vendorInvoices.forEach((inv) => {
+      const manualRef = String(inv.reference || "").trim();
+      const baseRef = manualRef || String(inv.id || "");
       entries.push({
         id: `bill-${inv.id}`,
         date: inv.date,
+        postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
+        orderHint: 10,
         description: `Purchase Bill - ${inv.id}`,
-        reference: inv.id,
+        reference: baseRef,
         type: "Bill",
         debit: Number(inv.totalAmount || 0),
         credit: 0,
@@ -135,8 +149,10 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         entries.push({
           id: `pay-${inv.id}`,
           date: inv.date,
+          postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
+          orderHint: 20,
           description: "Payment Made",
-          reference: `PAY-${inv.id}`,
+          reference: baseRef,
           type: "Payment",
           debit: 0,
           credit: paid,

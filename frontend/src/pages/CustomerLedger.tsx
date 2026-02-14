@@ -7,6 +7,8 @@ import { formatDateDMY } from "../services/dateFormat";
 interface LedgerEntry {
   id: string;
   date: string;
+  postedAt?: string;
+  orderHint?: number;
   description: string;
   reference: string;
   type: "Invoice" | "Receipt" | "Return";
@@ -30,6 +32,12 @@ const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
   const bOpen = b.description === "Opening Balance";
   if (aOpen !== bOpen) return aOpen ? -1 : 1;
   if (a.date !== b.date) return a.date.localeCompare(b.date);
+  const aPosted = String(a.postedAt || "");
+  const bPosted = String(b.postedAt || "");
+  if (aPosted !== bPosted) return aPosted.localeCompare(bPosted);
+  const aHint = Number.isFinite(a.orderHint) ? Number(a.orderHint) : 0;
+  const bHint = Number.isFinite(b.orderHint) ? Number(b.orderHint) : 0;
+  if (aHint !== bHint) return aHint - bHint;
   const aRefNum = parseRefNumber(a.reference || a.id);
   const bRefNum = parseRefNumber(b.reference || b.id);
   if (aRefNum !== bRefNum) return aRefNum - bRefNum;
@@ -111,6 +119,8 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       entries.push({
         id: `open-${customerId}`,
         date: "2023-10-01",
+        postedAt: "2023-10-01T00:00:00.000Z",
+        orderHint: -100,
         description: "Opening Balance",
         reference: "-",
         type: "Invoice",
@@ -127,11 +137,15 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       });
 
     customerInvoices.forEach((inv) => {
+        const manualRef = String(inv.reference || "").trim();
+        const baseRef = manualRef || String(inv.id || "");
         entries.push({
           id: `inv-${inv.id}`,
           date: inv.date,
+          postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
+          orderHint: 10,
           description: `Credit Sales - ${inv.id}`,
-          reference: inv.id,
+          reference: baseRef,
           type: "Invoice",
           debit: Number(inv.totalAmount || 0),
           credit: 0,
@@ -141,8 +155,10 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
           entries.push({
             id: `rcp-${inv.id}`,
             date: inv.date,
+            postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
+            orderHint: 20,
             description: "Payment Received",
-            reference: `RCP-${inv.id}`,
+            reference: baseRef,
             type: "Receipt",
             debit: 0,
             credit: received,
@@ -158,11 +174,14 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       });
 
     customerReturns.forEach((ret) => {
+      const manualRef = String(ret.reference || "").trim();
       entries.push({
         id: `ret-${ret.id}`,
         date: ret.date,
+        postedAt: String((ret as any).createdAt || (ret as any).updatedAt || ret.date || ""),
+        orderHint: 30,
         description: `Sales Return - ${ret.id}`,
-        reference: ret.id,
+        reference: manualRef || String(ret.id || ""),
         type: "Return",
         debit: 0,
         credit: Number(ret.totalAmount || 0),
@@ -189,6 +208,8 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       entries.push({
         id: `pay-${pay.id}`,
         date: pay.date,
+        postedAt: String(pay.createdAt || pay.updatedAt || pay.date || ""),
+        orderHint: 40,
         description: "Payment Received",
         reference: pay.id,
         type: "Receipt",

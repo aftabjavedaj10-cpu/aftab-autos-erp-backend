@@ -313,6 +313,8 @@ const mapSalesInvoiceFromDb = (row: any) => ({
   overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
   amountReceived: row.amount_received ?? row.amountReceived ?? 0,
   totalAmount: row.total_amount ?? row.totalAmount ?? 0,
+  createdAt: row.created_at ?? row.createdAt,
+  updatedAt: row.updated_at ?? row.updatedAt,
   items: Array.isArray(row.items) ? row.items.map(mapSalesInvoiceItemFromDb) : [],
 });
 
@@ -449,6 +451,8 @@ const mapSalesReturnFromDb = (row: any) => ({
   overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
   amountReceived: row.amount_refunded ?? row.amountRefunded ?? row.amountReceived ?? 0,
   totalAmount: row.total_amount ?? row.totalAmount ?? 0,
+  createdAt: row.created_at ?? row.createdAt,
+  updatedAt: row.updated_at ?? row.updatedAt,
   items: Array.isArray(row.items) ? row.items.map(mapSalesReturnItemFromDb) : [],
 });
 
@@ -506,6 +510,8 @@ const mapReceivePaymentFromDb = (row: any) => ({
   status: row.status,
   totalAmount: Number(row.total_amount ?? row.totalAmount ?? 0),
   notes: row.notes ?? "",
+  createdAt: row.created_at ?? row.createdAt,
+  updatedAt: row.updated_at ?? row.updatedAt,
 });
 
 const mapReceivePaymentToDb = (payment: any) =>
@@ -533,6 +539,8 @@ const mapPurchaseInvoiceFromDb = (row: any) => ({
   overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
   amountReceived: row.amount_paid ?? row.amountPaid ?? row.amountReceived ?? 0,
   totalAmount: row.total_amount ?? row.totalAmount ?? 0,
+  createdAt: row.created_at ?? row.createdAt,
+  updatedAt: row.updated_at ?? row.updatedAt,
   items: Array.isArray(row.items) ? row.items.map(mapPurchaseInvoiceItemFromDb) : [],
 });
 

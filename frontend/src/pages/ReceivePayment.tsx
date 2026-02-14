@@ -10,6 +10,8 @@ export interface ReceivePaymentDoc {
   status: string;
   totalAmount: number;
   notes?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface ReceivePaymentPageProps {
@@ -52,6 +54,8 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
     status: String(invoice.status || "Draft"),
     totalAmount: Number(invoice.totalAmount || 0),
     notes: invoice.notes || "",
+    createdAt: (invoice as any).createdAt,
+    updatedAt: (invoice as any).updatedAt,
   });
 
   return (
