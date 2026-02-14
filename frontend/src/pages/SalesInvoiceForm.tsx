@@ -7,6 +7,8 @@ interface SalesInvoiceFormPageProps {
   forceNewMode?: boolean;
   idPrefix?: string;
   showSavePrices?: boolean;
+  amountReceivedLabel?: string;
+  balanceLabel?: string;
   partyLabel?: string;
   partySearchPlaceholder?: string;
   partyEmptyText?: string;
@@ -35,6 +37,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   forceNewMode = false,
   idPrefix = "SI",
   showSavePrices = true,
+  amountReceivedLabel = "Cash Received",
+  balanceLabel = "Balance Due",
   partyLabel = "Customer Account",
   partySearchPlaceholder = "Search name, phone, or code...",
   partyEmptyText = "No customers found",
@@ -1321,7 +1325,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             <div className="bg-orange-50 dark:bg-orange-500/5 p-3 rounded-lg border border-orange-100 dark:border-orange-500/10 mt-4">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black text-orange-700 dark:text-orange-400 uppercase tracking-tight">
-                  Cash Received
+                  {amountReceivedLabel}
                 </span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-orange-600 font-black">Rs.</span>
@@ -1354,7 +1358,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                     totals.balanceDue > 0 ? "text-rose-700" : "text-emerald-700"
                   }`}
                 >
-                  Balance Due
+                  {balanceLabel}
                 </span>
                 <span
                   className={`text-[14px] font-black tracking-tight ${
