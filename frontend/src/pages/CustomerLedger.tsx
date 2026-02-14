@@ -71,7 +71,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const selectedCustomer = useMemo(
-    () => customers.find((c) => c.id === selectedCustomerId),
+    () => customers.find((c) => String(c.id || "") === String(selectedCustomerId || "")),
     [selectedCustomerId, customers]
   );
 
@@ -105,7 +105,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
   const rawEntries = useMemo(() => {
     const entries: LedgerEntry[] = [];
     const customerId = selectedCustomerId;
-    const customer = customers.find((c) => c.id === customerId);
+    const customer = customers.find((c) => String(c.id || "") === String(customerId || ""));
     const openingRaw = Number(customer?.openingBalance || 0);
     if (!Number.isNaN(openingRaw) && openingRaw !== 0) {
       entries.push({
@@ -120,7 +120,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
     }
 
     const customerInvoices = salesInvoices
-      .filter((inv) => inv.customerId === customerId)
+      .filter((inv) => String(inv.customerId || "") === String(customerId || ""))
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         return String(a.id).localeCompare(String(b.id));
@@ -151,7 +151,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       });
 
     const customerReturns = salesReturns
-      .filter((ret) => ret.customerId === customerId)
+      .filter((ret) => String(ret.customerId || "") === String(customerId || ""))
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         return String(a.id).localeCompare(String(b.id));
@@ -244,7 +244,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
 
   const handleSelectCustomer = (customer: Customer) => {
     if (!customer.id) return;
-    setSelectedCustomerId(customer.id);
+    setSelectedCustomerId(String(customer.id));
     setCustomerSearch(customer.name);
     setShowResults(false);
   };

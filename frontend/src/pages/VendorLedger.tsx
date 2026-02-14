@@ -66,7 +66,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const selectedVendor = useMemo(
-    () => vendors.find((v) => v.id === selectedVendorId),
+    () => vendors.find((v) => String(v.id || "") === String(selectedVendorId || "")),
     [selectedVendorId, vendors]
   );
 
@@ -99,7 +99,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   const rawEntries = useMemo(() => {
     const entries: LedgerEntry[] = [];
     const vendorId = selectedVendorId;
-    const vendor = vendors.find((v) => v.id === vendorId);
+    const vendor = vendors.find((v) => String(v.id || "") === String(vendorId || ""));
     const opening = Number(vendor?.balance || 0);
     if (!Number.isNaN(opening) && opening !== 0) {
       entries.push({
@@ -187,7 +187,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   }, [filteredEntries]);
 
   const handleSelectVendor = (vendor: Vendor) => {
-    setSelectedVendorId(vendor.id);
+    setSelectedVendorId(String(vendor.id));
     setVendorSearch(vendor.name);
     setShowResults(false);
   };
