@@ -9,6 +9,7 @@ interface LedgerEntry {
   orderHint?: number;
   viewId?: string;
   description: string;
+  detailNarration?: string;
   reference: string;
   type: "Bill" | "Payment" | "Return";
   debit: number;
@@ -18,6 +19,18 @@ interface LedgerEntry {
 const parseRefNumber = (value: string) => {
   const match = String(value || "").match(/(\d+)\s*$/);
   return match ? Number(match[1]) : -1;
+};
+
+const buildItemsNarration = (items: any[] = []) => {
+  const cleaned = items
+    .filter((it) => it)
+    .map((it) => {
+      const name = String(it.productName || it.name || "Item").trim();
+      const qty = Number(it.quantity || 0);
+      const rate = Number(it.unitPrice || 0);
+      return `${name} x${qty}${rate ? ` @ ${rate.toLocaleString()}` : ""}`;
+    });
+  return cleaned.join(", ");
 };
 
 const ledgerTypePriority: Record<LedgerEntry["type"], number> = {
@@ -74,6 +87,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   const [startDate, setStartDate] = useState<string>(defaultStartDate);
   const [endDate, setEndDate] = useState<string>(defaultEndDate);
   const [typeFilter, setTypeFilter] = useState("All Types");
+  const [showDetailedNarration, setShowDetailedNarration] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -143,6 +157,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         orderHint: 10,
         viewId: String(inv.id || ""),
         description: `Purchase Bill - ${inv.id}`,
+        detailNarration: buildItemsNarration(inv.items || []),
         reference: manualRef,
         type: "Bill",
         debit: Number(inv.totalAmount || 0),
@@ -157,6 +172,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
           orderHint: 20,
           viewId: String(inv.id || ""),
           description: "Payment Made",
+          detailNarration: buildItemsNarration(inv.items || []),
           reference: manualRef,
           type: "Payment",
           debit: 0,
@@ -262,7 +278,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 mb-4 print:hidden">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
           <div className="md:col-span-1 relative" ref={searchRef}>
             <div className="relative group">
               <span className="absolute inset-y-0 left-3 flex items-center text-slate-400 text-[12px]">🔍</span>
@@ -340,6 +356,17 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
               ))}
             </select>
           </div>
+          <div className="flex items-end">
+            <label className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-slate-600">
+              <input
+                type="checkbox"
+                checked={showDetailedNarration}
+                onChange={(e) => setShowDetailedNarration(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+              />
+              Show Detailed Narration
+            </label>
+          </div>
         </div>
       </div>
 
@@ -366,7 +393,12 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
                     {formatDateDMY(entry.date)}
                   </td>
                   <td className="px-4 py-1.5 font-black uppercase text-slate-900">
-                    {entry.description}
+                    <p>{entry.description}</p>
+                    {showDetailedNarration && entry.detailNarration && (
+                      <p className="mt-0.5 text-[9px] normal-case font-semibold text-slate-500">
+                        {entry.detailNarration}
+                      </p>
+                    )}
                   </td>
                   <td className="px-4 py-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-300 uppercase">
                     {entry.reference || ""}
