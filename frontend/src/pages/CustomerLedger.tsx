@@ -14,6 +14,31 @@ interface LedgerEntry {
   credit: number;
 }
 
+const parseRefNumber = (value: string) => {
+  const match = String(value || "").match(/(\d+)\s*$/);
+  return match ? Number(match[1]) : -1;
+};
+
+const ledgerTypePriority: Record<LedgerEntry["type"], number> = {
+  Invoice: 1,
+  Return: 2,
+  Receipt: 3,
+};
+
+const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
+  const aOpen = a.description === "Opening Balance";
+  const bOpen = b.description === "Opening Balance";
+  if (aOpen !== bOpen) return aOpen ? -1 : 1;
+  if (a.date !== b.date) return a.date.localeCompare(b.date);
+  const aRefNum = parseRefNumber(a.reference || a.id);
+  const bRefNum = parseRefNumber(b.reference || b.id);
+  if (aRefNum !== bRefNum) return aRefNum - bRefNum;
+  const aType = ledgerTypePriority[a.type] ?? 99;
+  const bType = ledgerTypePriority[b.type] ?? 99;
+  if (aType !== bType) return aType - bType;
+  return String(a.reference || a.id).localeCompare(String(b.reference || b.id));
+};
+
 const TRANSACTION_TYPES = ["All Types", "Invoice", "Receipt", "Return"];
 
 interface CustomerLedgerPageProps {
@@ -172,19 +197,8 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       });
     });
 
-    const parseRefNumber = (value: string) => {
-      const match = String(value || "").match(/(\d+)\s*$/);
-      return match ? Number(match[1]) : -1;
-    };
-
-    // Oldest at top, newest appended at bottom.
-    entries.sort((a, b) => {
-      if (a.date !== b.date) return a.date.localeCompare(b.date);
-      const aNum = parseRefNumber(a.reference || a.id);
-      const bNum = parseRefNumber(b.reference || b.id);
-      if (aNum !== bNum) return aNum - bNum;
-      return String(a.reference || a.id).localeCompare(String(b.reference || b.id));
-    });
+    // Modern ERP ledger pattern: Opening first, then oldest to newest.
+    entries.sort(compareLedgerEntries);
 
     return entries;
   }, [customers, salesInvoices, salesReturns, receivePayments, selectedCustomerId, selectedCustomer]);
@@ -220,10 +234,12 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
 
   const runningBalances = useMemo(() => {
     let running = 0;
-    return filteredEntries.map((entry) => {
+    const map = new Map<string, number>();
+    filteredEntries.forEach((entry) => {
       running += entry.debit - entry.credit;
-      return running;
+      map.set(entry.id, running);
     });
+    return map;
   }, [filteredEntries]);
 
   const handleSelectCustomer = (customer: Customer) => {
@@ -383,7 +399,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
               </tr>
             </thead>
             <tbody>
-              {paginatedEntries.map((entry, idx) => (
+              {paginatedEntries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-slate-50 text-[11px]">
                   <td className="px-4 py-2 font-bold text-slate-500 italic">
                     {formatDateDMY(entry.date)}
@@ -401,7 +417,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
                     {entry.credit > 0 ? entry.credit.toLocaleString() : "-"}
                   </td>
                   <td className="px-4 py-2 text-right font-black bg-slate-50/20 italic text-slate-400 tracking-tighter">
-                    {runningBalances[idx]?.toLocaleString() || "0"}
+                    {(runningBalances.get(entry.id) || 0).toLocaleString()}
                   </td>
                 </tr>
               ))}

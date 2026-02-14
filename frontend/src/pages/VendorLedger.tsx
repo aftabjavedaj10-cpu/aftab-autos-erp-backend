@@ -13,10 +13,29 @@ interface LedgerEntry {
   credit: number;
 }
 
+const parseRefNumber = (value: string) => {
+  const match = String(value || "").match(/(\d+)\s*$/);
+  return match ? Number(match[1]) : -1;
+};
+
+const ledgerTypePriority: Record<LedgerEntry["type"], number> = {
+  Bill: 1,
+  Return: 2,
+  Payment: 3,
+};
+
 const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
+  const aOpen = a.description === "Opening Balance";
+  const bOpen = b.description === "Opening Balance";
+  if (aOpen !== bOpen) return aOpen ? -1 : 1;
   if (a.date !== b.date) return a.date.localeCompare(b.date);
-  if (a.reference !== b.reference) return a.reference.localeCompare(b.reference);
-  return a.id.localeCompare(b.id);
+  const aRefNum = parseRefNumber(a.reference || a.id);
+  const bRefNum = parseRefNumber(b.reference || b.id);
+  if (aRefNum !== bRefNum) return aRefNum - bRefNum;
+  const aType = ledgerTypePriority[a.type] ?? 99;
+  const bType = ledgerTypePriority[b.type] ?? 99;
+  if (aType !== bType) return aType - bType;
+  return String(a.reference || a.id).localeCompare(String(b.reference || b.id));
 };
 
 const TRANSACTION_TYPES = ["All Types", "Bill", "Payment", "Return"];
@@ -159,10 +178,12 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
 
   const runningBalances = useMemo(() => {
     let running = 0;
-    return filteredEntries.map((entry) => {
+    const map = new Map<string, number>();
+    filteredEntries.forEach((entry) => {
       running += entry.debit - entry.credit;
-      return running;
+      map.set(entry.id, running);
     });
+    return map;
   }, [filteredEntries]);
 
   const handleSelectVendor = (vendor: Vendor) => {
@@ -321,7 +342,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
               </tr>
             </thead>
             <tbody>
-              {paginatedEntries.map((entry, idx) => (
+              {paginatedEntries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-slate-50 text-[11px]">
                   <td className="px-4 py-2 font-bold text-slate-500 italic">
                     {formatDateDMY(entry.date)}
@@ -339,7 +360,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
                     {entry.credit > 0 ? entry.credit.toLocaleString() : "-"}
                   </td>
                   <td className="px-4 py-2 text-right font-black bg-slate-50/20 italic text-slate-400 tracking-tighter">
-                    {runningBalances[idx]?.toLocaleString() || "0"}
+                    {(runningBalances.get(entry.id) || 0).toLocaleString()}
                   </td>
                 </tr>
               ))}
