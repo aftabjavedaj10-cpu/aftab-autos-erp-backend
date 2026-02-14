@@ -46,6 +46,11 @@ const ledgerTypePriority: Record<LedgerEntry["type"], number> = {
   Payment: 3,
 };
 
+const isLedgerVisibleStatus = (status: unknown) => {
+  const normalized = String(status || "").trim().toLowerCase();
+  return normalized !== "void" && normalized !== "deleted";
+};
+
 const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
   const aOpen = a.description === "Opening Balance";
   const bOpen = b.description === "Opening Balance";
@@ -149,7 +154,11 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
     }
 
     const vendorInvoices = purchaseInvoices
-      .filter((inv) => String(inv.customerId || "") === String(vendorId))
+      .filter(
+        (inv) =>
+          String(inv.customerId || "") === String(vendorId) &&
+          isLedgerVisibleStatus((inv as any).status)
+      )
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         return String(a.id || "").localeCompare(String(b.id || ""));

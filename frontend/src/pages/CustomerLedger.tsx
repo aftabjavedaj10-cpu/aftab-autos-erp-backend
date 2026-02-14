@@ -48,6 +48,11 @@ const ledgerTypePriority: Record<LedgerEntry["type"], number> = {
   Receipt: 3,
 };
 
+const isLedgerVisibleStatus = (status: unknown) => {
+  const normalized = String(status || "").trim().toLowerCase();
+  return normalized !== "void" && normalized !== "deleted";
+};
+
 const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
   const aOpen = a.description === "Opening Balance";
   const bOpen = b.description === "Opening Balance";
@@ -160,7 +165,11 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
     }
 
     const customerInvoices = salesInvoices
-      .filter((inv) => String(inv.customerId || "") === String(customerId || ""))
+      .filter(
+        (inv) =>
+          String(inv.customerId || "") === String(customerId || "") &&
+          isLedgerVisibleStatus((inv as any).status)
+      )
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         return String(a.id).localeCompare(String(b.id));
@@ -202,7 +211,11 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       });
 
     const customerReturns = salesReturns
-      .filter((ret) => String(ret.customerId || "") === String(customerId || ""))
+      .filter(
+        (ret) =>
+          String(ret.customerId || "") === String(customerId || "") &&
+          isLedgerVisibleStatus((ret as any).status)
+      )
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         return String(a.id).localeCompare(String(b.id));
@@ -228,6 +241,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
 
     const customerPayments = receivePayments
       .filter((pay) => {
+        const statusOk = isLedgerVisibleStatus((pay as any).status);
         const byId =
           selectedCustomerId &&
           pay.customerId &&
@@ -235,7 +249,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         const byName =
           String(pay.customerName || "").toLowerCase() ===
           String(selectedCustomer?.name || "").toLowerCase();
-        return Boolean(byId || byName);
+        return statusOk && Boolean(byId || byName);
       })
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
