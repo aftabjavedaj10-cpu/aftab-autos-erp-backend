@@ -1100,6 +1100,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onBack={() => setActiveTab("reports")}
             customers={customers}
             salesInvoices={salesInvoices}
+            salesReturns={salesReturns}
           />
         )}
 

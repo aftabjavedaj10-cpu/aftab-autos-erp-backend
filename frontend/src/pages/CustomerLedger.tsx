@@ -19,12 +19,14 @@ interface CustomerLedgerPageProps {
   onBack: () => void;
   customers: Customer[];
   salesInvoices: SalesInvoice[];
+  salesReturns: SalesInvoice[];
 }
 
 const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
   onBack,
   customers,
   salesInvoices,
+  salesReturns,
 }) => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState("");
@@ -120,8 +122,32 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         }
       });
 
+    const customerReturns = salesReturns
+      .filter((ret) => ret.customerId === customerId)
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return String(a.id).localeCompare(String(b.id));
+      });
+
+    customerReturns.forEach((ret) => {
+      entries.push({
+        id: `ret-${ret.id}`,
+        date: ret.date,
+        description: `Sales Return - ${ret.id}`,
+        reference: ret.id,
+        type: "Return",
+        debit: 0,
+        credit: Number(ret.totalAmount || 0),
+      });
+    });
+
+    entries.sort((a, b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return String(a.reference).localeCompare(String(b.reference));
+    });
+
     return entries;
-  }, [customers, salesInvoices, selectedCustomerId]);
+  }, [customers, salesInvoices, salesReturns, selectedCustomerId]);
 
   const filteredEntries = useMemo(() => {
     return rawEntries.filter((entry) => {
