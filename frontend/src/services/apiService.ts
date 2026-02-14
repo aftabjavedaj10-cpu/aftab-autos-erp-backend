@@ -435,6 +435,69 @@ const mapQuotationItemToDb = (item: any, quotationId: string) =>
     ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
   );
 
+const mapSalesReturnFromDb = (row: any) => ({
+  id: row.id,
+  customerId: row.customer_id ?? row.customerId,
+  customerName: row.customer_name ?? row.customerName,
+  reference: row.reference,
+  vehicleNumber: row.vehicle_number ?? row.vehicleNumber,
+  date: row.date,
+  dueDate: row.due_date ?? row.dueDate,
+  status: row.status,
+  paymentStatus: row.payment_status ?? row.paymentStatus,
+  notes: row.notes,
+  overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
+  amountReceived: row.amount_refunded ?? row.amountRefunded ?? row.amountReceived ?? 0,
+  totalAmount: row.total_amount ?? row.totalAmount ?? 0,
+  items: Array.isArray(row.items) ? row.items.map(mapSalesReturnItemFromDb) : [],
+});
+
+const mapSalesReturnItemFromDb = (row: any) => ({
+  id: row.id,
+  invoiceId: row.sales_return_id ?? row.salesReturnId,
+  productId: row.product_id ?? row.productId,
+  productCode: row.product_code ?? row.productCode,
+  productName: row.product_name ?? row.productName,
+  unit: row.unit,
+  quantity: Number(row.quantity ?? 0),
+  unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
+  discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
+  discountType: row.discount_type ?? row.discountType ?? "fixed",
+  tax: Number(row.tax ?? 0),
+  total: Number(row.total ?? 0),
+});
+
+const mapSalesReturnToDb = (invoice: any) =>
+  stripClientOnly(
+    {
+      ...invoice,
+      customer_id: invoice.customerId ?? invoice.customer_id,
+      customer_name: invoice.customerName ?? invoice.customer_name,
+      vehicle_number: invoice.vehicleNumber ?? invoice.vehicle_number,
+      due_date: invoice.dueDate ?? invoice.due_date,
+      payment_status: invoice.paymentStatus ?? invoice.payment_status,
+      overall_discount: invoice.overallDiscount ?? invoice.overall_discount ?? 0,
+      amount_refunded: invoice.amountReceived ?? invoice.amount_refunded ?? 0,
+      total_amount: invoice.totalAmount ?? invoice.total_amount ?? 0,
+    },
+    ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "paymentStatus", "overallDiscount", "amountReceived", "totalAmount"]
+  );
+
+const mapSalesReturnItemToDb = (item: any, salesReturnId: string) =>
+  stripClientOnly(
+    {
+      ...item,
+      sales_return_id: salesReturnId,
+      product_id: item.productId ?? item.product_id,
+      product_code: item.productCode ?? item.product_code,
+      product_name: item.productName ?? item.product_name,
+      unit_price: item.unitPrice ?? item.unit_price ?? 0,
+      discount_value: item.discountValue ?? item.discount_value ?? 0,
+      discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    },
+    ["invoiceId", "productId", "productCode", "productName", "unitPrice", "discountValue", "discountType"]
+  );
+
 const mapPurchaseInvoiceFromDb = (row: any) => ({
   id: row.id,
   customerId: row.vendor_id ?? row.vendorId,
@@ -569,6 +632,7 @@ const mapStockLedgerFromDb = (row: any) => ({
 });
 
 const SALES_INVOICE_ID_PATTERN = /^SI-(\d{6})$/;
+const SALES_RETURN_ID_PATTERN = /^SR-(\d{6})$/;
 const QUOTATION_ID_PATTERN = /^QT-(\d{6})$/;
 const PURCHASE_INVOICE_ID_PATTERN = /^PI-(\d{6})$/;
 const STOCK_ADJUSTMENT_ID_PATTERN = /^ADJ-(\d{6})$/;
@@ -580,6 +644,14 @@ const parseSalesInvoiceNumber = (id?: string) => {
 };
 
 const formatSalesInvoiceId = (num: number) => `SI-${String(num).padStart(6, "0")}`;
+
+const parseSalesReturnNumber = (id?: string) => {
+  if (!id) return -1;
+  const match = id.match(SALES_RETURN_ID_PATTERN);
+  return match ? Number(match[1]) : -1;
+};
+
+const formatSalesReturnId = (num: number) => `SR-${String(num).padStart(6, "0")}`;
 
 const parseQuotationNumber = (id?: string) => {
   if (!id) return -1;
@@ -599,6 +671,11 @@ const isQuotationDuplicateKeyError = (err: unknown) => {
   return err.message.includes('duplicate key value violates unique constraint "quotations_pkey"');
 };
 
+const isSalesReturnDuplicateKeyError = (err: unknown) => {
+  if (!(err instanceof Error)) return false;
+  return err.message.includes('duplicate key value violates unique constraint "sales_returns_pkey"');
+};
+
 const getLatestSalesInvoiceId = async () => {
   const rows = await apiCall("/sales_invoices?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
@@ -607,6 +684,12 @@ const getLatestSalesInvoiceId = async () => {
 
 const getLatestQuotationId = async () => {
   const rows = await apiCall("/quotations?select=id&order=created_at.desc&limit=1");
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0]?.id ?? null;
+};
+
+const getLatestSalesReturnId = async () => {
+  const rows = await apiCall("/sales_returns?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows[0]?.id ?? null;
 };
@@ -1004,6 +1087,81 @@ export const quotationAPI = {
   delete: async (id: string) => {
     await ensurePermission("sales_invoices.delete");
     return apiCall(`/quotations?id=eq.${id}`, "DELETE");
+  },
+};
+
+// ============ SALES RETURNS ============
+export const salesReturnAPI = {
+  getAll: async () => {
+    await ensurePermission("sales_invoices.read");
+    const rows = await apiCall(
+      "/sales_returns?select=*,items:sales_return_items(*)&order=created_at.desc"
+    );
+    return Array.isArray(rows) ? rows.map(mapSalesReturnFromDb) : rows;
+  },
+  getById: async (id: string) => {
+    await ensurePermission("sales_invoices.read");
+    const row = await getFirst(`/sales_returns?select=*,items:sales_return_items(*)&id=eq.${id}`);
+    return mapSalesReturnFromDb(row);
+  },
+  create: async (salesReturn: any) => {
+    await ensurePermission("sales_invoices.write");
+    const withCompany = attachOwnership(salesReturn);
+    let header: any = null;
+    let createPayload = mapSalesReturnToDb(withCompany);
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        header = await apiCall("/sales_returns", "POST", createPayload, true).then(firstRow);
+        break;
+      } catch (err) {
+        if (!isSalesReturnDuplicateKeyError(err) || attempt === 2) {
+          throw err;
+        }
+        const latestId = await getLatestSalesReturnId();
+        const currentNum = parseSalesReturnNumber(createPayload?.id);
+        const latestNum = parseSalesReturnNumber(latestId ?? undefined);
+        const nextNum = Math.max(currentNum, latestNum, 0) + 1;
+        createPayload = { ...createPayload, id: formatSalesReturnId(nextNum) };
+      }
+    }
+
+    const items = Array.isArray(salesReturn.items) ? salesReturn.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/sales_return_items",
+        "POST",
+        items.map((item: any) =>
+          attachCompanyId(mapSalesReturnItemToDb(item, header.id))
+        ),
+        true
+      );
+    }
+
+    return salesReturnAPI.getById(header.id);
+  },
+  update: async (id: string, salesReturn: any) => {
+    await ensurePermission("sales_invoices.write");
+    await apiCall(`/sales_returns?id=eq.${id}`, "PATCH", mapSalesReturnToDb(salesReturn), true);
+
+    await apiCall(`/sales_return_items?sales_return_id=eq.${id}`, "DELETE");
+    const items = Array.isArray(salesReturn.items) ? salesReturn.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/sales_return_items",
+        "POST",
+        items.map((item: any) =>
+          attachCompanyId(mapSalesReturnItemToDb(item, id))
+        ),
+        true
+      );
+    }
+
+    return salesReturnAPI.getById(id);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("sales_invoices.delete");
+    return apiCall(`/sales_returns?id=eq.${id}`, "DELETE");
   },
 };
 
@@ -1425,6 +1583,7 @@ export default {
   vendorAPI,
   categoryAPI,
   salesInvoiceAPI,
+  salesReturnAPI,
   purchaseInvoiceAPI,
   quotationAPI,
   stockLedgerAPI,

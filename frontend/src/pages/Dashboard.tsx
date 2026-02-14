@@ -25,12 +25,12 @@ import QuotationPage from "./Quotation";
 import QuotationFormPage from "./QuotationForm";
 import SalesOrderPage, { type SalesOrderDoc } from "./SalesOrder";
 import SalesOrderFormPage from "./SalesOrderForm";
-import SalesReturnPage, { type SalesReturnDoc } from "./SalesReturn";
+import SalesReturnPage from "./SalesReturn";
 import SalesReturnFormPage from "./SalesReturnForm";
 import ReceivePaymentPage, { type ReceivePaymentDoc } from "./ReceivePayment";
 import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, quotationAPI, salesInvoiceAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, quotationAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -58,10 +58,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
   const [editingQuotationInvoice, setEditingQuotationInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [salesOrders, setSalesOrders] = useState<SalesOrderDoc[]>([]);
-  const [salesReturns, setSalesReturns] = useState<SalesReturnDoc[]>([]);
+  const [salesReturns, setSalesReturns] = useState<SalesInvoice[]>([]);
   const [receivePayments, setReceivePayments] = useState<ReceivePaymentDoc[]>([]);
   const [editingSalesOrder, setEditingSalesOrder] = useState<SalesOrderDoc | undefined>(undefined);
-  const [editingSalesReturn, setEditingSalesReturn] = useState<SalesReturnDoc | undefined>(undefined);
+  const [editingSalesReturn, setEditingSalesReturn] = useState<SalesInvoice | undefined>(undefined);
   const [editingReceivePayment, setEditingReceivePayment] = useState<ReceivePaymentDoc | undefined>(undefined);
   const [stockLedger, setStockLedger] = useState<StockLedgerEntry[]>([]);
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
@@ -173,6 +173,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           salesInvoicesData,
           purchaseInvoicesData,
           quotationData,
+          salesReturnData,
           ledgerData,
         ] = await Promise.all([
           productAPI.getAll().catch(() => []),
@@ -182,6 +183,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           salesInvoiceAPI.getAll().catch(() => []),
           purchaseInvoiceAPI.getAll().catch(() => []),
           quotationAPI.getAll().catch(() => []),
+          salesReturnAPI.getAll().catch(() => []),
           companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
         ]);
 
@@ -200,6 +202,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         );
         setQuotationInvoices(
           Array.isArray(quotationData) ? quotationData : quotationData.data || []
+        );
+        setSalesReturns(
+          Array.isArray(salesReturnData) ? salesReturnData : salesReturnData.data || []
         );
       } catch (err) {
         console.error("Failed to fetch data:", err);
@@ -420,8 +425,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_sales_return");
   };
 
-  const handleEditSalesReturn = (doc: SalesReturnDoc) => {
-    setEditingSalesReturn(doc);
+  const handleEditSalesReturn = (invoice: SalesInvoice) => {
+    setEditingSalesReturn(invoice);
     setActiveTab("add_sales_return");
   };
 
@@ -868,28 +873,62 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
         {activeTab === "sales_return" && (
           <SalesReturnPage
-            docs={salesReturns}
+            invoices={salesReturns}
             onAddClick={handleAddSalesReturn}
             onEditClick={handleEditSalesReturn}
-            onDelete={(id) => setSalesReturns((prev) => prev.filter((d) => d.id !== id))}
+            onDelete={async (id) => {
+              try {
+                await salesReturnAPI.delete(id);
+                setSalesReturns((prev) => prev.filter((d) => d.id !== id));
+                const companyId = getActiveCompanyId();
+                const ledgerData = companyId
+                  ? await stockLedgerAPI.listRecent(companyId, 5000)
+                  : [];
+                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+                setStockLedger(normalizedLedger);
+                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+              } catch (err: any) {
+                setError(err?.message || "Failed to delete sales return");
+              }
+            }}
           />
         )}
 
         {activeTab === "add_sales_return" && (
           <SalesReturnFormPage
-            docs={salesReturns}
+            invoices={salesReturns}
             customers={customers}
             products={products}
             company={activeCompany || undefined}
-            doc={editingSalesReturn}
+            invoice={editingSalesReturn}
             onBack={() => {
               setEditingSalesReturn(undefined);
               setActiveTab("sales_return");
             }}
-            onSave={(doc) => {
-              setSalesReturns((prev) => upsertSalesModuleDoc(prev, doc));
-              setEditingSalesReturn(undefined);
-              setActiveTab("sales_return");
+            onSave={async (invoiceData) => {
+              try {
+                const saved = editingSalesReturn?.id
+                  ? await salesReturnAPI.update(invoiceData.id, invoiceData)
+                  : await salesReturnAPI.create(invoiceData);
+                setSalesReturns((prev) => {
+                  const exists = prev.find((inv) => inv.id === saved.id);
+                  if (exists) {
+                    return prev.map((inv) => (inv.id === saved.id ? saved : inv));
+                  }
+                  return [saved, ...prev];
+                });
+                const companyId = getActiveCompanyId();
+                const ledgerData = companyId
+                  ? await stockLedgerAPI.listRecent(companyId, 5000)
+                  : [];
+                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+                setStockLedger(normalizedLedger);
+                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                setEditingSalesReturn(undefined);
+                setActiveTab("sales_return");
+              } catch (err: any) {
+                setError(err?.message || "Failed to save sales return");
+              }
             }}
           />
         )}
