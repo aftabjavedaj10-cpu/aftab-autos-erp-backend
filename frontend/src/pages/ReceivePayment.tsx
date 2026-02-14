@@ -6,6 +6,7 @@ export interface ReceivePaymentDoc {
   id: string;
   customerId?: string;
   customerName: string;
+  reference?: string;
   date: string;
   status: string;
   totalAmount: number;
@@ -33,11 +34,11 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
         id: doc.id,
         customerId: doc.customerId,
         customerName: doc.customerName,
+        reference: doc.reference || "",
         date: doc.date,
         dueDate: doc.date,
         status: doc.status,
         paymentStatus: "Paid",
-        reference: "",
         notes: doc.notes || "",
         items: [],
         totalAmount: Number(doc.totalAmount || 0),
@@ -50,6 +51,7 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
     id: invoice.id,
     customerId: invoice.customerId,
     customerName: invoice.customerName,
+    reference: invoice.reference || "",
     date: invoice.date,
     status: String(invoice.status || "Draft"),
     totalAmount: Number(invoice.totalAmount || 0),

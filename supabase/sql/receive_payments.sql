@@ -7,6 +7,7 @@ create table if not exists public.receive_payments (
   owner_id uuid not null references auth.users(id) on delete cascade,
   customer_id integer references public.customers(id) on delete set null,
   customer_name text,
+  reference text,
   date date not null default current_date,
   status text not null default 'Draft',
   total_amount numeric(12, 2) not null default 0,
@@ -15,6 +16,9 @@ create table if not exists public.receive_payments (
   updated_at timestamptz not null default now(),
   constraint receive_payments_status_check check (status in ('Draft', 'Pending', 'Approved', 'Void', 'Deleted'))
 );
+
+alter table public.receive_payments
+  add column if not exists reference text;
 
 create index if not exists idx_receive_payments_company_created
   on public.receive_payments(company_id, created_at desc);
@@ -67,4 +71,3 @@ on public.receive_payments
 for delete
 to authenticated
 using (has_company_permission(company_id, 'sales_invoices.delete'));
-

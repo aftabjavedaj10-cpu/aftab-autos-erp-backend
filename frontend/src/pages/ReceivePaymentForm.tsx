@@ -33,6 +33,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   const [paymentDate, setPaymentDate] = useState(
     doc?.date || new Date().toISOString().slice(0, 10)
   );
+  const [reference, setReference] = useState(doc?.reference || "");
   const [customerSearch, setCustomerSearch] = useState(doc?.customerName || "");
   const [selectedCustomerName, setSelectedCustomerName] = useState(doc?.customerName || "");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
@@ -188,6 +189,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
       id: paymentNo.trim(),
       customerId: selectedCustomerId || undefined,
       customerName: selectedCustomerName.trim(),
+      reference: reference.trim(),
       date: paymentDate,
       status,
       totalAmount: amountValue,
@@ -211,6 +213,7 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
 <body><div class="box">
 <div class="head">${modeTitle}</div>
 <div class="line"><span>No</span><span>${paymentNo}</span></div>
+<div class="line"><span>Reference</span><span>${reference || "-"}</span></div>
 <div class="line"><span>Date</span><span>${paymentDate}</span></div>
 <div class="line"><span>Customer</span><span>${selectedCustomerName || "-"}</span></div>
 <div class="line"><span>Ledger Balance</span><span>Rs. ${ledgerBalance.amount.toLocaleString()} ${ledgerBalance.side}</span></div>
@@ -274,6 +277,19 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  Reference
+                </span>
+                <input
+                  type="text"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-bold text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  placeholder="Manual reference (optional)"
                 />
               </label>
 

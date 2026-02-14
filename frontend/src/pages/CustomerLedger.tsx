@@ -210,7 +210,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         postedAt: String(pay.createdAt || pay.updatedAt || pay.date || ""),
         orderHint: 40,
         description: "Payment Received",
-        reference: pay.id,
+        reference: String(pay.reference || "").trim(),
         type: "Receipt",
         debit: 0,
         credit: Number(pay.totalAmount || 0),
