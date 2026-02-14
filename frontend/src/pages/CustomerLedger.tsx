@@ -1,7 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import type { Customer, SalesInvoice } from "../types";
 import type { ReceivePaymentDoc } from "./ReceivePayment";
-import Pagination from "../components/Pagination";
 import { formatDateDMY } from "../services/dateFormat";
 
 interface LedgerEntry {
@@ -64,19 +63,21 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
   salesReturns,
   receivePayments,
 }) => {
+  const defaultEndDate = new Date().toISOString().split("T")[0];
+  const defaultStartDate = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().split("T")[0];
+  })();
+
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [customerSearch, setCustomerSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
-  const [startDate, setStartDate] = useState<string>("2023-10-01");
-  const [endDate, setEndDate] = useState<string>(
-    new Date().toISOString().split("T")[0]
-  );
+  const [startDate, setStartDate] = useState<string>(defaultStartDate);
+  const [endDate, setEndDate] = useState<string>(defaultEndDate);
   const [typeFilter, setTypeFilter] = useState("All Types");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const selectedCustomer = useMemo(
     () => customers.find((c) => String(c.id || "") === String(selectedCustomerId || "")),
@@ -230,15 +231,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       return matchesDate && matchesType;
     });
   }, [rawEntries, startDate, endDate, typeFilter]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCustomerId, startDate, endDate, typeFilter]);
-
-  const paginatedEntries = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    return filteredEntries.slice(start, start + rowsPerPage);
-  }, [filteredEntries, currentPage, rowsPerPage]);
 
   const totals = useMemo(() => {
     return filteredEntries.reduce(
@@ -419,29 +411,29 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
               </tr>
             </thead>
             <tbody>
-              {paginatedEntries.map((entry) => (
+              {filteredEntries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-slate-50 text-[11px]">
-                  <td className="px-4 py-2 font-bold text-slate-500 italic">
+                  <td className="px-4 py-1 font-bold text-slate-500 italic">
                     {formatDateDMY(entry.date)}
                   </td>
-                  <td className="px-4 py-2 font-black uppercase text-slate-900">
+                  <td className="px-4 py-1 font-black uppercase text-slate-900">
                     {entry.description}
                   </td>
-                  <td className="px-4 py-2 text-[10px] font-black text-indigo-600 dark:text-indigo-300 uppercase">
+                  <td className="px-4 py-1 text-[10px] font-black text-indigo-600 dark:text-indigo-300 uppercase">
                     {entry.reference || ""}
                   </td>
-                  <td className="px-4 py-2 text-right font-black text-orange-600">
+                  <td className="px-4 py-1 text-right font-black text-orange-600">
                     {entry.debit > 0 ? entry.debit.toLocaleString() : "-"}
                   </td>
-                  <td className="px-4 py-2 text-right font-black text-emerald-600">
+                  <td className="px-4 py-1 text-right font-black text-emerald-600">
                     {entry.credit > 0 ? entry.credit.toLocaleString() : "-"}
                   </td>
-                  <td className="px-4 py-2 text-right font-black bg-slate-50/20 italic text-slate-400 tracking-tighter">
+                  <td className="px-4 py-1 text-right font-black bg-slate-50/20 italic text-slate-400 tracking-tighter">
                     {(runningBalances.get(entry.id) || 0).toLocaleString()}
                   </td>
                 </tr>
               ))}
-              {paginatedEntries.length === 0 && (
+              {filteredEntries.length === 0 && (
                 <tr>
                   <td
                     colSpan={6}
@@ -452,43 +444,29 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
                 </tr>
               )}
             </tbody>
+            <tfoot>
+              <tr className="border-t bg-slate-50/40 text-[9px] font-black uppercase">
+                <td className="px-4 py-2" />
+                <td className="px-4 py-2" />
+                <td className="px-4 py-2 text-slate-500">Totals</td>
+                <td className="px-4 py-2 text-right">
+                  <p className="text-[8px] tracking-widest text-slate-400">Total Sales (Dr)</p>
+                  <p className="text-orange-600">Rs. {totals.debit.toLocaleString()}</p>
+                </td>
+                <td className="px-4 py-2 text-right">
+                  <p className="text-[8px] tracking-widest text-slate-400">Total Receipts (Cr)</p>
+                  <p className="text-emerald-600">Rs. {totals.credit.toLocaleString()}</p>
+                </td>
+                <td className="px-4 py-2 text-right">
+                  <p className="text-[8px] tracking-widest text-slate-400">Closing Balance</p>
+                  <p className="text-slate-900">
+                    Rs. {Math.abs(closingBalance).toLocaleString()} {closingBalance >= 0 ? "DR" : "CR"}
+                  </p>
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-4 border-t bg-slate-50/30 text-center">
-          <div className="p-4 border-b md:border-b-0 md:border-r">
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
-              Total Sales (Dr)
-            </p>
-            <p className="text-sm font-black text-orange-600">
-              Rs. {totals.debit.toLocaleString()}
-            </p>
-          </div>
-          <div className="p-4 border-b md:border-b-0 md:border-r">
-            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">
-              Total Receipts (Cr)
-            </p>
-            <p className="text-sm font-black text-emerald-600">
-              Rs. {totals.credit.toLocaleString()}
-            </p>
-          </div>
-          <div className="p-4 md:col-span-2 bg-orange-600/5">
-            <p className="text-[8px] font-black text-orange-600 uppercase tracking-widest mb-0.5">
-              Closing Balance
-            </p>
-            <p className="text-sm font-black">
-              Rs. {Math.abs(closingBalance).toLocaleString()}{" "}
-              {closingBalance >= 0 ? "DR" : "CR"}
-            </p>
-          </div>
-        </div>
-        <Pagination
-          totalItems={filteredEntries.length}
-          currentPage={currentPage}
-          rowsPerPage={rowsPerPage}
-          onPageChange={setCurrentPage}
-          onRowsPerPageChange={setRowsPerPage}
-        />
       </div>
     </div>
   );
