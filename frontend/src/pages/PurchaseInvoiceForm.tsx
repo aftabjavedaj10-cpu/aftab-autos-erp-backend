@@ -113,15 +113,13 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
   const [isRevising, setIsRevising] = useState(false);
-  const [voidPreviousStatus, setVoidPreviousStatus] = useState<"Pending" | "Approved" | null>(null);
   const [savePrices, setSavePrices] = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [salesPriceByProductId, setSalesPriceByProductId] = useState<Record<string, number>>({});
   const [formError, setFormError] = useState<string | null>(null);
-
-  const getVoidRestoreStorageKey = (invoiceId: string) => `purchase-invoice-void-restore:${invoiceId}`;
+  const COPY_SEED_KEY = "purchase-invoice-copy-seed";
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -453,7 +451,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const isDeleted = formData.status === "Deleted";
   const isLocked = (isApproved && !isRevising) || isVoid || isDeleted;
   const canVoid = isEdit && (formData.status === "Pending" || formData.status === "Approved");
-  const canReviseVoid = isVoid && !!voidPreviousStatus;
+  const canCopy = isEdit && (isVoid || isDeleted);
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
     if (!formData.customerId) {
@@ -499,21 +497,10 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
       `Void purchase invoice ${formData.id}? This will reverse stock effect and keep document for audit.`
     );
     if (!confirmed) return;
-    const previousStatus = formData.status === "Pending" ? "Pending" : "Approved";
-    setVoidPreviousStatus(previousStatus);
-    try {
-      window.localStorage.setItem(getVoidRestoreStorageKey(formData.id), previousStatus);
-    } catch {
-      // Ignore local storage errors
-    }
     handleSubmit("Void", true);
   };
 
   const handleReviseAction = () => {
-    if (canReviseVoid) {
-      handleSubmit(voidPreviousStatus, true);
-      return;
-    }
     if (!isApproved) return;
     if (!isRevising) {
       setIsRevising(true);
@@ -521,6 +508,26 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
     }
     handleSubmit("Approved", true);
     setIsRevising(false);
+  };
+
+  const handleCopyInvoice = () => {
+    if (!canCopy) return;
+    const today = new Date().toISOString().split("T")[0];
+    const copySeed = {
+      ...formData,
+      id: nextInvoiceId,
+      status: "Draft",
+      paymentStatus: "Unpaid",
+      amountReceived: 0,
+      date: today,
+      dueDate: today,
+    };
+    try {
+      window.sessionStorage.setItem(COPY_SEED_KEY, JSON.stringify(copySeed));
+    } catch {
+      // Ignore session storage errors
+    }
+    onNavigateNew?.();
   };
 
   const currentCustomer = useMemo(() => {
@@ -535,25 +542,6 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 
   useEffect(() => {
     if (invoice) {
-      const possiblePreviousStatus =
-        (invoice as any)?.voided_from_status ??
-        (invoice as any)?.voidedFromStatus ??
-        (invoice as any)?.previous_status ??
-        (invoice as any)?.previousStatus;
-      let nextVoidPreviousStatus: "Pending" | "Approved" | null = null;
-      if (possiblePreviousStatus === "Pending" || possiblePreviousStatus === "Approved") {
-        nextVoidPreviousStatus = possiblePreviousStatus;
-      } else if ((invoice.status || "") === "Void") {
-        try {
-          const storedStatus = window.localStorage.getItem(getVoidRestoreStorageKey(invoice.id));
-          if (storedStatus === "Pending" || storedStatus === "Approved") {
-            nextVoidPreviousStatus = storedStatus;
-          }
-        } catch {
-          // Ignore local storage errors
-        }
-      }
-      setVoidPreviousStatus(nextVoidPreviousStatus);
       setFormData({
         id: invoice.id,
         customerId: invoice.customerId || "",
@@ -572,8 +560,27 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
       });
       return;
     }
-    setVoidPreviousStatus(null);
   }, [invoice]);
+
+  useEffect(() => {
+    if (invoice) return;
+    try {
+      const rawSeed = window.sessionStorage.getItem(COPY_SEED_KEY);
+      if (!rawSeed) return;
+      window.sessionStorage.removeItem(COPY_SEED_KEY);
+      const parsedSeed = JSON.parse(rawSeed);
+      setFormData((prev) => ({
+        ...prev,
+        ...parsedSeed,
+        id: nextInvoiceId,
+        status: "Draft",
+        paymentStatus: "Unpaid",
+        amountReceived: 0,
+      }));
+    } catch {
+      // Ignore seed parse/storage errors
+    }
+  }, [invoice, nextInvoiceId]);
 
   useEffect(() => {
     if (!isPurchaseMode) return;
@@ -1429,6 +1436,24 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
           >
             Cancel
           </button>
+          {canVoid && (
+            <button
+              type="button"
+              onClick={handleVoid}
+              className="px-4 py-2 bg-rose-600 border border-rose-500 rounded-lg text-[10px] font-black uppercase tracking-widest text-white hover:bg-rose-700 transition-colors"
+            >
+              Void
+            </button>
+          )}
+          {canCopy && (
+            <button
+              type="button"
+              onClick={handleCopyInvoice}
+              className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
+            >
+              Copy
+            </button>
+          )}
 
           <div className="relative" ref={printMenuRef}>
             <div className="inline-flex">
@@ -1492,7 +1517,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
             )}
           </div>
 
-          {!isApproved && (
+          {!isApproved && !isVoid && !isDeleted && (
             <div className="relative" ref={saveMenuRef}>
               <div className="inline-flex">
                 <button
@@ -1541,22 +1566,13 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
             </div>
           )}
 
-          {(isApproved || canReviseVoid) && (
+          {isApproved && (
             <button
               type="button"
               onClick={handleReviseAction}
               className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
             >
               {isApproved && isRevising ? "Save Revision" : "Revise"}
-            </button>
-          )}
-          {canVoid && (
-            <button
-              type="button"
-              onClick={handleVoid}
-              className="px-4 py-2 bg-rose-600 border border-rose-500 rounded-lg text-[10px] font-black uppercase tracking-widest text-white hover:bg-rose-700 transition-colors"
-            >
-              Void
             </button>
           )}
         </div>
