@@ -15,7 +15,7 @@ import AddCustomerPage from "./AddCustomer";
 import VendorsPage from "./Vendors";
 import AddVendorPage from "./AddVendor";
 import CategoriesPage from "./Categories";
-import AddCategoryPage from "./AddCategory";
+import AddCategoryFormPage from "./AddCategoryForm";
 import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
@@ -709,7 +709,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
 
         {activeTab === "add_category" && (
-          <AddCategoryPage
+          <AddCategoryFormPage
             category={editingCategory}
             onBack={() => { setEditingCategory(undefined); setActiveTab('categories'); }}
             onSave={(category, stayOnPage) => {
