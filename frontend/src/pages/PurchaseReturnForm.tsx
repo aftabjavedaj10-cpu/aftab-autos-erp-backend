@@ -113,7 +113,6 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
   const [isSaveMenuOpen, setIsSaveMenuOpen] = useState(false);
   const [isPrintMenuOpen, setIsPrintMenuOpen] = useState(false);
   const [isRevising, setIsRevising] = useState(false);
-  const [savePrices, setSavePrices] = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
@@ -488,7 +487,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
       customerName: customer?.name || "Unknown",
       totalAmount: totals.netTotal,
     };
-    onSave(invoiceData, stayOnPage, savePrices, isPurchaseMode ? salesPriceByProductId : undefined);
+    onSave(invoiceData, stayOnPage, false, isPurchaseMode ? salesPriceByProductId : undefined);
   };
 
   const handleVoid = () => {
@@ -685,33 +684,6 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg px-2 py-1">
-            <span className="text-[9px] font-black uppercase tracking-widest text-slate-500">Save Prices</span>
-            <button
-              type="button"
-              onClick={() => setSavePrices((prev) => !prev)}
-              className={`relative w-10 h-6 rounded-full border overflow-hidden transition-colors ${
-                savePrices
-                  ? "bg-orange-500 border-orange-500"
-                  : "bg-slate-200 border-slate-300 dark:bg-slate-700 dark:border-slate-600"
-              }`}
-              aria-pressed={savePrices}
-              title="When enabled, edited item prices will update product sale prices."
-            >
-              <span
-                className={`absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
-                  savePrices ? "translate-x-5" : "translate-x-0"
-                }`}
-              />
-            </button>
-            <span
-              className={`text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                savePrices ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"
-              }`}
-            >
-              {savePrices ? "On" : "Off"}
-            </span>
-          </div>
           <span
             className={`px-2 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${
               formData.status === "Draft"
