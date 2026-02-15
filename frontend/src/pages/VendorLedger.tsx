@@ -3,12 +3,14 @@ import type { Company, SalesInvoice, Vendor } from "../types";
 import { formatDateDMY } from "../services/dateFormat";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { FiEye } from "react-icons/fi";
 
 interface LedgerEntry {
   id: string;
   date: string;
   postedAt?: string;
   orderHint?: number;
+  viewId?: string;
   description: string;
   detailNarration?: string;
   reference: string;
@@ -79,6 +81,7 @@ interface VendorLedgerPageProps {
   vendors: Vendor[];
   purchaseInvoices: SalesInvoice[];
   company?: Company;
+  onViewPurchaseInvoice?: (id: string) => void;
 }
 
 const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
@@ -86,6 +89,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   vendors,
   purchaseInvoices,
   company,
+  onViewPurchaseInvoice,
 }) => {
   const defaultEndDate = new Date().toISOString().split("T")[0];
   const defaultStartDate = (() => {
@@ -172,6 +176,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         date: inv.date,
         postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
         orderHint: 10,
+        viewId: String(inv.id || ""),
         description: `Purchase Bill - ${inv.id}`,
         detailNarration: buildItemsNarration(inv.items || []),
         reference: manualRef,
@@ -186,6 +191,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
           date: inv.date,
           postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
           orderHint: 20,
+          viewId: String(inv.id || ""),
           description: "Payment Made",
           detailNarration: buildItemsNarration(inv.items || []),
           reference: manualRef,
@@ -258,6 +264,11 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
     if (e.key === "Escape") {
       setShowResults(false);
     }
+  };
+
+  const handleViewEntry = (entry: LedgerEntry) => {
+    if (!entry.viewId) return;
+    onViewPurchaseInvoice?.(entry.viewId);
   };
 
   const handleDownloadPdf = () => {
@@ -481,20 +492,21 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/80 print:bg-white text-[9px] font-black uppercase text-slate-500 tracking-widest border-b">
+              <tr className="bg-slate-50/80 print:bg-white text-[9px] font-black uppercase text-slate-500 tracking-widest border-b print:border-b-2 print:border-black">
                 <th className="px-4 py-3 w-24">Date</th>
-                <th className="px-4 py-3">Narration</th>
-                <th className="px-4 py-3 w-56">Reference</th>
+                <th className="px-4 py-3 print:w-[52%]">Narration</th>
+                <th className="px-4 py-3 w-56 print:w-[18%]">Reference</th>
                 <th className="px-4 py-3 text-right w-28">Debit</th>
                 <th className="px-4 py-3 text-right w-28">Credit</th>
                 <th className="px-4 py-3 text-right w-32 bg-slate-100/30 print:bg-white">
                   Balance
                 </th>
+                <th className="px-4 py-3 text-center w-20 print:hidden">View</th>
               </tr>
             </thead>
             <tbody>
               {filteredEntries.map((entry) => (
-                <tr key={entry.id} className="hover:bg-slate-50 text-[11px] border-b border-slate-200 print:border-black">
+                <tr key={entry.id} className="hover:bg-slate-50 text-[11px] border-b border-slate-200 print:border-slate-400">
                   <td className="px-4 py-1.5 font-medium text-slate-500 italic">
                     {formatDateDMY(entry.date)}
                   </td>
@@ -518,12 +530,23 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
                   <td className="px-4 py-1.5 text-right font-medium bg-slate-50/20 italic text-slate-400 tracking-tighter">
                     {(runningBalances.get(entry.id) || 0).toLocaleString()}
                   </td>
+                  <td className="px-4 py-1.5 text-center print:hidden">
+                    <button
+                      type="button"
+                      onClick={() => handleViewEntry(entry)}
+                      disabled={!entry.viewId}
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-200 text-slate-600 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      aria-label="View entry"
+                    >
+                      <FiEye className="text-[13px]" />
+                    </button>
+                  </td>
                 </tr>
               ))}
               {filteredEntries.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={7}
                     className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest"
                   >
                     No ledger entries.
@@ -547,6 +570,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
                     Rs. {Math.abs(closingBalance).toLocaleString()} {closingBalance >= 0 ? "DR" : "CR"}
                   </p>
                 </td>
+                <td className="px-4 py-2 print:hidden" />
               </tr>
             </tfoot>
           </table>

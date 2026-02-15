@@ -1129,6 +1129,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             salesReturns={salesReturns}
             receivePayments={receivePayments}
             company={activeCompany || undefined}
+            onViewSalesInvoice={(id) => {
+              const invoice = salesInvoices.find((inv) => String(inv.id) === String(id));
+              if (!invoice) return;
+              setEditingSalesInvoice(invoice);
+              setSalesInvoiceForceNewMode(false);
+              setActiveTab("add_sales_invoice");
+            }}
+            onViewSalesReturn={(id) => {
+              const invoice = salesReturns.find((inv) => String(inv.id) === String(id));
+              if (!invoice) return;
+              setEditingSalesReturn(invoice);
+              setActiveTab("add_sales_return");
+            }}
+            onViewReceivePayment={(id) => {
+              const doc = receivePayments.find((row) => String(row.id) === String(id));
+              if (!doc) return;
+              setEditingReceivePayment(doc);
+              setActiveTab("add_receive_payment");
+            }}
           />
         )}
 
@@ -1138,6 +1157,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             vendors={vendors}
             purchaseInvoices={purchaseInvoices}
             company={activeCompany || undefined}
+            onViewPurchaseInvoice={(id) => {
+              const invoice = purchaseInvoices.find((inv) => String(inv.id) === String(id));
+              if (!invoice) return;
+              setEditingPurchaseInvoice(invoice);
+              setActiveTab("add_purchase_invoice");
+            }}
           />
         )}
 
