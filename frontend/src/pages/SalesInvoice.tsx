@@ -50,6 +50,10 @@ interface SalesInvoicePageProps {
   pageSubtitle?: string;
   addButtonLabel?: string;
   showBalanceColumn?: boolean;
+  referenceColumnLabel?: string;
+  showAgainstInvoiceColumn?: boolean;
+  againstInvoiceColumnLabel?: string;
+  getAgainstInvoiceValue?: (invoice: SalesInvoice) => string;
 }
 
 const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
@@ -61,6 +65,10 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
   pageSubtitle = "Accounts Receivable & Audit Trail",
   addButtonLabel = "Issue New Invoice",
   showBalanceColumn = true,
+  referenceColumnLabel = "Reference / PO",
+  showAgainstInvoiceColumn = false,
+  againstInvoiceColumnLabel = "Against Invoice #",
+  getAgainstInvoiceValue,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [refSearch, setRefSearch] = useState("");
@@ -355,7 +363,10 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                 </th>
                 <th className="px-4 py-3">Document #</th>
                 <th className="px-4 py-3">Customer Entity</th>
-                <th className="px-4 py-3">Reference / PO</th>
+                {showAgainstInvoiceColumn && (
+                  <th className="px-4 py-3">{againstInvoiceColumnLabel}</th>
+                )}
+                <th className="px-4 py-3">{referenceColumnLabel}</th>
                 <th className="px-4 py-3">Date / Due</th>
                 <th className="px-4 py-3">Total Amount</th>
                 {showBalanceColumn && <th className="px-4 py-3">Balance Amount</th>}
@@ -402,6 +413,13 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                       {inv.customerName}
                     </p>
                   </td>
+                  {showAgainstInvoiceColumn && (
+                    <td className="px-4 py-3">
+                      <span className="text-[9px] font-black uppercase bg-slate-50 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded border border-slate-100 dark:border-slate-700">
+                        {(getAgainstInvoiceValue?.(inv) || "").trim() || "-"}
+                      </span>
+                    </td>
+                  )}
                   <td className="px-4 py-3">
                     <span className="text-[9px] font-black uppercase bg-slate-50 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded border border-slate-100 dark:border-slate-700">
                       {inv.reference || "No Ref"}
@@ -473,7 +491,11 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               {paginatedInvoices.length === 0 && (
                 <tr>
                   <td
-                    colSpan={showBalanceColumn ? 9 : 8}
+                    colSpan={
+                      8 +
+                      (showAgainstInvoiceColumn ? 1 : 0) +
+                      (showBalanceColumn ? 1 : 0)
+                    }
                     className="px-8 py-20 text-center text-slate-400 font-bold uppercase tracking-widest italic opacity-40"
                   >
                     No invoices found.

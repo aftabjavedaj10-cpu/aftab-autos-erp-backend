@@ -7,6 +7,7 @@ create table if not exists public.receive_payments (
   owner_id uuid not null references auth.users(id) on delete cascade,
   customer_id integer references public.customers(id) on delete set null,
   customer_name text,
+  invoice_id text,
   reference text,
   date date not null default current_date,
   status text not null default 'Draft',
@@ -20,10 +21,15 @@ create table if not exists public.receive_payments (
 alter table public.receive_payments
   add column if not exists reference text;
 
+alter table public.receive_payments
+  add column if not exists invoice_id text;
+
 create index if not exists idx_receive_payments_company_created
   on public.receive_payments(company_id, created_at desc);
 create index if not exists idx_receive_payments_customer
   on public.receive_payments(customer_id);
+create index if not exists idx_receive_payments_invoice
+  on public.receive_payments(invoice_id);
 
 create or replace function public.touch_receive_payments_updated_at()
 returns trigger

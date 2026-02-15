@@ -35,7 +35,7 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
         id: doc.id,
         customerId: doc.customerId,
         customerName: doc.customerName,
-        reference: doc.invoiceId || doc.reference || "",
+        reference: doc.reference || "",
         date: doc.date,
         dueDate: doc.date,
         status: doc.status,
@@ -52,7 +52,7 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
     id: invoice.id,
     customerId: invoice.customerId,
     customerName: invoice.customerName,
-    invoiceId: /^SI-\d+$/i.test(String(invoice.reference || "")) ? String(invoice.reference) : "",
+    invoiceId: docs.find((doc) => doc.id === invoice.id)?.invoiceId || "",
     reference: invoice.reference || "",
     date: invoice.date,
     status: String(invoice.status || "Draft"),
@@ -72,6 +72,12 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
       pageSubtitle="Customer payment entries"
       addButtonLabel="Add Payment"
       showBalanceColumn={false}
+      showAgainstInvoiceColumn
+      againstInvoiceColumnLabel="Against Invoice #"
+      referenceColumnLabel="Reference"
+      getAgainstInvoiceValue={(invoice) =>
+        docs.find((doc) => doc.id === invoice.id)?.invoiceId || ""
+      }
     />
   );
 };
