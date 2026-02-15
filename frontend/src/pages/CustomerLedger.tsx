@@ -11,8 +11,6 @@ interface LedgerEntry {
   date: string;
   postedAt?: string;
   orderHint?: number;
-  viewKind?: "sales_invoice" | "sales_return" | "receive_payment";
-  viewId?: string;
   description: string;
   detailNarration?: string;
   reference: string;
@@ -85,9 +83,6 @@ interface CustomerLedgerPageProps {
   salesReturns: SalesInvoice[];
   receivePayments: ReceivePaymentDoc[];
   company?: Company;
-  onViewSalesInvoice?: (id: string) => void;
-  onViewSalesReturn?: (id: string) => void;
-  onViewReceivePayment?: (id: string) => void;
 }
 
 const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
@@ -97,9 +92,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
   salesReturns,
   receivePayments,
   company,
-  onViewSalesInvoice,
-  onViewSalesReturn,
-  onViewReceivePayment,
 }) => {
   const defaultEndDate = new Date().toISOString().split("T")[0];
   const defaultStartDate = (() => {
@@ -187,8 +179,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
           date: inv.date,
           postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
           orderHint: 10,
-          viewKind: "sales_invoice",
-          viewId: String(inv.id || ""),
           description: `Credit Sales - ${inv.id}`,
           detailNarration: buildItemsNarration(inv.items || []),
           reference: manualRef,
@@ -203,8 +193,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
             date: inv.date,
             postedAt: String((inv as any).createdAt || (inv as any).updatedAt || inv.date || ""),
             orderHint: 20,
-            viewKind: "sales_invoice",
-            viewId: String(inv.id || ""),
             description: "Payment Received",
             detailNarration: buildItemsNarration(inv.items || []),
             reference: manualRef,
@@ -233,8 +221,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         date: ret.date,
         postedAt: String((ret as any).createdAt || (ret as any).updatedAt || ret.date || ""),
         orderHint: 30,
-        viewKind: "sales_return",
-        viewId: String(ret.id || ""),
         description: `Sales Return - ${ret.id}`,
         detailNarration: buildItemsNarration(ret.items || []),
         reference: manualRef,
@@ -267,8 +253,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         date: pay.date,
         postedAt: String(pay.createdAt || pay.updatedAt || pay.date || ""),
         orderHint: 40,
-        viewKind: "receive_payment",
-        viewId: String(pay.id || ""),
         description: "Payment Received",
         reference: String(pay.reference || "").trim(),
         type: "Receipt",
@@ -345,21 +329,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
     }
   };
 
-  const handleViewEntry = (entry: LedgerEntry) => {
-    if (!entry.viewId || !entry.viewKind) return;
-    if (entry.viewKind === "sales_invoice") {
-      onViewSalesInvoice?.(entry.viewId);
-      return;
-    }
-    if (entry.viewKind === "sales_return") {
-      onViewSalesReturn?.(entry.viewId);
-      return;
-    }
-    if (entry.viewKind === "receive_payment") {
-      onViewReceivePayment?.(entry.viewId);
-    }
-  };
-
   const handleDownloadPdf = () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const reportTitle = "Customer Ledger Report";
@@ -413,11 +382,11 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
 
     const y = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 6 : 250;
     doc.setFontSize(10);
-    doc.text(`Total Sales (Dr): ${totals.debit.toLocaleString()}`, 120, y);
-    doc.text(`Total Receipts (Cr): ${totals.credit.toLocaleString()}`, 120, y + 5);
+    doc.text(`Rs. ${totals.debit.toLocaleString()}`, 150, y);
+    doc.text(`Rs. ${totals.credit.toLocaleString()}`, 150, y + 5);
     doc.text(
-      `Closing Balance: ${Math.abs(closingBalance).toLocaleString()} ${closingBalance >= 0 ? "DR" : "CR"}`,
-      120,
+      `Rs. ${Math.abs(closingBalance).toLocaleString()} ${closingBalance >= 0 ? "DR" : "CR"}`,
+      150,
       y + 10
     );
 
@@ -554,17 +523,17 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 print:border-black">
+        <div className="hidden print:block px-6 py-4 border-b border-black">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase">
+            <h2 className="text-2xl font-black text-slate-900 uppercase">
               {company?.name || "AFTAB AUTOS"}
             </h2>
-            <h3 className="text-xl font-black text-slate-900 dark:text-white">
+            <h3 className="text-xl font-black text-slate-900">
               Customer Ledger Report
             </h3>
           </div>
           <div className="mt-2 flex items-start justify-between gap-3">
-            <div className="text-[12px] font-bold text-slate-700 dark:text-slate-200">
+            <div className="text-[12px] font-bold text-slate-700">
               <p>
                 Customer:{" "}
                 {selectedCustomer
@@ -581,16 +550,15 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/80 text-[9px] font-black uppercase text-slate-500 tracking-widest border-b">
+              <tr className="bg-slate-50/80 print:bg-white text-[9px] font-black uppercase text-slate-500 tracking-widest border-b">
                 <th className="px-4 py-3 w-24">Date</th>
                 <th className="px-4 py-3">Narration</th>
                 <th className="px-4 py-3 w-56">Reference</th>
                 <th className="px-4 py-3 text-right w-28">Debit</th>
                 <th className="px-4 py-3 text-right w-28">Credit</th>
-                <th className="px-4 py-3 text-right w-32 bg-slate-100/30">
+                <th className="px-4 py-3 text-right w-32 bg-slate-100/30 print:bg-white">
                   Balance
                 </th>
-                <th className="px-4 py-3 text-center w-20">View</th>
               </tr>
             </thead>
             <tbody>
@@ -619,22 +587,12 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
                   <td className="px-4 py-1.5 text-right font-black bg-slate-50/20 italic text-slate-400 tracking-tighter">
                     {(runningBalances.get(entry.id) || 0).toLocaleString()}
                   </td>
-                  <td className="px-4 py-1.5 text-center">
-                    <button
-                      type="button"
-                      onClick={() => handleViewEntry(entry)}
-                      disabled={!entry.viewId || !entry.viewKind}
-                      className="rounded-lg border border-slate-200 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      View
-                    </button>
-                  </td>
                 </tr>
               ))}
               {filteredEntries.length === 0 && (
                 <tr>
                   <td
-                    colSpan={7}
+                    colSpan={6}
                     className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest"
                   >
                     No ledger entries.
@@ -643,25 +601,21 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
               )}
             </tbody>
             <tfoot>
-              <tr className="border-t bg-slate-50/40 text-[11px] font-black uppercase">
+              <tr className="border-t bg-slate-50/40 print:bg-white text-[11px] font-black uppercase">
                 <td className="px-4 py-2" />
                 <td className="px-4 py-2" />
-                <td className="px-4 py-2 text-slate-500">Totals</td>
+                <td className="px-4 py-2 text-slate-500" />
                 <td className="px-4 py-2 text-right">
-                  <p className="text-[9px] tracking-widest text-slate-400">Total Sales (Dr)</p>
                   <p className="text-orange-600">Rs. {totals.debit.toLocaleString()}</p>
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <p className="text-[9px] tracking-widest text-slate-400">Total Receipts (Cr)</p>
                   <p className="text-emerald-600">Rs. {totals.credit.toLocaleString()}</p>
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <p className="text-[9px] tracking-widest text-slate-400">Closing Balance</p>
                   <p className="text-slate-900">
                     Rs. {Math.abs(closingBalance).toLocaleString()} {closingBalance >= 0 ? "DR" : "CR"}
                   </p>
                 </td>
-                <td className="px-4 py-2" />
               </tr>
             </tfoot>
           </table>
