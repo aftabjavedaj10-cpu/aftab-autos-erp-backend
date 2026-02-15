@@ -23,6 +23,8 @@ import PurchaseInvoicePage from "./PurchaseInvoice";
 import PurchaseInvoiceFormPage from "./PurchaseInvoiceForm";
 import PurchaseOrderPage from "./PurchaseOrder";
 import PurchaseOrderFormPage from "./PurchaseOrderForm";
+import PurchaseReturnPage from "./PurchaseReturn";
+import PurchaseReturnFormPage from "./PurchaseReturnForm";
 import QuotationPage from "./Quotation";
 import QuotationFormPage from "./QuotationForm";
 import SalesOrderPage, { type SalesOrderDoc } from "./SalesOrder";
@@ -55,9 +57,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
   const [purchaseInvoices, setPurchaseInvoices] = useState<SalesInvoice[]>([]);
   const [purchaseOrders, setPurchaseOrders] = useState<SalesInvoice[]>([]);
+  const [purchaseReturns, setPurchaseReturns] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [editingPurchaseInvoice, setEditingPurchaseInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<SalesInvoice | undefined>(undefined);
+  const [editingPurchaseReturn, setEditingPurchaseReturn] = useState<SalesInvoice | undefined>(undefined);
   const [salesInvoiceForceNewMode, setSalesInvoiceForceNewMode] = useState(false);
   const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
   const [editingQuotationInvoice, setEditingQuotationInvoice] = useState<SalesInvoice | undefined>(undefined);
@@ -402,6 +406,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const handleEditPurchaseOrder = (invoice: SalesInvoice) => {
     setEditingPurchaseOrder(invoice);
     setActiveTab("add_purchase_order");
+  };
+
+  const handleAddPurchaseReturn = () => {
+    setEditingPurchaseReturn(undefined);
+    setActiveTab("add_purchase_return");
+  };
+
+  const handleEditPurchaseReturn = (invoice: SalesInvoice) => {
+    setEditingPurchaseReturn(invoice);
+    setActiveTab("add_purchase_return");
   };
 
   const getNextSalesInvoiceId = () => {
@@ -1125,6 +1139,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           />
         )}
 
+        {activeTab === "purchase_return" && (
+          <PurchaseReturnPage
+            invoices={purchaseReturns}
+            onAddClick={handleAddPurchaseReturn}
+            onEditClick={handleEditPurchaseReturn}
+            onDelete={async (id) => {
+              const current = purchaseReturns.find((inv) => inv.id === id);
+              if (!current) return;
+              if (current.status !== "Void") {
+                setError("Purchase return must be set to Void before marking as Deleted.");
+                return;
+              }
+              const updated = { ...current, status: "Deleted" as const };
+              setPurchaseReturns((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
+            }}
+          />
+        )}
+
         {activeTab === "reports" && (
           <ReportsPage
             onNavigate={(tab) => setActiveTab(tab)}
@@ -1507,6 +1539,45 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 }
               } catch (err: any) {
                 setError(err?.message || "Failed to save purchase order");
+              }
+            }}
+          />
+        )}
+
+        {activeTab === "add_purchase_return" && (
+          <PurchaseReturnFormPage
+            invoice={editingPurchaseReturn}
+            invoices={purchaseReturns}
+            products={products}
+            vendors={vendors}
+            company={activeCompany || undefined}
+            onBack={() => {
+              setEditingPurchaseReturn(undefined);
+              setActiveTab("purchase_return");
+            }}
+            onNavigate={(inv) => {
+              setEditingPurchaseReturn(inv);
+              setActiveTab("add_purchase_return");
+            }}
+            onNavigateNew={() => {
+              setEditingPurchaseReturn(undefined);
+              setActiveTab("add_purchase_return");
+            }}
+            onSave={async (invoiceData, stayOnPage) => {
+              const saved = invoiceData;
+              setPurchaseReturns((prev) => {
+                const exists = prev.find((inv) => inv.id === saved.id);
+                if (exists) {
+                  return prev.map((inv) => (inv.id === saved.id ? saved : inv));
+                }
+                return [saved, ...prev];
+              });
+
+              if (stayOnPage) {
+                setEditingPurchaseReturn(saved);
+              } else {
+                setEditingPurchaseReturn(undefined);
+                setActiveTab("purchase_return");
               }
             }}
           />
