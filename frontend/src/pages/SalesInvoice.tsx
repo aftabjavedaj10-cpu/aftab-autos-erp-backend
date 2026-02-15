@@ -54,6 +54,8 @@ interface SalesInvoicePageProps {
   showAgainstInvoiceColumn?: boolean;
   againstInvoiceColumnLabel?: string;
   getAgainstInvoiceValue?: (invoice: SalesInvoice) => string;
+  entityColumnLabel?: string;
+  searchPlaceholder?: string;
 }
 
 const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
@@ -69,6 +71,8 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
   showAgainstInvoiceColumn = false,
   againstInvoiceColumnLabel = "Against Invoice #",
   getAgainstInvoiceValue,
+  entityColumnLabel = "Customer Entity",
+  searchPlaceholder = "Invoice # or Customer...",
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [refSearch, setRefSearch] = useState("");
@@ -231,7 +235,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
               </span>
               <input
                 type="text"
-                placeholder="Invoice # or Customer..."
+                placeholder={searchPlaceholder}
                 className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-11 pr-3 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-[11px] dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -362,7 +366,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                   </div>
                 </th>
                 <th className="px-4 py-3">Document #</th>
-                <th className="px-4 py-3">Customer Entity</th>
+                <th className="px-4 py-3">{entityColumnLabel}</th>
                 {showAgainstInvoiceColumn && (
                   <th className="px-4 py-3">{againstInvoiceColumnLabel}</th>
                 )}

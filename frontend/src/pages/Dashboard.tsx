@@ -33,6 +33,8 @@ import SalesReturnPage from "./SalesReturn";
 import SalesReturnFormPage from "./SalesReturnForm";
 import ReceivePaymentPage, { type ReceivePaymentDoc } from "./ReceivePayment";
 import ReceivePaymentFormPage from "./ReceivePaymentForm";
+import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
+import MakePaymentFormPage from "./MakePaymentForm";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
@@ -68,9 +70,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [salesOrders, setSalesOrders] = useState<SalesOrderDoc[]>([]);
   const [salesReturns, setSalesReturns] = useState<SalesInvoice[]>([]);
   const [receivePayments, setReceivePayments] = useState<ReceivePaymentDoc[]>([]);
+  const [makePayments, setMakePayments] = useState<MakePaymentDoc[]>(() => {
+    try {
+      const raw = localStorage.getItem("makePayments");
+      return raw ? (JSON.parse(raw) as MakePaymentDoc[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [editingSalesOrder, setEditingSalesOrder] = useState<SalesOrderDoc | undefined>(undefined);
   const [editingSalesReturn, setEditingSalesReturn] = useState<SalesInvoice | undefined>(undefined);
   const [editingReceivePayment, setEditingReceivePayment] = useState<ReceivePaymentDoc | undefined>(undefined);
+  const [editingMakePayment, setEditingMakePayment] = useState<MakePaymentDoc | undefined>(undefined);
   const [stockLedger, setStockLedger] = useState<StockLedgerEntry[]>([]);
   const [activeCompany, setActiveCompany] = useState<Company | null>(null);
   const [pinnedReportIds, setPinnedReportIds] = useState<number[]>(() => {
@@ -245,6 +256,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     const timer = window.setTimeout(() => setError(null), 5000);
     return () => window.clearTimeout(timer);
   }, [error]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("makePayments", JSON.stringify(makePayments));
+    } catch {
+      // ignore storage errors
+    }
+  }, [makePayments]);
 
   const handleAddProduct = () => {
     setEditingProduct(undefined);
@@ -500,6 +519,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const handleEditReceivePayment = (doc: ReceivePaymentDoc) => {
     setEditingReceivePayment(doc);
     setActiveTab("add_receive_payment");
+  };
+
+  const handleAddMakePayment = () => {
+    setEditingMakePayment(undefined);
+    setActiveTab("add_make_payment");
+  };
+
+  const handleEditMakePayment = (doc: MakePaymentDoc) => {
+    setEditingMakePayment(doc);
+    setActiveTab("add_make_payment");
   };
 
   const lowStockCount = useMemo(() => {
@@ -1040,6 +1069,43 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               } catch (err: any) {
                 setError(err?.message || "Failed to save receive payment");
               }
+            }}
+          />
+        )}
+
+        {activeTab === "make_payment" && (
+          <MakePaymentPage
+            docs={makePayments}
+            onAddClick={handleAddMakePayment}
+            onEditClick={handleEditMakePayment}
+            onDelete={(id) => {
+              setMakePayments((prev) => prev.filter((d) => d.id !== id));
+            }}
+          />
+        )}
+
+        {activeTab === "add_make_payment" && (
+          <MakePaymentFormPage
+            docs={makePayments}
+            vendors={vendors}
+            products={products}
+            purchaseInvoices={purchaseInvoices}
+            purchaseReturns={purchaseReturns}
+            company={activeCompany || undefined}
+            doc={editingMakePayment}
+            onBack={() => {
+              setEditingMakePayment(undefined);
+              setActiveTab("make_payment");
+            }}
+            onSave={(doc, stayOnPage) => {
+              setMakePayments((prev) => upsertSalesModuleDoc(prev, doc));
+              if (stayOnPage) {
+                setEditingMakePayment(undefined);
+                setActiveTab("add_make_payment");
+                return;
+              }
+              setEditingMakePayment(undefined);
+              setActiveTab("make_payment");
             }}
           />
         )}
