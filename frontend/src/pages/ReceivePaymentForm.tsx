@@ -132,7 +132,12 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   );
 
   const ledgerBalance = useMemo(() => {
+    const isVisible = (status: unknown) => {
+      const normalized = String(status || "").trim().toLowerCase();
+      return normalized !== "void" && normalized !== "deleted";
+    };
     const opening = parseNumber(selectedCustomer?.openingBalance ?? selectedCustomer?.balance ?? 0);
+    const currentDocId = String(doc?.id || "").toUpperCase();
     const matchByCustomer = (customerId?: string, customerName?: string) => {
       const byId =
         selectedCustomerId &&
@@ -144,22 +149,61 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
       return Boolean(byId || byName);
     };
 
+    const visiblePayments = docs.filter((p) => {
+      if (!isVisible((p as any).status)) return false;
+      return matchByCustomer(p.customerId, p.customerName);
+    });
+
+    const linkedInvoiceIds = new Set(
+      visiblePayments
+        .map((p) => {
+          const against = String(p.invoiceId || "").trim();
+          if (against) return against.toUpperCase();
+          const ref = String(p.reference || "").trim();
+          return /^SI-\d+$/i.test(ref) ? ref.toUpperCase() : "";
+        })
+        .filter(Boolean)
+    );
+
     const invoiceDebit = salesInvoices
+      .filter((inv) => isVisible((inv as any).status))
       .filter((inv) => matchByCustomer(inv.customerId, inv.customerName))
       .reduce((sum, inv) => sum + parseNumber(inv.totalAmount), 0);
     const invoiceCredits = salesInvoices
+      .filter((inv) => isVisible((inv as any).status))
       .filter((inv) => matchByCustomer(inv.customerId, inv.customerName))
-      .reduce((sum, inv) => sum + parseNumber(inv.amountReceived), 0);
+      .reduce((sum, inv) => {
+        const invoiceId = String(inv.id || "").toUpperCase();
+        if (linkedInvoiceIds.has(invoiceId)) return sum;
+        return sum + parseNumber(inv.amountReceived);
+      }, 0);
     const returnCredits = salesReturns
+      .filter((ret) => isVisible((ret as any).status))
       .filter((ret) => matchByCustomer(ret.customerId, ret.customerName))
       .reduce((sum, ret) => sum + parseNumber(ret.totalAmount), 0);
-    const paymentCredits = docs
-      .filter((p) => matchByCustomer(p.customerId, p.customerName))
+    const paymentCredits = visiblePayments
+      .filter((p) => String(p.id || "").toUpperCase() !== currentDocId)
       .reduce((sum, p) => sum + parseNumber(p.totalAmount), 0);
 
-    const net = opening + invoiceDebit - invoiceCredits - returnCredits - paymentCredits;
+    const draftPaymentCredit = selectedCustomerName ? parseNumber(amountValue) : 0;
+    const net =
+      opening +
+      invoiceDebit -
+      invoiceCredits -
+      returnCredits -
+      paymentCredits -
+      draftPaymentCredit;
     return { amount: Math.abs(net), side: net >= 0 ? "DR" : "CR" };
-  }, [selectedCustomer, selectedCustomerId, selectedCustomerName, salesInvoices, salesReturns, docs]);
+  }, [
+    amountValue,
+    doc?.id,
+    selectedCustomer,
+    selectedCustomerId,
+    selectedCustomerName,
+    salesInvoices,
+    salesReturns,
+    docs,
+  ]);
 
   const quickTotals = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);

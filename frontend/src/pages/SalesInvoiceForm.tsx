@@ -1,6 +1,7 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types";
+import type { ReceivePaymentDoc } from "./ReceivePayment";
 
 interface SalesInvoiceFormPageProps {
   invoice?: SalesInvoice;
@@ -14,6 +15,8 @@ interface SalesInvoiceFormPageProps {
   partyEmptyText?: string;
   partyCodeLabel?: string;
   invoices: SalesInvoice[];
+  salesReturns?: SalesInvoice[];
+  receivePayments?: ReceivePaymentDoc[];
   products: Product[];
   customers: Customer[];
   company?: Company;
@@ -44,6 +47,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   partyEmptyText = "No customers found",
   partyCodeLabel = "Code",
   invoices,
+  salesReturns = [],
+  receivePayments = [],
   products,
   customers,
   company,
@@ -508,6 +513,97 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     return customers.find((c) => c.id === formData.customerId);
   }, [formData.customerId, customers]);
 
+  const customerLedgerBalance = useMemo(() => {
+    if (!formData.customerId) return { amount: 0, side: "DR" as const };
+
+    const parseNumber = (value: unknown) => {
+      const parsed = Number(value ?? 0);
+      return Number.isFinite(parsed) ? parsed : 0;
+    };
+    const isVisible = (status: unknown) => {
+      const normalized = String(status || "").trim().toLowerCase();
+      return normalized !== "void" && normalized !== "deleted";
+    };
+    const matchesCustomer = (customerId?: string, customerName?: string) => {
+      const byId =
+        formData.customerId &&
+        customerId &&
+        String(customerId) === String(formData.customerId);
+      const byName =
+        String(customerName || "").toLowerCase() ===
+        String(currentCustomer?.name || "").toLowerCase();
+      return Boolean(byId || byName);
+    };
+
+    const opening = parseNumber(currentCustomer?.openingBalance ?? currentCustomer?.balance ?? 0);
+    const currentInvoiceId = String(formData.id || "").toUpperCase();
+
+    const visiblePayments = receivePayments.filter((pay) => {
+      if (!isVisible((pay as any).status)) return false;
+      return matchesCustomer(pay.customerId, pay.customerName);
+    });
+
+    const linkedInvoiceIds = new Set(
+      visiblePayments
+        .map((pay) => {
+          const against = String(pay.invoiceId || "").trim();
+          if (against) return against.toUpperCase();
+          const ref = String(pay.reference || "").trim();
+          return /^SI-\d+$/i.test(ref) ? ref.toUpperCase() : "";
+        })
+        .filter(Boolean)
+    );
+
+    const paymentCredits = visiblePayments
+      .filter((pay) => String(pay.invoiceId || "").toUpperCase() !== currentInvoiceId)
+      .reduce((sum, pay) => sum + parseNumber(pay.totalAmount), 0);
+
+    const invoiceDebit = invoices
+      .filter((inv) => isVisible((inv as any).status))
+      .filter((inv) => matchesCustomer(inv.customerId, inv.customerName))
+      .filter((inv) => String(inv.id || "").toUpperCase() !== currentInvoiceId)
+      .reduce((sum, inv) => sum + parseNumber(inv.totalAmount), 0);
+
+    const invoiceCredits = invoices
+      .filter((inv) => isVisible((inv as any).status))
+      .filter((inv) => matchesCustomer(inv.customerId, inv.customerName))
+      .filter((inv) => String(inv.id || "").toUpperCase() !== currentInvoiceId)
+      .reduce((sum, inv) => {
+        const invId = String(inv.id || "").toUpperCase();
+        if (linkedInvoiceIds.has(invId)) return sum;
+        return sum + parseNumber(inv.amountReceived);
+      }, 0);
+
+    const returnCredits = salesReturns
+      .filter((ret) => isVisible((ret as any).status))
+      .filter((ret) => matchesCustomer(ret.customerId, ret.customerName))
+      .reduce((sum, ret) => sum + parseNumber(ret.totalAmount), 0);
+
+    const currentInvoiceDebit = parseNumber(totals.netTotal);
+    const currentInvoiceCredit = parseNumber(formData.amountReceived);
+
+    const net =
+      opening +
+      invoiceDebit +
+      currentInvoiceDebit -
+      invoiceCredits -
+      returnCredits -
+      paymentCredits -
+      currentInvoiceCredit;
+
+    return { amount: Math.abs(net), side: net >= 0 ? "DR" as const : "CR" as const };
+  }, [
+    customers,
+    currentCustomer,
+    formData.amountReceived,
+    formData.customerId,
+    formData.id,
+    invoices,
+    receivePayments,
+    salesReturns,
+    totals.netTotal,
+  ]);
+
   useEffect(() => {
     if (currentCustomer) {
       setCustomerSearchTerm(currentCustomer.name);
@@ -814,7 +910,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                     Account Ledger Balance:
                   </span>
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                    {currentCustomer.balance || "Rs. 0.00"}
+                    Rs. {customerLedgerBalance.amount.toLocaleString()} {customerLedgerBalance.side}
                   </span>
                 </div>
               )}
