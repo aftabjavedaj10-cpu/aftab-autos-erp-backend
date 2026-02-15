@@ -1,6 +1,8 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
-import type { SalesInvoice, Vendor } from "../types";
+import type { Company, SalesInvoice, Vendor } from "../types";
 import { formatDateDMY } from "../services/dateFormat";
+import { jsPDF } from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface LedgerEntry {
   id: string;
@@ -77,6 +79,7 @@ interface VendorLedgerPageProps {
   onBack: () => void;
   vendors: Vendor[];
   purchaseInvoices: SalesInvoice[];
+  company?: Company;
   onViewPurchaseInvoice?: (id: string) => void;
 }
 
@@ -84,6 +87,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   onBack,
   vendors,
   purchaseInvoices,
+  company,
   onViewPurchaseInvoice,
 }) => {
   const defaultEndDate = new Date().toISOString().split("T")[0];
@@ -266,6 +270,71 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
     onViewPurchaseInvoice?.(entry.viewId);
   };
 
+  const handleDownloadPdf = () => {
+    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const reportTitle = "Vendor Ledger Report";
+    const companyName = String(company?.name || "AFTAB AUTOS");
+    const vendorLabel = selectedVendor
+      ? `${selectedVendor.id ? `${selectedVendor.id} - ` : ""}${selectedVendor.name}`
+      : "All Vendors";
+
+    doc.setFontSize(16);
+    doc.text(companyName, 14, 15);
+    doc.text(reportTitle, 148, 15);
+    doc.setLineWidth(0.3);
+    doc.line(14, 18, 196, 18);
+
+    doc.setFontSize(10);
+    doc.text(`Vendor: ${vendorLabel}`, 14, 24);
+    doc.text(`From: ${formatDateDMY(startDate)}  To: ${formatDateDMY(endDate)}`, 14, 29);
+
+    const body = filteredEntries.map((entry) => [
+      formatDateDMY(entry.date),
+      entry.reference || "",
+      showDetailedNarration && entry.detailNarration
+        ? `${entry.description}\n${entry.detailNarration}`
+        : entry.description,
+      entry.debit > 0 ? entry.debit.toLocaleString() : "-",
+      entry.credit > 0 ? entry.credit.toLocaleString() : "-",
+      (runningBalances.get(entry.id) || 0).toLocaleString(),
+    ]);
+
+    autoTable(doc, {
+      startY: 34,
+      head: [["Date", "Ref.", "Narration", "Debit (PKR)", "Credit (PKR)", "Balance (PKR)"]],
+      body,
+      theme: "grid",
+      styles: { fontSize: 8, cellPadding: 1.5, lineColor: [180, 180, 180], lineWidth: 0.1 },
+      headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: "bold" },
+      columnStyles: {
+        0: { cellWidth: 24 },
+        1: { cellWidth: 24 },
+        2: { cellWidth: 84 },
+        3: { cellWidth: 22, halign: "right" },
+        4: { cellWidth: 22, halign: "right" },
+        5: { cellWidth: 24, halign: "right" },
+      },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index >= 3) {
+          data.cell.styles.halign = "right";
+        }
+      },
+    });
+
+    const y = (doc as any).lastAutoTable?.finalY ? (doc as any).lastAutoTable.finalY + 6 : 250;
+    doc.setFontSize(10);
+    doc.text(`Total Bills (Dr): ${totals.debit.toLocaleString()}`, 124, y);
+    doc.text(`Total Payments (Cr): ${totals.credit.toLocaleString()}`, 124, y + 5);
+    doc.text(
+      `Closing Balance: ${Math.abs(closingBalance).toLocaleString()} ${closingBalance >= 0 ? "DR" : "CR"}`,
+      124,
+      y + 10
+    );
+
+    const safeVendor = String(selectedVendor?.name || "all").replace(/[^\w-]+/g, "_");
+    doc.save(`vendor_ledger_${safeVendor}_${startDate}_to_${endDate}.pdf`);
+  };
+
   return (
     <div className="animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 print:hidden">
@@ -285,12 +354,20 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
             Audit Hub
           </p>
         </div>
-        <button
-          onClick={() => window.print()}
-          className="bg-slate-900 text-white font-black py-2 px-6 rounded-xl text-[9px] uppercase tracking-widest shadow-md"
-        >
-          Print Statement
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => window.print()}
+            className="bg-slate-900 text-white font-black py-2 px-6 rounded-xl text-[9px] uppercase tracking-widest shadow-md"
+          >
+            Print Statement
+          </button>
+          <button
+            onClick={handleDownloadPdf}
+            className="bg-orange-600 text-white font-black py-2 px-6 rounded-xl text-[9px] uppercase tracking-widest shadow-md"
+          >
+            Download PDF
+          </button>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 p-4 mb-4 print:hidden">
@@ -387,6 +464,30 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
       </div>
 
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 print:border-black">
+          <div className="flex items-start justify-between gap-3">
+            <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase">
+              {company?.name || "AFTAB AUTOS"}
+            </h2>
+            <h3 className="text-xl font-black text-slate-900 dark:text-white">
+              Vendor Ledger Report
+            </h3>
+          </div>
+          <div className="mt-2 flex items-start justify-between gap-3">
+            <div className="text-[12px] font-bold text-slate-700 dark:text-slate-200">
+              <p>
+                Vendor:{" "}
+                {selectedVendor
+                  ? `${selectedVendor.id ? `${selectedVendor.id} - ` : ""}${selectedVendor.name}`
+                  : "All Vendors"}
+              </p>
+              <p>From: {formatDateDMY(startDate)} To: {formatDateDMY(endDate)}</p>
+            </div>
+            {company?.logoUrl ? (
+              <img src={company.logoUrl} alt="Company Logo" className="h-16 w-auto object-contain" />
+            ) : null}
+          </div>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>

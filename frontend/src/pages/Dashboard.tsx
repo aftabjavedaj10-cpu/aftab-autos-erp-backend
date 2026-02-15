@@ -1128,6 +1128,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             salesInvoices={salesInvoices}
             salesReturns={salesReturns}
             receivePayments={receivePayments}
+            company={activeCompany || undefined}
             onViewSalesInvoice={(id) => {
               const invoice = salesInvoices.find((inv) => String(inv.id) === String(id));
               if (!invoice) return;
@@ -1155,6 +1156,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onBack={() => setActiveTab("reports")}
             vendors={vendors}
             purchaseInvoices={purchaseInvoices}
+            company={activeCompany || undefined}
             onViewPurchaseInvoice={(id) => {
               const invoice = purchaseInvoices.find((inv) => String(inv.id) === String(id));
               if (!invoice) return;
