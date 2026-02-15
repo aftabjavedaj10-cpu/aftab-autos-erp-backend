@@ -522,7 +522,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden print:rounded-none print:shadow-none print:border-black">
         <div className="hidden print:block px-6 py-4 border-b border-black">
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-2xl font-black text-slate-900 uppercase">
@@ -563,7 +563,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
             </thead>
             <tbody>
               {filteredEntries.map((entry) => (
-                <tr key={entry.id} className="hover:bg-slate-50 text-[11px]">
+                <tr key={entry.id} className="hover:bg-slate-50 text-[11px] border-b border-slate-200 print:border-black">
                   <td className="px-4 py-1.5 font-bold text-slate-500 italic">
                     {formatDateDMY(entry.date)}
                   </td>
@@ -578,10 +578,10 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
                   <td className="px-4 py-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-300 uppercase">
                     {entry.reference || ""}
                   </td>
-                  <td className="px-4 py-1.5 text-right font-black text-orange-600">
+                  <td className="px-4 py-1.5 text-right font-black text-orange-600 print:text-black">
                     {entry.debit > 0 ? entry.debit.toLocaleString() : "-"}
                   </td>
-                  <td className="px-4 py-1.5 text-right font-black text-emerald-600">
+                  <td className="px-4 py-1.5 text-right font-black text-emerald-600 print:text-black">
                     {entry.credit > 0 ? entry.credit.toLocaleString() : "-"}
                   </td>
                   <td className="px-4 py-1.5 text-right font-black bg-slate-50/20 italic text-slate-400 tracking-tighter">
@@ -606,10 +606,10 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
                 <td className="px-4 py-2" />
                 <td className="px-4 py-2 text-slate-500" />
                 <td className="px-4 py-2 text-right">
-                  <p className="text-orange-600">Rs. {totals.debit.toLocaleString()}</p>
+                  <p className="text-orange-600 print:text-black">Rs. {totals.debit.toLocaleString()}</p>
                 </td>
                 <td className="px-4 py-2 text-right">
-                  <p className="text-emerald-600">Rs. {totals.credit.toLocaleString()}</p>
+                  <p className="text-emerald-600 print:text-black">Rs. {totals.credit.toLocaleString()}</p>
                 </td>
                 <td className="px-4 py-2 text-right">
                   <p className="text-slate-900">

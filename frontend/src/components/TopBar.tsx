@@ -57,6 +57,7 @@ const TopBar: React.FC<TopBarProps> = ({
         bg-white/70 dark:bg-slate-950/85 backdrop-blur-xl
         border-b border-white/60 dark:border-slate-800/80
         shadow-sm
+        print:hidden
       "
     >
       <div className="flex items-center gap-3">
