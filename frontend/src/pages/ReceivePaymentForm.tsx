@@ -29,6 +29,11 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   onSave,
 }) => {
   const isEdit = Boolean(doc?.id);
+  const currentStatus = String(doc?.status || "Draft");
+  const isApproved = currentStatus === "Approved";
+  const isPending = currentStatus === "Pending";
+  const isVoid = currentStatus === "Void";
+  const isDeleted = currentStatus === "Deleted";
   const [paymentNo, setPaymentNo] = useState(doc?.id || "");
   const [paymentDate, setPaymentDate] = useState(
     doc?.date || new Date().toISOString().slice(0, 10)
@@ -299,12 +304,46 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
           <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900 dark:text-white">
             {isEdit ? "Edit Receive Payment" : "New Receive Payment"}
           </h1>
+          {(isApproved || isPending || isVoid || isDeleted) && (
+            <div className="pt-1">
+              <span
+                className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
+                  isDeleted
+                    ? "bg-slate-100 text-slate-700 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600"
+                    : isVoid
+                    ? "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/20 dark:text-rose-300 dark:border-rose-800"
+                    : isPending
+                    ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/20 dark:text-amber-300 dark:border-amber-800"
+                    : "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-300 dark:border-emerald-800"
+                }`}
+              >
+                {isDeleted ? "Void Deleted" : isVoid ? "Void" : isPending ? "Pending" : "Approved"}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         <div className="xl:col-span-2">
-          <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="relative rounded-3xl border border-slate-200 bg-white p-5 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+            {(isApproved || isPending || isVoid || isDeleted) && (
+              <div className="pointer-events-none absolute inset-0 z-[2] flex items-center justify-center overflow-hidden rounded-3xl">
+                <span
+                  className={`select-none text-5xl font-black tracking-[0.25em] uppercase rotate-[-18deg] opacity-[0.10] ${
+                    isDeleted
+                      ? "text-slate-600 dark:text-slate-300"
+                      : isVoid
+                      ? "text-rose-600 dark:text-rose-300"
+                      : isPending
+                      ? "text-amber-700 dark:text-amber-300"
+                      : "text-emerald-700 dark:text-emerald-300"
+                  }`}
+                >
+                  {isDeleted ? "Void Deleted" : isVoid ? "Void" : isPending ? "Pending" : "Approved"}
+                </span>
+              </div>
+            )}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <label className="block">
                 <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">

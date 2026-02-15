@@ -414,6 +414,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     return `RP-${String(maxNo + 1).padStart(6, "0")}`;
   };
 
+  const findLinkedReceivePayments = (invoiceId: string) => {
+    const target = String(invoiceId || "").toUpperCase();
+    if (!target) return [] as ReceivePaymentDoc[];
+    return receivePayments.filter((doc) => {
+      const against = String(doc.invoiceId || "").toUpperCase();
+      const legacyRef = String(doc.reference || "").toUpperCase();
+      return against === target || legacyRef === target;
+    });
+  };
+
   const handleAddQuotation = () => {
     setEditingQuotationInvoice(undefined);
     setActiveTab("add_quotation");
@@ -1012,6 +1022,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 const softDeleted = { ...current, status: "Deleted" as const };
                 const updated = await salesInvoiceAPI.update(id, softDeleted);
                 setSalesInvoices((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
+
+                const linkedPayments = findLinkedReceivePayments(id);
+                if (linkedPayments.length > 0) {
+                  const paymentUpdates = await Promise.all(
+                    linkedPayments.map((doc) =>
+                      receivePaymentAPI.update(doc.id, { ...doc, status: "Deleted" })
+                    )
+                  );
+                  setReceivePayments((prev) =>
+                    prev.map((doc) => {
+                      const next = paymentUpdates.find((row) => row.id === doc.id);
+                      return next || doc;
+                    })
+                  );
+                }
+
                 const companyId = getActiveCompanyId();
                 const ledgerData = companyId
                   ? await stockLedgerAPI.listRecent(companyId, 5000)
@@ -1241,11 +1267,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
                 // Auto-create/update receive payment from cash received on sales invoice.
                 const receivedAmount = Number(saved.amountReceived || 0);
-                const linkedPayment = receivePayments.find(
-                  (doc) =>
-                    String(doc.invoiceId || "").toUpperCase() === String(saved.id || "").toUpperCase() ||
-                    String(doc.reference || "").toUpperCase() === String(saved.id || "").toUpperCase()
-                );
+                const linkedPayments = findLinkedReceivePayments(saved.id);
+                const linkedPayment = linkedPayments[0];
 
                 if (receivedAmount > 0) {
                   const paymentPayload: ReceivePaymentDoc = {
@@ -1262,10 +1285,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   const paymentSaved = linkedPayment
                     ? await receivePaymentAPI.update(linkedPayment.id, paymentPayload)
                     : await receivePaymentAPI.create(paymentPayload);
-                  setReceivePayments((prev) => upsertSalesModuleDoc(prev, paymentSaved));
-                } else if (linkedPayment) {
-                  await receivePaymentAPI.delete(linkedPayment.id);
-                  setReceivePayments((prev) => prev.filter((doc) => doc.id !== linkedPayment.id));
+
+                  if (linkedPayments.length > 1) {
+                    const duplicates = linkedPayments.slice(1);
+                    await Promise.all(duplicates.map((doc) => receivePaymentAPI.delete(doc.id)));
+                    const duplicateIds = new Set(duplicates.map((doc) => doc.id));
+                    setReceivePayments((prev) =>
+                      upsertSalesModuleDoc(
+                        prev.filter((doc) => !duplicateIds.has(doc.id)),
+                        paymentSaved
+                      )
+                    );
+                  } else {
+                    setReceivePayments((prev) => upsertSalesModuleDoc(prev, paymentSaved));
+                  }
+                } else if (linkedPayments.length > 0) {
+                  await Promise.all(linkedPayments.map((doc) => receivePaymentAPI.delete(doc.id)));
+                  const idsToDelete = new Set(linkedPayments.map((doc) => doc.id));
+                  setReceivePayments((prev) => prev.filter((doc) => !idsToDelete.has(doc.id)));
                 }
 
                 if (stayOnPage) {
