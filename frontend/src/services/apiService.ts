@@ -503,6 +503,10 @@ const mapReceivePaymentFromDb = (row: any) => ({
   id: row.id,
   customerId: row.customer_id ?? row.customerId,
   customerName: row.customer_name ?? row.customerName,
+  invoiceId:
+    row.invoice_id ??
+    row.invoiceId ??
+    (/^SI-\d+$/i.test(String(row.reference ?? "")) ? String(row.reference) : ""),
   reference: row.reference ?? "",
   date: row.date,
   status: row.status,
@@ -518,10 +522,10 @@ const mapReceivePaymentToDb = (payment: any) =>
       ...payment,
       customer_id: payment.customerId ?? payment.customer_id,
       customer_name: payment.customerName ?? payment.customer_name,
-      reference: payment.reference ?? null,
+      reference: payment.invoiceId ?? payment.reference ?? null,
       total_amount: payment.totalAmount ?? payment.total_amount ?? 0,
     },
-    ["customerId", "customerName", "totalAmount"]
+    ["customerId", "customerName", "totalAmount", "invoiceId"]
   );
 
 const mapPurchaseInvoiceFromDb = (row: any) => ({

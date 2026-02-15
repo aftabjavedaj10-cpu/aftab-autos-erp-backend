@@ -6,6 +6,7 @@ export interface ReceivePaymentDoc {
   id: string;
   customerId?: string;
   customerName: string;
+  invoiceId?: string;
   reference?: string;
   date: string;
   status: string;
@@ -34,7 +35,7 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
         id: doc.id,
         customerId: doc.customerId,
         customerName: doc.customerName,
-        reference: doc.reference || "",
+        reference: doc.invoiceId || doc.reference || "",
         date: doc.date,
         dueDate: doc.date,
         status: doc.status,
@@ -51,6 +52,7 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
     id: invoice.id,
     customerId: invoice.customerId,
     customerName: invoice.customerName,
+    invoiceId: /^SI-\d+$/i.test(String(invoice.reference || "")) ? String(invoice.reference) : "",
     reference: invoice.reference || "",
     date: invoice.date,
     status: String(invoice.status || "Draft"),
@@ -69,6 +71,7 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
       pageTitle="Receive Payment"
       pageSubtitle="Customer payment entries"
       addButtonLabel="Add Payment"
+      showBalanceColumn={false}
     />
   );
 };

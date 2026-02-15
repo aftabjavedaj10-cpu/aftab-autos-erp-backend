@@ -33,6 +33,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   const [paymentDate, setPaymentDate] = useState(
     doc?.date || new Date().toISOString().slice(0, 10)
   );
+  const [invoiceId, setInvoiceId] = useState(doc?.invoiceId || "");
   const [reference, setReference] = useState(doc?.reference || "");
   const [customerSearch, setCustomerSearch] = useState(doc?.customerName || "");
   const [selectedCustomerName, setSelectedCustomerName] = useState(doc?.customerName || "");
@@ -76,6 +77,11 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
       setSelectedCustomerId(String(doc.customerId));
     }
   }, [doc?.customerId]);
+
+  useEffect(() => {
+    if (!doc) return;
+    setInvoiceId(doc.invoiceId || (/^SI-\d+$/i.test(String(doc.reference || "")) ? String(doc.reference) : ""));
+  }, [doc]);
 
   useEffect(() => {
     if (!selectedCustomerName) {
@@ -189,6 +195,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
       id: paymentNo.trim(),
       customerId: selectedCustomerId || undefined,
       customerName: selectedCustomerName.trim(),
+      invoiceId: invoiceId.trim() || undefined,
       reference: reference.trim(),
       date: paymentDate,
       status,
@@ -277,6 +284,19 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  Invoice #
+                </span>
+                <input
+                  type="text"
+                  value={invoiceId}
+                  onChange={(e) => setInvoiceId(e.target.value.toUpperCase())}
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black uppercase tracking-wide text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  placeholder="SI-000001 (optional)"
                 />
               </label>
 

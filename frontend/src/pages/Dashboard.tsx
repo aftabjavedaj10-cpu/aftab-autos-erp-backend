@@ -405,6 +405,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     return [incoming, ...docs];
   };
 
+  const getNextReceivePaymentId = (docs: ReceivePaymentDoc[]) => {
+    const maxNo = docs.reduce((max, row) => {
+      const match = String(row.id || "").match(/^RP-(\d{6})$/);
+      const value = match ? Number(match[1]) : 0;
+      return value > max ? value : max;
+    }, 0);
+    return `RP-${String(maxNo + 1).padStart(6, "0")}`;
+  };
+
   const handleAddQuotation = () => {
     setEditingQuotationInvoice(undefined);
     setActiveTab("add_quotation");
@@ -1227,6 +1236,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   }
                   return [saved, ...prev];
                 });
+
+                // Auto-create/update receive payment from cash received on sales invoice.
+                const receivedAmount = Number(saved.amountReceived || 0);
+                const linkedPayment = receivePayments.find(
+                  (doc) =>
+                    String(doc.invoiceId || "").toUpperCase() === String(saved.id || "").toUpperCase() ||
+                    String(doc.reference || "").toUpperCase() === String(saved.id || "").toUpperCase()
+                );
+
+                if (receivedAmount > 0) {
+                  const paymentPayload: ReceivePaymentDoc = {
+                    id: linkedPayment?.id || getNextReceivePaymentId(receivePayments),
+                    customerId: saved.customerId,
+                    customerName: saved.customerName,
+                    invoiceId: saved.id,
+                    reference: saved.reference || "",
+                    date: saved.date,
+                    status: saved.status === "Void" || saved.status === "Deleted" ? saved.status : "Approved",
+                    totalAmount: receivedAmount,
+                    notes: linkedPayment?.notes || `Auto payment from ${saved.id}`,
+                  };
+                  const paymentSaved = linkedPayment
+                    ? await receivePaymentAPI.update(linkedPayment.id, paymentPayload)
+                    : await receivePaymentAPI.create(paymentPayload);
+                  setReceivePayments((prev) => upsertSalesModuleDoc(prev, paymentSaved));
+                } else if (linkedPayment) {
+                  await receivePaymentAPI.delete(linkedPayment.id);
+                  setReceivePayments((prev) => prev.filter((doc) => doc.id !== linkedPayment.id));
+                }
 
                 if (stayOnPage) {
                   setEditingSalesInvoice(saved);
