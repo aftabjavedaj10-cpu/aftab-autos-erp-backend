@@ -52,6 +52,18 @@ const isLedgerVisibleStatus = (status: unknown) => {
   return normalized !== "void" && normalized !== "deleted";
 };
 
+const parseDMYToISO = (value: string): string | null => {
+  const trimmed = String(value || "").trim();
+  const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const [, dd, mm, yyyy] = match;
+  const iso = `${yyyy}-${mm}-${dd}`;
+  const date = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  if (date.toISOString().slice(0, 10) !== iso) return null;
+  return iso;
+};
+
 const compareLedgerEntries = (a: LedgerEntry, b: LedgerEntry): number => {
   const aOpen = a.description === "Opening Balance";
   const bOpen = b.description === "Opening Balance";
@@ -101,8 +113,12 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   const [showResults, setShowResults] = useState(false);
   const [startDate, setStartDate] = useState<string>(defaultStartDate);
   const [endDate, setEndDate] = useState<string>(defaultEndDate);
+  const [startDateInput, setStartDateInput] = useState<string>(formatDateDMY(defaultStartDate));
+  const [endDateInput, setEndDateInput] = useState<string>(formatDateDMY(defaultEndDate));
   const [typeFilter, setTypeFilter] = useState("All Types");
   const [showDetailedNarration, setShowDetailedNarration] = useState(false);
+  const [includeVoid, setIncludeVoid] = useState(false);
+  const [includeDeleted, setIncludeDeleted] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
 
@@ -110,6 +126,14 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
     () => vendors.find((v) => String(v.id || "") === String(selectedVendorId || "")),
     [selectedVendorId, vendors]
   );
+
+  useEffect(() => {
+    setStartDateInput(formatDateDMY(startDate));
+  }, [startDate]);
+
+  useEffect(() => {
+    setEndDateInput(formatDateDMY(endDate));
+  }, [endDate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -160,7 +184,9 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
       .filter(
         (inv) =>
           String(inv.customerId || "") === String(vendorId) &&
-          isLedgerVisibleStatus((inv as any).status)
+          (isLedgerVisibleStatus((inv as any).status) ||
+            (includeVoid && String((inv as any).status || "").toLowerCase() === "void") ||
+            (includeDeleted && String((inv as any).status || "").toLowerCase() === "deleted"))
       )
       .sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
@@ -201,7 +227,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
     });
 
     return entries.sort(compareLedgerEntries);
-  }, [vendors, selectedVendorId, purchaseInvoices]);
+  }, [vendors, selectedVendorId, purchaseInvoices, includeVoid, includeDeleted]);
 
   const filteredEntries = useMemo(() => {
     return rawEntries.filter((entry) => {
@@ -344,10 +370,19 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
               From
             </label>
             <input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              type="text"
+              value={startDateInput}
+              onChange={(e) => setStartDateInput(e.target.value)}
+              onBlur={() => {
+                const parsed = parseDMYToISO(startDateInput);
+                if (parsed) {
+                  setStartDate(parsed);
+                } else {
+                  setStartDateInput(formatDateDMY(startDate));
+                }
+              }}
               className="w-full bg-slate-50 border rounded-xl py-1.5 px-3 text-[11px] font-bold"
+              placeholder="dd/mm/yyyy"
             />
           </div>
           <div>
@@ -355,10 +390,19 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
               To
             </label>
             <input
-              type="date"
-              value={endDate}
-              onChange={(e) => setEndDate(e.target.value)}
+              type="text"
+              value={endDateInput}
+              onChange={(e) => setEndDateInput(e.target.value)}
+              onBlur={() => {
+                const parsed = parseDMYToISO(endDateInput);
+                if (parsed) {
+                  setEndDate(parsed);
+                } else {
+                  setEndDateInput(formatDateDMY(endDate));
+                }
+              }}
               className="w-full bg-slate-50 border rounded-xl py-1.5 px-3 text-[11px] font-bold"
+              placeholder="dd/mm/yyyy"
             />
           </div>
           <div>
@@ -386,6 +430,26 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
                 className="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
               />
               Show Detailed Narration
+            </label>
+          </div>
+          <div className="flex items-end gap-4">
+            <label className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-slate-600">
+              <input
+                type="checkbox"
+                checked={includeVoid}
+                onChange={(e) => setIncludeVoid(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+              />
+              Void
+            </label>
+            <label className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-wide text-slate-600">
+              <input
+                type="checkbox"
+                checked={includeDeleted}
+                onChange={(e) => setIncludeDeleted(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
+              />
+              Deleted
             </label>
           </div>
         </div>
