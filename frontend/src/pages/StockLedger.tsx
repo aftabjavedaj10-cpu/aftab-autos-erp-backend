@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from "react";
 import type { Product, StockLedgerEntry } from "../types";
-import Pagination from "../components/Pagination";
 import { formatDateDMY } from "../services/dateFormat";
+import { FiCalendar } from "react-icons/fi";
 
 interface StockLedgerPageProps {
   onBack: () => void;
@@ -9,22 +9,43 @@ interface StockLedgerPageProps {
   stockLedger: StockLedgerEntry[];
 }
 
+const parseDMYToISO = (value: string): string | null => {
+  const trimmed = String(value || "").trim();
+  const match = trimmed.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!match) return null;
+  const [, dd, mm, yyyy] = match;
+  const iso = `${yyyy}-${mm}-${dd}`;
+  const date = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return null;
+  if (date.toISOString().slice(0, 10) !== iso) return null;
+  return iso;
+};
+
 const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
   onBack,
   products,
   stockLedger,
 }) => {
+  const defaultToDate = new Date().toISOString().split("T")[0];
+  const defaultFromDate = (() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().split("T")[0];
+  })();
+
   const [productSearch, setProductSearch] = useState("");
   const [selectedProductId, setSelectedProductId] = useState<string>("");
   const [showResults, setShowResults] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [direction, setDirection] = useState("all");
   const [invoiceSearch, setInvoiceSearch] = useState("");
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [fromDate, setFromDate] = useState(defaultFromDate);
+  const [toDate, setToDate] = useState(defaultToDate);
+  const [fromDateInput, setFromDateInput] = useState(formatDateDMY(defaultFromDate));
+  const [toDateInput, setToDateInput] = useState(formatDateDMY(defaultToDate));
   const searchRef = useRef<HTMLDivElement>(null);
+  const fromDatePickerRef = useRef<HTMLInputElement>(null);
+  const toDatePickerRef = useRef<HTMLInputElement>(null);
 
   const productMap = useMemo(() => {
     const map = new Map<string, Product>();
@@ -50,6 +71,14 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
   useEffect(() => {
     setHighlightedIndex(0);
   }, [productSearch, showResults]);
+
+  useEffect(() => {
+    setFromDateInput(formatDateDMY(fromDate));
+  }, [fromDate]);
+
+  useEffect(() => {
+    setToDateInput(formatDateDMY(toDate));
+  }, [toDate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -141,15 +170,6 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
     const available = Math.max(0, onHand - reserved);
     return { onHand, reserved, available };
   }, [selectedProductId, stockLedger]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedProductId, direction, invoiceSearch, fromDate, toDate]);
-
-  const paginatedRows = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    return filteredRows.slice(start, start + rowsPerPage);
-  }, [filteredRows, currentPage, rowsPerPage]);
 
   return (
     <div className="animate-in fade-in duration-500 pb-10">
@@ -254,21 +274,93 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
             />
           </div>
           <div className="w-full md:w-auto flex items-center gap-2">
-            <input
-              type="date"
-              value={fromDate}
-              onChange={(e) => setFromDate(e.target.value)}
-              className="bg-slate-50 border rounded-xl py-2 px-3 text-[11px] font-bold outline-none"
-              title="From date"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={fromDateInput}
+                onChange={(e) => setFromDateInput(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseDMYToISO(fromDateInput);
+                  if (parsed) {
+                    setFromDate(parsed);
+                  } else {
+                    setFromDateInput(formatDateDMY(fromDate));
+                  }
+                }}
+                className="bg-slate-50 border rounded-xl py-2 pl-3 pr-8 text-[11px] font-bold outline-none w-32"
+                title="From date"
+                placeholder="dd/mm/yyyy"
+              />
+              <input
+                ref={fromDatePickerRef}
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="absolute pointer-events-none opacity-0 w-0 h-0"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const el = fromDatePickerRef.current;
+                  if (!el) return;
+                  if ((el as any).showPicker) {
+                    (el as any).showPicker();
+                  } else {
+                    el.click();
+                  }
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-orange-600"
+                aria-label="Open from date picker"
+              >
+                <FiCalendar className="text-[14px]" />
+              </button>
+            </div>
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">to</span>
-            <input
-              type="date"
-              value={toDate}
-              onChange={(e) => setToDate(e.target.value)}
-              className="bg-slate-50 border rounded-xl py-2 px-3 text-[11px] font-bold outline-none"
-              title="To date"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={toDateInput}
+                onChange={(e) => setToDateInput(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseDMYToISO(toDateInput);
+                  if (parsed) {
+                    setToDate(parsed);
+                  } else {
+                    setToDateInput(formatDateDMY(toDate));
+                  }
+                }}
+                className="bg-slate-50 border rounded-xl py-2 pl-3 pr-8 text-[11px] font-bold outline-none w-32"
+                title="To date"
+                placeholder="dd/mm/yyyy"
+              />
+              <input
+                ref={toDatePickerRef}
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="absolute pointer-events-none opacity-0 w-0 h-0"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const el = toDatePickerRef.current;
+                  if (!el) return;
+                  if ((el as any).showPicker) {
+                    (el as any).showPicker();
+                  } else {
+                    el.click();
+                  }
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-orange-600"
+                aria-label="Open to date picker"
+              >
+                <FiCalendar className="text-[14px]" />
+              </button>
+            </div>
           </div>
           <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
             {selectedProductId ? "Selected product entries" : "Select a product to view ledger"}:{" "}
@@ -322,7 +414,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
               </tr>
             </thead>
             <tbody>
-              {paginatedRows.map((entry) => {
+              {filteredRows.map((entry) => {
                 const product = productMap.get(String(entry.productId));
                 return (
                   <tr key={entry.id} className="hover:bg-slate-50 text-[11px]">
@@ -361,7 +453,7 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
                   </tr>
                 );
               })}
-              {paginatedRows.length === 0 && (
+              {filteredRows.length === 0 && (
                 <tr>
                   <td
                     colSpan={8}
@@ -375,13 +467,6 @@ const StockLedgerPage: React.FC<StockLedgerPageProps> = ({
           </table>
         </div>
 
-        <Pagination
-          totalItems={filteredRows.length}
-          currentPage={currentPage}
-          rowsPerPage={rowsPerPage}
-          onPageChange={setCurrentPage}
-          onRowsPerPageChange={setRowsPerPage}
-        />
       </div>
     </div>
   );

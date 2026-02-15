@@ -1,7 +1,7 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import type { Company, SalesInvoice, Vendor } from "../types";
 import { formatDateDMY } from "../services/dateFormat";
-import { FiEye } from "react-icons/fi";
+import { FiCalendar, FiEye } from "react-icons/fi";
 
 interface LedgerEntry {
   id: string;
@@ -121,6 +121,8 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   const [includeDeleted, setIncludeDeleted] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
+  const startDatePickerRef = useRef<HTMLInputElement>(null);
+  const endDatePickerRef = useRef<HTMLInputElement>(null);
 
   const selectedVendor = useMemo(
     () => vendors.find((v) => String(v.id || "") === String(selectedVendorId || "")),
@@ -369,41 +371,95 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
             <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">
               From
             </label>
-            <input
-              type="text"
-              value={startDateInput}
-              onChange={(e) => setStartDateInput(e.target.value)}
-              onBlur={() => {
-                const parsed = parseDMYToISO(startDateInput);
-                if (parsed) {
-                  setStartDate(parsed);
-                } else {
-                  setStartDateInput(formatDateDMY(startDate));
-                }
-              }}
-              className="w-full bg-slate-50 border rounded-xl py-1.5 px-3 text-[11px] font-bold"
-              placeholder="dd/mm/yyyy"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={startDateInput}
+                onChange={(e) => setStartDateInput(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseDMYToISO(startDateInput);
+                  if (parsed) {
+                    setStartDate(parsed);
+                  } else {
+                    setStartDateInput(formatDateDMY(startDate));
+                  }
+                }}
+                className="w-full bg-slate-50 border rounded-xl py-1.5 pl-3 pr-9 text-[11px] font-bold"
+                placeholder="dd/mm/yyyy"
+              />
+              <input
+                ref={startDatePickerRef}
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="absolute pointer-events-none opacity-0 w-0 h-0"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const el = startDatePickerRef.current;
+                  if (!el) return;
+                  if ((el as any).showPicker) {
+                    (el as any).showPicker();
+                  } else {
+                    el.click();
+                  }
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-orange-600"
+                aria-label="Open from date picker"
+              >
+                <FiCalendar className="text-[14px]" />
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">
               To
             </label>
-            <input
-              type="text"
-              value={endDateInput}
-              onChange={(e) => setEndDateInput(e.target.value)}
-              onBlur={() => {
-                const parsed = parseDMYToISO(endDateInput);
-                if (parsed) {
-                  setEndDate(parsed);
-                } else {
-                  setEndDateInput(formatDateDMY(endDate));
-                }
-              }}
-              className="w-full bg-slate-50 border rounded-xl py-1.5 px-3 text-[11px] font-bold"
-              placeholder="dd/mm/yyyy"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={endDateInput}
+                onChange={(e) => setEndDateInput(e.target.value)}
+                onBlur={() => {
+                  const parsed = parseDMYToISO(endDateInput);
+                  if (parsed) {
+                    setEndDate(parsed);
+                  } else {
+                    setEndDateInput(formatDateDMY(endDate));
+                  }
+                }}
+                className="w-full bg-slate-50 border rounded-xl py-1.5 pl-3 pr-9 text-[11px] font-bold"
+                placeholder="dd/mm/yyyy"
+              />
+              <input
+                ref={endDatePickerRef}
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="absolute pointer-events-none opacity-0 w-0 h-0"
+                tabIndex={-1}
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  const el = endDatePickerRef.current;
+                  if (!el) return;
+                  if ((el as any).showPicker) {
+                    (el as any).showPicker();
+                  } else {
+                    el.click();
+                  }
+                }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-orange-600"
+                aria-label="Open to date picker"
+              >
+                <FiCalendar className="text-[14px]" />
+              </button>
+            </div>
           </div>
           <div>
             <label className="block text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">
