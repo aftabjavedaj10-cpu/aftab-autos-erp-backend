@@ -350,7 +350,6 @@ const PurchaseOrderPage: React.FC<PurchaseOrderPageProps> = ({
                 <th className="px-4 py-3">Reference / PO</th>
                 <th className="px-4 py-3">Date / Due</th>
                 <th className="px-4 py-3">Total Amount</th>
-                <th className="px-4 py-3">Balance Amount</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
@@ -410,11 +409,6 @@ const PurchaseOrderPage: React.FC<PurchaseOrderPageProps> = ({
                     </p>
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-black text-slate-900 dark:text-white text-[10px]">
-                      Rs. {Math.max(0, (inv.totalAmount || 0) - (inv.amountReceived || 0)).toLocaleString()}
-                    </p>
-                  </td>
-                  <td className="px-4 py-3">
                     <span
                       className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter border ${
                         inv.status === "Paid"
@@ -459,7 +453,7 @@ const PurchaseOrderPage: React.FC<PurchaseOrderPageProps> = ({
               {paginatedInvoices.length === 0 && (
                 <tr>
                   <td
-                    colSpan={9}
+                    colSpan={8}
                     className="px-8 py-20 text-center text-slate-400 font-bold uppercase tracking-widest italic opacity-40"
                   >
                     No purchase orders found.
