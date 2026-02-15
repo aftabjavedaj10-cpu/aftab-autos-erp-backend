@@ -46,6 +46,19 @@ const buildItemsNarration = (items: any[] = []) => {
   return cleaned.join("\n");
 };
 
+const loadImageDataUrl = (url: string) =>
+  new Promise<string>((resolve, reject) => {
+    fetch(url)
+      .then((res) => res.blob())
+      .then((blob) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result || ""));
+        reader.onerror = () => reject(new Error("Failed to read image"));
+        reader.readAsDataURL(blob);
+      })
+      .catch(reject);
+  });
+
 const ledgerTypePriority: Record<LedgerEntry["type"], number> = {
   Invoice: 1,
   Return: 2,
@@ -353,13 +366,14 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
     if (entry.viewKind === "receive_payment") return onViewReceivePayment?.(entry.viewId);
   };
 
-  const handleDownloadPdf = () => {
+  const customerDisplay = selectedCustomer
+    ? `${selectedCustomer.customerCode || selectedCustomer.id || ""} - ${selectedCustomer.name}`.trim()
+    : "All Customers";
+
+  const handleDownloadPdf = async () => {
     const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
     const reportTitle = "Customer Ledger Report";
     const companyName = String(company?.name || "AFTAB AUTOS");
-    const customerLabel = selectedCustomer
-      ? `${selectedCustomer.id ? `${selectedCustomer.id} - ` : ""}${selectedCustomer.name}`
-      : "All Customers";
 
     doc.setFontSize(16);
     doc.text(companyName, 14, 15);
@@ -368,15 +382,25 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
     doc.line(14, 18, 196, 18);
 
     doc.setFontSize(10);
-    doc.text(`Customer: ${customerLabel}`, 14, 24);
+    doc.text(`Customer: ${customerDisplay}`, 14, 24);
     doc.text(`From: ${formatDateDMY(startDate)}  To: ${formatDateDMY(endDate)}`, 14, 29);
+    if (company?.logoUrl) {
+      try {
+        const logo = await loadImageDataUrl(company.logoUrl);
+        if (logo) {
+          doc.addImage(logo, "PNG", 150, 21, 40, 24);
+        }
+      } catch {
+        // Ignore logo failures for PDF export.
+      }
+    }
 
     const body = filteredEntries.map((entry) => [
       formatDateDMY(entry.date),
-      entry.reference || "",
       showDetailedNarration && entry.detailNarration
         ? `${entry.description}\n${entry.detailNarration}`
         : entry.description,
+      entry.reference || "",
       entry.debit > 0 ? entry.debit.toLocaleString() : "-",
       entry.credit > 0 ? entry.credit.toLocaleString() : "-",
       (runningBalances.get(entry.id) || 0).toLocaleString(),
@@ -384,15 +408,15 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
 
     autoTable(doc, {
       startY: 34,
-      head: [["Date", "Ref.", "Narration", "Debit (PKR)", "Credit (PKR)", "Balance (PKR)"]],
+      head: [["DATE", "NARRATION", "REFERENCE", "DEBIT (PKR)", "CREDIT (PKR)", "BALANCE (PKR)"]],
       body,
       theme: "grid",
-      styles: { fontSize: 8, cellPadding: 1.5, lineColor: [180, 180, 180], lineWidth: 0.1 },
-      headStyles: { fillColor: [245, 245, 245], textColor: [0, 0, 0], fontStyle: "bold" },
+      styles: { fontSize: 8, cellPadding: 1.5, lineColor: [120, 120, 120], lineWidth: 0.1, textColor: [0, 0, 0] },
+      headStyles: { fillColor: [255, 255, 255], textColor: [0, 0, 0], fontStyle: "bold", lineColor: [0, 0, 0], lineWidth: 0.4 },
       columnStyles: {
         0: { cellWidth: 24 },
-        1: { cellWidth: 24 },
-        2: { cellWidth: 84 },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 28 },
         3: { cellWidth: 22, halign: "right" },
         4: { cellWidth: 22, halign: "right" },
         5: { cellWidth: 24, halign: "right" },
@@ -414,7 +438,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
       y + 10
     );
 
-    const safeCustomer = String(selectedCustomer?.name || "all").replace(/[^\w-]+/g, "_");
+    const safeCustomer = String(selectedCustomer?.customerCode || selectedCustomer?.id || selectedCustomer?.name || "all").replace(/[^\w-]+/g, "_");
     doc.save(`customer_ledger_${safeCustomer}_${startDate}_to_${endDate}.pdf`);
   };
 
@@ -561,7 +585,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
               <p>
                 Customer:{" "}
                 {selectedCustomer
-                  ? `${selectedCustomer.id ? `${selectedCustomer.id} - ` : ""}${selectedCustomer.name}`
+                  ? `${selectedCustomer.customerCode || selectedCustomer.id || ""} - ${selectedCustomer.name}`
                   : "All Customers"}
               </p>
               <p>From: {formatDateDMY(startDate)} To: {formatDateDMY(endDate)}</p>
