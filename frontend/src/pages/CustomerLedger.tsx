@@ -207,8 +207,36 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         return String(a.id).localeCompare(String(b.id));
       });
 
+    const linkedPaymentInvoiceIds = new Set(
+      receivePayments
+        .filter((pay) => {
+          const statusRaw = String((pay as any).status || "").toLowerCase();
+          const statusOk =
+            isLedgerVisibleStatus((pay as any).status) ||
+            (includeVoid && statusRaw === "void") ||
+            (includeDeleted && statusRaw === "deleted");
+          const byId =
+            selectedCustomerId &&
+            pay.customerId &&
+            String(pay.customerId) === String(selectedCustomerId);
+          const byName =
+            String(pay.customerName || "").toLowerCase() ===
+            String(selectedCustomer?.name || "").toLowerCase();
+          return statusOk && Boolean(byId || byName);
+        })
+        .map((pay) => {
+          const against = String((pay as any).invoiceId || "").trim();
+          if (against) return against;
+          const ref = String((pay as any).reference || "").trim();
+          return /^SI-\d+$/i.test(ref) ? ref : "";
+        })
+        .filter(Boolean)
+        .map((id) => id.toUpperCase())
+    );
+
     customerInvoices.forEach((inv) => {
         const manualRef = String(inv.reference || "").trim();
+        const invoiceId = String(inv.id || "").toUpperCase();
         entries.push({
           id: `inv-${inv.id}`,
           date: inv.date,
@@ -224,7 +252,8 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
           credit: 0,
         });
         const received = Number(inv.amountReceived || 0);
-        if (received > 0) {
+        const hasLinkedReceivePayment = linkedPaymentInvoiceIds.has(invoiceId);
+        if (received > 0 && !hasLinkedReceivePayment) {
           entries.push({
             id: `rcp-${inv.id}`,
             date: inv.date,
