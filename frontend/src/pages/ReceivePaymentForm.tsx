@@ -14,7 +14,7 @@ interface ReceivePaymentFormPageProps {
   onSave: (doc: ReceivePaymentDoc, stayOnPage?: boolean) => void;
 }
 
-type SaveStatus = "Draft" | "Pending" | "Approved";
+type SaveStatus = "Draft" | "Pending" | "Approved" | "Void";
 type PrintMode = "invoice" | "receipt" | "a5" | "token";
 
 const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
@@ -34,6 +34,10 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   const isPending = currentStatus === "Pending";
   const isVoid = currentStatus === "Void";
   const isDeleted = currentStatus === "Deleted";
+  const isLinkedPayment =
+    Boolean(String(doc?.invoiceId || "").trim()) ||
+    /^SI-\d+$/i.test(String(doc?.reference || "").trim());
+  const canVoid = isEdit && !isLinkedPayment && (isApproved || isPending);
   const [paymentNo, setPaymentNo] = useState(doc?.id || "");
   const [paymentDate, setPaymentDate] = useState(
     doc?.date || new Date().toISOString().slice(0, 10)
@@ -496,6 +500,16 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
               >
                 Cancel
               </button>
+
+              {canVoid && (
+                <button
+                  type="button"
+                  onClick={() => handleSave("Void")}
+                  className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-[11px] font-black uppercase tracking-widest text-rose-700 hover:bg-rose-100 dark:border-rose-800 dark:bg-rose-950/20 dark:text-rose-300 dark:hover:bg-rose-950/30"
+                >
+                  Void
+                </button>
+              )}
 
               <div className="relative" ref={printMenuRef}>
                 <div className="inline-flex">

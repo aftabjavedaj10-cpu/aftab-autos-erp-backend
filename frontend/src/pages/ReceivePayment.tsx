@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useState } from "react";
 import type { SalesInvoice } from "../types";
 import SalesInvoicePage from "./SalesInvoice";
 
@@ -23,15 +24,30 @@ interface ReceivePaymentPageProps {
   onDelete: (id: string) => void;
 }
 
+const isLinkedPayment = (doc: ReceivePaymentDoc) => {
+  const invoiceId = String(doc.invoiceId || "").trim();
+  if (invoiceId) return true;
+  const legacyRef = String(doc.reference || "").trim();
+  return /^SI-\d+$/i.test(legacyRef);
+};
+
 const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
   docs,
   onAddClick,
   onEditClick,
   onDelete,
 }) => {
+  const [sourceFilter, setSourceFilter] = useState<"manual" | "linked" | "all">("manual");
+
+  const visibleDocs = useMemo(() => {
+    if (sourceFilter === "all") return docs;
+    if (sourceFilter === "linked") return docs.filter((doc) => isLinkedPayment(doc));
+    return docs.filter((doc) => !isLinkedPayment(doc));
+  }, [docs, sourceFilter]);
+
   const mappedInvoices = useMemo<SalesInvoice[]>(
     () =>
-      docs.map((doc) => ({
+      visibleDocs.map((doc) => ({
         id: doc.id,
         customerId: doc.customerId,
         customerName: doc.customerName,
@@ -45,7 +61,7 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
         totalAmount: Number(doc.totalAmount || 0),
         amountReceived: Number(doc.totalAmount || 0),
       })),
-    [docs]
+    [visibleDocs]
   );
 
   const mapBack = (invoice: SalesInvoice): ReceivePaymentDoc => ({
@@ -63,22 +79,60 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
   });
 
   return (
-    <SalesInvoicePage
-      invoices={mappedInvoices}
-      onAddClick={onAddClick}
-      onEditClick={(invoice) => onEditClick(mapBack(invoice))}
-      onDelete={onDelete}
-      pageTitle="Receive Payment"
-      pageSubtitle="Customer payment entries"
-      addButtonLabel="Add Payment"
-      showBalanceColumn={false}
-      showAgainstInvoiceColumn
-      againstInvoiceColumnLabel="Against Invoice #"
-      referenceColumnLabel="Reference"
-      getAgainstInvoiceValue={(invoice) =>
-        docs.find((doc) => doc.id === invoice.id)?.invoiceId || ""
-      }
-    />
+    <div>
+      <div className="mb-3 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => setSourceFilter("manual")}
+          className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border ${
+            sourceFilter === "manual"
+              ? "bg-orange-600 text-white border-orange-600"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+          }`}
+        >
+          Manual Payments
+        </button>
+        <button
+          type="button"
+          onClick={() => setSourceFilter("linked")}
+          className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border ${
+            sourceFilter === "linked"
+              ? "bg-orange-600 text-white border-orange-600"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+          }`}
+        >
+          Linked Payments
+        </button>
+        <button
+          type="button"
+          onClick={() => setSourceFilter("all")}
+          className={`rounded-lg px-3 py-1.5 text-[10px] font-black uppercase tracking-wider border ${
+            sourceFilter === "all"
+              ? "bg-orange-600 text-white border-orange-600"
+              : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+          }`}
+        >
+          All Payments
+        </button>
+      </div>
+
+      <SalesInvoicePage
+        invoices={mappedInvoices}
+        onAddClick={onAddClick}
+        onEditClick={(invoice) => onEditClick(mapBack(invoice))}
+        onDelete={onDelete}
+        pageTitle="Receive Payment"
+        pageSubtitle="Customer payment entries"
+        addButtonLabel="Add Payment"
+        showBalanceColumn={false}
+        showAgainstInvoiceColumn
+        againstInvoiceColumnLabel="Against Invoice #"
+        referenceColumnLabel="Reference"
+        getAgainstInvoiceValue={(invoice) =>
+          docs.find((doc) => doc.id === invoice.id)?.invoiceId || ""
+        }
+      />
+    </div>
   );
 };
 
