@@ -674,6 +674,80 @@ const mapPurchaseOrderItemToDb = (item: any, orderId: string) => ({
   total: Number(item.total ?? 0),
 });
 
+const mapPurchaseReturnFromDb = (row: any) => ({
+  id: row.id,
+  customerId: row.vendor_id ?? row.vendorId,
+  customerName: row.vendor_name ?? row.vendorName,
+  reference: row.reference,
+  vehicleNumber: row.vehicle_number ?? row.vehicleNumber,
+  date: row.date,
+  dueDate: row.due_date ?? row.dueDate,
+  status: row.status,
+  paymentStatus: row.payment_status ?? row.paymentStatus,
+  notes: row.notes,
+  overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
+  amountReceived: row.amount_paid ?? row.amountPaid ?? row.amountReceived ?? 0,
+  totalAmount: row.total_amount ?? row.totalAmount ?? 0,
+  createdAt: row.created_at ?? row.createdAt,
+  updatedAt: row.updated_at ?? row.updatedAt,
+  items: Array.isArray(row.items) ? row.items.map(mapPurchaseReturnItemFromDb) : [],
+});
+
+const mapPurchaseReturnItemFromDb = (row: any) => ({
+  id: row.id,
+  invoiceId: row.purchase_return_id ?? row.purchaseReturnId,
+  productId: row.product_id ?? row.productId,
+  productCode: row.product_code ?? row.productCode,
+  productName: row.product_name ?? row.productName,
+  unit: row.unit,
+  quantity: Number(row.quantity ?? 0),
+  unitPrice: Number(row.unit_cost ?? row.unitCost ?? row.unitPrice ?? 0),
+  discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
+  discountType: row.discount_type ?? row.discountType ?? "fixed",
+  tax: Number(row.tax ?? 0),
+  total: Number(row.total ?? 0),
+});
+
+const mapPurchaseReturnToDb = (invoice: any) =>
+  stripClientOnly(
+    {
+      ...invoice,
+      vendor_id: invoice.customerId ?? invoice.vendor_id,
+      vendor_name: invoice.customerName ?? invoice.vendor_name,
+      vehicle_number: invoice.vehicleNumber ?? invoice.vehicle_number,
+      due_date: invoice.dueDate ?? invoice.due_date,
+      payment_status: invoice.paymentStatus ?? invoice.payment_status,
+      overall_discount: invoice.overallDiscount ?? invoice.overall_discount ?? 0,
+      amount_paid: invoice.amountReceived ?? invoice.amount_paid ?? 0,
+      total_amount: invoice.totalAmount ?? invoice.total_amount ?? 0,
+    },
+    [
+      "items",
+      "customerId",
+      "customerName",
+      "vehicleNumber",
+      "dueDate",
+      "paymentStatus",
+      "overallDiscount",
+      "amountReceived",
+      "totalAmount",
+    ]
+  );
+
+const mapPurchaseReturnItemToDb = (item: any, invoiceId: string) => ({
+  purchase_return_id: invoiceId,
+  product_id: item.productId ?? item.product_id ?? null,
+  product_code: item.productCode ?? item.product_code ?? "",
+  product_name: item.productName ?? item.product_name ?? "",
+  unit: item.unit ?? "",
+  quantity: Number(item.quantity ?? 0),
+  unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
+  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+  discount_type: item.discountType ?? item.discount_type ?? "fixed",
+  tax: Number(item.tax ?? 0),
+  total: Number(item.total ?? 0),
+});
+
 const mapCompanyFromDb = (row: any) => {
   if (!row) return row;
   return {
@@ -739,6 +813,7 @@ const SALES_RETURN_ID_PATTERN = /^SR-(\d{6})$/;
 const QUOTATION_ID_PATTERN = /^QT-(\d{6})$/;
 const PURCHASE_INVOICE_ID_PATTERN = /^PI-(\d{6})$/;
 const PURCHASE_ORDER_ID_PATTERN = /^PO-(\d{6})$/;
+const PURCHASE_RETURN_ID_PATTERN = /^PR-(\d{6})$/;
 const RECEIVE_PAYMENT_ID_PATTERN = /^RP-(\d{6})$/;
 const STOCK_ADJUSTMENT_ID_PATTERN = /^ADJ-(\d{6})$/;
 
@@ -852,6 +927,25 @@ const isPurchaseOrderDuplicateKeyError = (err: unknown) => {
 
 const getLatestPurchaseOrderId = async () => {
   const rows = await apiCall("/purchase_orders?select=id&order=created_at.desc&limit=1");
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0]?.id ?? null;
+};
+
+const parsePurchaseReturnNumber = (id?: string) => {
+  if (!id) return -1;
+  const match = id.match(PURCHASE_RETURN_ID_PATTERN);
+  return match ? Number(match[1]) : -1;
+};
+
+const formatPurchaseReturnId = (num: number) => `PR-${String(num).padStart(6, "0")}`;
+
+const isPurchaseReturnDuplicateKeyError = (err: unknown) => {
+  if (!(err instanceof Error)) return false;
+  return err.message.includes('duplicate key value violates unique constraint "purchase_returns_pkey"');
+};
+
+const getLatestPurchaseReturnId = async () => {
+  const rows = await apiCall("/purchase_returns?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows[0]?.id ?? null;
 };
@@ -1528,6 +1622,90 @@ export const purchaseOrderAPI = {
   },
 };
 
+// ============ PURCHASE RETURNS ============
+export const purchaseReturnAPI = {
+  getAll: async () => {
+    await ensurePermission("sales_invoices.read");
+    const rows = await apiCall(
+      "/purchase_returns?select=*,items:purchase_return_items(*)&order=created_at.desc"
+    );
+    return Array.isArray(rows) ? rows.map(mapPurchaseReturnFromDb) : rows;
+  },
+  getById: async (id: string) => {
+    await ensurePermission("sales_invoices.read");
+    const row = await getFirst(
+      `/purchase_returns?select=*,items:purchase_return_items(*)&id=eq.${id}`
+    );
+    return mapPurchaseReturnFromDb(row);
+  },
+  create: async (invoice: any) => {
+    await ensurePermission("sales_invoices.write");
+    const withCompany = attachOwnership(invoice);
+    let header: any = null;
+    let createPayload = mapPurchaseReturnToDb(withCompany);
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        header = await apiCall("/purchase_returns", "POST", createPayload, true).then(firstRow);
+        break;
+      } catch (err) {
+        if (!isPurchaseReturnDuplicateKeyError(err) || attempt === 2) {
+          throw err;
+        }
+        const latestId = await getLatestPurchaseReturnId();
+        const currentNum = parsePurchaseReturnNumber(createPayload?.id);
+        const latestNum = parsePurchaseReturnNumber(latestId ?? undefined);
+        const nextNum = Math.max(currentNum, latestNum, 0) + 1;
+        createPayload = { ...createPayload, id: formatPurchaseReturnId(nextNum) };
+      }
+    }
+
+    const items = Array.isArray(invoice.items) ? invoice.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/purchase_return_items",
+        "POST",
+        items.map((item: any) =>
+          attachCompanyId(mapPurchaseReturnItemToDb(item, header.id))
+        ),
+        true
+      );
+    }
+
+    await apiCall(
+      `/purchase_returns?id=eq.${header.id}`,
+      "PATCH",
+      mapPurchaseReturnToDb(withCompany),
+      true
+    );
+
+    return purchaseReturnAPI.getById(header.id);
+  },
+  update: async (id: string, invoice: any) => {
+    await ensurePermission("sales_invoices.write");
+    await apiCall(`/purchase_return_items?purchase_return_id=eq.${id}`, "DELETE");
+    const items = Array.isArray(invoice.items) ? invoice.items : [];
+    if (items.length > 0) {
+      await apiCall(
+        "/purchase_return_items",
+        "POST",
+        items.map((item: any) =>
+          attachCompanyId(mapPurchaseReturnItemToDb(item, id))
+        ),
+        true
+      );
+    }
+
+    await apiCall(`/purchase_returns?id=eq.${id}`, "PATCH", mapPurchaseReturnToDb(invoice), true);
+
+    return purchaseReturnAPI.getById(id);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("sales_invoices.delete");
+    return apiCall(`/purchase_returns?id=eq.${id}`, "DELETE");
+  },
+};
+
 // ============ STOCK LEDGER ============
 export const stockLedgerAPI = {
   listByCompany: async (companyId: string, limit = 2000) => {
@@ -1863,6 +2041,7 @@ export default {
   receivePaymentAPI,
   purchaseInvoiceAPI,
   purchaseOrderAPI,
+  purchaseReturnAPI,
   quotationAPI,
   stockLedgerAPI,
   companyAPI,

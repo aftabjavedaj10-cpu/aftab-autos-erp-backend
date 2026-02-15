@@ -34,7 +34,7 @@ import SalesReturnFormPage from "./SalesReturnForm";
 import ReceivePaymentPage, { type ReceivePaymentDoc } from "./ReceivePayment";
 import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, quotationAPI, receivePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -181,6 +181,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           salesInvoicesData,
           purchaseInvoicesData,
           purchaseOrdersData,
+          purchaseReturnsData,
           quotationData,
           salesReturnData,
           receivePaymentData,
@@ -193,6 +194,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           salesInvoiceAPI.getAll().catch(() => []),
           purchaseInvoiceAPI.getAll().catch(() => []),
           purchaseOrderAPI.getAll().catch(() => []),
+          purchaseReturnAPI.getAll().catch(() => []),
           quotationAPI.getAll().catch(() => []),
           salesReturnAPI.getAll().catch(() => []),
           receivePaymentAPI.getAll().catch(() => []),
@@ -214,6 +216,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         );
         setPurchaseOrders(
           Array.isArray(purchaseOrdersData) ? purchaseOrdersData : purchaseOrdersData.data || []
+        );
+        setPurchaseReturns(
+          Array.isArray(purchaseReturnsData) ? purchaseReturnsData : purchaseReturnsData.data || []
         );
         setQuotationInvoices(
           Array.isArray(quotationData) ? quotationData : quotationData.data || []
@@ -1145,14 +1150,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onAddClick={handleAddPurchaseReturn}
             onEditClick={handleEditPurchaseReturn}
             onDelete={async (id) => {
-              const current = purchaseReturns.find((inv) => inv.id === id);
-              if (!current) return;
-              if (current.status !== "Void") {
-                setError("Purchase return must be set to Void before marking as Deleted.");
-                return;
+              try {
+                const current = purchaseReturns.find((inv) => inv.id === id);
+                if (!current) return;
+                if (current.status !== "Void") {
+                  setError("Purchase return must be set to Void before marking as Deleted.");
+                  return;
+                }
+                const updated = await purchaseReturnAPI.update(id, { ...current, status: "Deleted" as const });
+                setPurchaseReturns((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
+                const companyId = getActiveCompanyId();
+                const ledgerData = companyId
+                  ? await stockLedgerAPI.listRecent(companyId, 5000)
+                  : [];
+                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+                setStockLedger(normalizedLedger);
+                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+              } catch (err: any) {
+                setError(err?.message || "Failed to set purchase return as deleted");
               }
-              const updated = { ...current, status: "Deleted" as const };
-              setPurchaseReturns((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
             }}
           />
         )}
@@ -1564,20 +1580,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setActiveTab("add_purchase_return");
             }}
             onSave={async (invoiceData, stayOnPage) => {
-              const saved = invoiceData;
-              setPurchaseReturns((prev) => {
-                const exists = prev.find((inv) => inv.id === saved.id);
-                if (exists) {
-                  return prev.map((inv) => (inv.id === saved.id ? saved : inv));
-                }
-                return [saved, ...prev];
-              });
+              try {
+                const saved = editingPurchaseReturn
+                  ? await purchaseReturnAPI.update(invoiceData.id, invoiceData)
+                  : await purchaseReturnAPI.create(invoiceData);
+                setPurchaseReturns((prev) => {
+                  const exists = prev.find((inv) => inv.id === saved.id);
+                  if (exists) {
+                    return prev.map((inv) => (inv.id === saved.id ? saved : inv));
+                  }
+                  return [saved, ...prev];
+                });
 
-              if (stayOnPage) {
-                setEditingPurchaseReturn(saved);
-              } else {
-                setEditingPurchaseReturn(undefined);
-                setActiveTab("purchase_return");
+                const companyId = getActiveCompanyId();
+                const ledgerData = companyId
+                  ? await stockLedgerAPI.listRecent(companyId, 5000)
+                  : [];
+                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+                setStockLedger(normalizedLedger);
+                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+
+                if (stayOnPage) {
+                  setEditingPurchaseReturn(saved);
+                } else {
+                  setEditingPurchaseReturn(undefined);
+                  setActiveTab("purchase_return");
+                }
+              } catch (err: any) {
+                setError(err?.message || "Failed to save purchase return");
               }
             }}
           />
