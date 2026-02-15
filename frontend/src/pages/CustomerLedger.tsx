@@ -3,8 +3,6 @@ import type { Customer, SalesInvoice } from "../types";
 import type { ReceivePaymentDoc } from "./ReceivePayment";
 import { formatDateDMY } from "../services/dateFormat";
 import type { Company } from "../types";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
 import { FiEye } from "react-icons/fi";
 
 interface LedgerEntry {
@@ -118,7 +116,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
   const [showDetailedNarration, setShowDetailedNarration] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
-  const ledgerTemplateRef = useRef<HTMLDivElement>(null);
 
   const selectedCustomer = useMemo(
     () => customers.find((c) => String(c.id || "") === String(selectedCustomerId || "")),
@@ -354,50 +351,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
     if (entry.viewKind === "receive_payment") return onViewReceivePayment?.(entry.viewId);
   };
 
-  const handleDownloadPdf = async () => {
-    if (!ledgerTemplateRef.current) return;
-    const canvas = await html2canvas(ledgerTemplateRef.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      onclone: (clonedDoc) => {
-        clonedDoc.querySelectorAll<HTMLElement>(".print\\:hidden").forEach((el) => {
-          el.style.display = "none";
-        });
-        clonedDoc
-          .querySelectorAll<HTMLElement>(".hidden.print\\:block, .print\\:block")
-          .forEach((el) => {
-            el.style.display = "block";
-          });
-      },
-    });
-
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const imgData = canvas.toDataURL("image/png");
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 8;
-    const usableWidth = pageWidth - margin * 2;
-    const usableHeight = pageHeight - margin * 2;
-    const imgHeight = (canvas.height * usableWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let y = margin;
-
-    doc.addImage(imgData, "PNG", margin, y, usableWidth, imgHeight);
-    heightLeft -= usableHeight;
-
-    while (heightLeft > 0) {
-      doc.addPage();
-      y = margin - (imgHeight - heightLeft);
-      doc.addImage(imgData, "PNG", margin, y, usableWidth, imgHeight);
-      heightLeft -= usableHeight;
-    }
-
-    const safeCustomer = String(selectedCustomer?.customerCode || selectedCustomer?.id || selectedCustomer?.name || "all").replace(/[^\w-]+/g, "_");
-    doc.save(`customer_ledger_${safeCustomer}_${startDate}_to_${endDate}.pdf`);
-  };
-
   return (
     <div className="animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 print:hidden">
@@ -423,12 +376,6 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
             className="bg-slate-900 text-white font-black py-2 px-6 rounded-xl text-[9px] uppercase tracking-widest shadow-md"
           >
             Print Statement
-          </button>
-          <button
-            onClick={handleDownloadPdf}
-            className="bg-orange-600 text-white font-black py-2 px-6 rounded-xl text-[9px] uppercase tracking-widest shadow-md"
-          >
-            Download PDF
           </button>
         </div>
       </div>
@@ -526,7 +473,7 @@ const CustomerLedgerPage: React.FC<CustomerLedgerPageProps> = ({
         </div>
       </div>
 
-      <div ref={ledgerTemplateRef} className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden print:rounded-none print:shadow-none print:border-0">
+      <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden print:rounded-none print:shadow-none print:border-0">
         <div className="hidden print:block px-6 py-4 print:border-0">
           <div className="flex items-start justify-between gap-3 border-b border-black pb-2">
             <h2 className="text-2xl font-black text-slate-900 uppercase">

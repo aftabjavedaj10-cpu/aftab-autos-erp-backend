@@ -1,8 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import type { Company, SalesInvoice, Vendor } from "../types";
 import { formatDateDMY } from "../services/dateFormat";
-import { jsPDF } from "jspdf";
-import html2canvas from "html2canvas";
 import { FiEye } from "react-icons/fi";
 
 interface LedgerEntry {
@@ -107,7 +105,6 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   const [showDetailedNarration, setShowDetailedNarration] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const searchRef = useRef<HTMLDivElement>(null);
-  const ledgerTemplateRef = useRef<HTMLDivElement>(null);
 
   const selectedVendor = useMemo(
     () => vendors.find((v) => String(v.id || "") === String(selectedVendorId || "")),
@@ -272,50 +269,6 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
     onViewPurchaseInvoice?.(entry.viewId);
   };
 
-  const handleDownloadPdf = async () => {
-    if (!ledgerTemplateRef.current) return;
-    const canvas = await html2canvas(ledgerTemplateRef.current, {
-      scale: 2,
-      useCORS: true,
-      backgroundColor: "#ffffff",
-      onclone: (clonedDoc) => {
-        clonedDoc.querySelectorAll<HTMLElement>(".print\\:hidden").forEach((el) => {
-          el.style.display = "none";
-        });
-        clonedDoc
-          .querySelectorAll<HTMLElement>(".hidden.print\\:block, .print\\:block")
-          .forEach((el) => {
-            el.style.display = "block";
-          });
-      },
-    });
-
-    const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-    const imgData = canvas.toDataURL("image/png");
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 8;
-    const usableWidth = pageWidth - margin * 2;
-    const usableHeight = pageHeight - margin * 2;
-    const imgHeight = (canvas.height * usableWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let y = margin;
-
-    doc.addImage(imgData, "PNG", margin, y, usableWidth, imgHeight);
-    heightLeft -= usableHeight;
-
-    while (heightLeft > 0) {
-      doc.addPage();
-      y = margin - (imgHeight - heightLeft);
-      doc.addImage(imgData, "PNG", margin, y, usableWidth, imgHeight);
-      heightLeft -= usableHeight;
-    }
-
-    const safeVendor = String(selectedVendor?.vendorCode || selectedVendor?.id || selectedVendor?.name || "all").replace(/[^\w-]+/g, "_");
-    doc.save(`vendor_ledger_${safeVendor}_${startDate}_to_${endDate}.pdf`);
-  };
-
   return (
     <div className="animate-in fade-in duration-500 pb-10">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4 print:hidden">
@@ -341,12 +294,6 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
             className="bg-slate-900 text-white font-black py-2 px-6 rounded-xl text-[9px] uppercase tracking-widest shadow-md"
           >
             Print Statement
-          </button>
-          <button
-            onClick={handleDownloadPdf}
-            className="bg-orange-600 text-white font-black py-2 px-6 rounded-xl text-[9px] uppercase tracking-widest shadow-md"
-          >
-            Download PDF
           </button>
         </div>
       </div>
@@ -444,7 +391,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         </div>
       </div>
 
-      <div ref={ledgerTemplateRef} className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden print:rounded-none print:shadow-none print:border-0">
+      <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden print:rounded-none print:shadow-none print:border-0">
         <div className="hidden print:block px-6 py-4 print:border-0">
           <div className="flex items-start justify-between gap-3 border-b border-black pb-2">
             <h2 className="text-2xl font-black text-slate-900 uppercase">
