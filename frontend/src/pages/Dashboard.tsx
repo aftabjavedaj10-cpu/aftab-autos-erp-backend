@@ -21,6 +21,8 @@ import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
 import PurchaseInvoicePage from "./PurchaseInvoice";
 import PurchaseInvoiceFormPage from "./PurchaseInvoiceForm";
+import PurchaseOrderPage from "./PurchaseOrder";
+import PurchaseOrderFormPage from "./PurchaseOrderForm";
 import QuotationPage from "./Quotation";
 import QuotationFormPage from "./QuotationForm";
 import SalesOrderPage, { type SalesOrderDoc } from "./SalesOrder";
@@ -30,7 +32,7 @@ import SalesReturnFormPage from "./SalesReturnForm";
 import ReceivePaymentPage, { type ReceivePaymentDoc } from "./ReceivePayment";
 import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, quotationAPI, receivePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, quotationAPI, receivePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -52,8 +54,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
   const [purchaseInvoices, setPurchaseInvoices] = useState<SalesInvoice[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<SalesInvoice[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [editingPurchaseInvoice, setEditingPurchaseInvoice] = useState<SalesInvoice | undefined>(undefined);
+  const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<SalesInvoice | undefined>(undefined);
   const [salesInvoiceForceNewMode, setSalesInvoiceForceNewMode] = useState(false);
   const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
   const [editingQuotationInvoice, setEditingQuotationInvoice] = useState<SalesInvoice | undefined>(undefined);
@@ -172,6 +176,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           categoriesData,
           salesInvoicesData,
           purchaseInvoicesData,
+          purchaseOrdersData,
           quotationData,
           salesReturnData,
           receivePaymentData,
@@ -183,6 +188,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           categoryAPI.getAll().catch(() => []),
           salesInvoiceAPI.getAll().catch(() => []),
           purchaseInvoiceAPI.getAll().catch(() => []),
+          purchaseOrderAPI.getAll().catch(() => []),
           quotationAPI.getAll().catch(() => []),
           salesReturnAPI.getAll().catch(() => []),
           receivePaymentAPI.getAll().catch(() => []),
@@ -201,6 +207,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         );
         setPurchaseInvoices(
           Array.isArray(purchaseInvoicesData) ? purchaseInvoicesData : purchaseInvoicesData.data || []
+        );
+        setPurchaseOrders(
+          Array.isArray(purchaseOrdersData) ? purchaseOrdersData : purchaseOrdersData.data || []
         );
         setQuotationInvoices(
           Array.isArray(quotationData) ? quotationData : quotationData.data || []
@@ -383,6 +392,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const handleEditPurchaseInvoice = (invoice: SalesInvoice) => {
     setEditingPurchaseInvoice(invoice);
     setActiveTab("add_purchase_invoice");
+  };
+
+  const handleAddPurchaseOrder = () => {
+    setEditingPurchaseOrder(undefined);
+    setActiveTab("add_purchase_order");
+  };
+
+  const handleEditPurchaseOrder = (invoice: SalesInvoice) => {
+    setEditingPurchaseOrder(invoice);
+    setActiveTab("add_purchase_order");
   };
 
   const getNextSalesInvoiceId = () => {
@@ -1084,6 +1103,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           />
         )}
 
+        {activeTab === "purchase_order" && (
+          <PurchaseOrderPage
+            invoices={purchaseOrders}
+            onAddClick={handleAddPurchaseOrder}
+            onEditClick={handleEditPurchaseOrder}
+            onDelete={async (id) => {
+              try {
+                const current = purchaseOrders.find((inv) => inv.id === id);
+                if (!current) return;
+                if (current.status !== "Void") {
+                  setError("Purchase order must be set to Void before marking as Deleted.");
+                  return;
+                }
+                const updated = await purchaseOrderAPI.update(id, { ...current, status: "Deleted" as const });
+                setPurchaseOrders((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
+              } catch (err: any) {
+                setError(err?.message || "Failed to set purchase order as deleted");
+              }
+            }}
+          />
+        )}
+
         {activeTab === "reports" && (
           <ReportsPage
             onNavigate={(tab) => setActiveTab(tab)}
@@ -1421,6 +1462,51 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 }
               } catch (err: any) {
                 setError(err?.message || "Failed to save purchase invoice");
+              }
+            }}
+          />
+        )}
+
+        {activeTab === "add_purchase_order" && (
+          <PurchaseOrderFormPage
+            invoice={editingPurchaseOrder}
+            invoices={purchaseOrders}
+            products={products}
+            vendors={vendors}
+            company={activeCompany || undefined}
+            onBack={() => {
+              setEditingPurchaseOrder(undefined);
+              setActiveTab("purchase_order");
+            }}
+            onNavigate={(inv) => {
+              setEditingPurchaseOrder(inv);
+              setActiveTab("add_purchase_order");
+            }}
+            onNavigateNew={() => {
+              setEditingPurchaseOrder(undefined);
+              setActiveTab("add_purchase_order");
+            }}
+            onSave={async (invoiceData, stayOnPage) => {
+              try {
+                const saved = editingPurchaseOrder
+                  ? await purchaseOrderAPI.update(invoiceData.id, invoiceData)
+                  : await purchaseOrderAPI.create(invoiceData);
+                setPurchaseOrders((prev) => {
+                  const exists = prev.find((inv) => inv.id === saved.id);
+                  if (exists) {
+                    return prev.map((inv) => (inv.id === saved.id ? saved : inv));
+                  }
+                  return [saved, ...prev];
+                });
+
+                if (stayOnPage) {
+                  setEditingPurchaseOrder(saved);
+                } else {
+                  setEditingPurchaseOrder(undefined);
+                  setActiveTab("purchase_order");
+                }
+              } catch (err: any) {
+                setError(err?.message || "Failed to save purchase order");
               }
             }}
           />

@@ -374,32 +374,6 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                 />
               </label>
 
-              <label className="block">
-                <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
-                  Invoice #
-                </span>
-                <input
-                  type="text"
-                  value={invoiceId}
-                  onChange={(e) => setInvoiceId(e.target.value.toUpperCase())}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black uppercase tracking-wide text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  placeholder="SI-000001 (optional)"
-                />
-              </label>
-
-              <label className="block">
-                <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
-                  Reference
-                </span>
-                <input
-                  type="text"
-                  value={reference}
-                  onChange={(e) => setReference(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-bold text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  placeholder="Manual reference (optional)"
-                />
-              </label>
-
               <div className="md:col-span-2" ref={customerBoxRef}>
                 <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
                   Customer Search
@@ -447,6 +421,32 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                   </div>
                 )}
               </div>
+
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  Invoice #
+                </span>
+                <input
+                  type="text"
+                  value={invoiceId}
+                  onChange={(e) => setInvoiceId(e.target.value.toUpperCase())}
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black uppercase tracking-wide text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  placeholder="SI-000001 (optional)"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
+                  Reference
+                </span>
+                <input
+                  type="text"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-bold text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  placeholder="Manual reference (optional)"
+                />
+              </label>
 
               <div className="block">
                 <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
