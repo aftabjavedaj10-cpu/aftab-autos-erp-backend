@@ -466,7 +466,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
 
       <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden print:rounded-none print:shadow-none print:border-0">
         <div className="hidden print:block px-6 py-4 print:border-0">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start justify-between gap-3 border-b border-black pb-2">
             <h2 className="text-2xl font-black text-slate-900 uppercase">
               {company?.name || "AFTAB AUTOS"}
             </h2>
@@ -492,9 +492,9 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50/80 print:bg-white text-[9px] font-black uppercase text-slate-500 tracking-widest border-b print:border-b-2 print:border-black">
+              <tr className="bg-slate-50/80 print:bg-white text-[10px] font-extrabold uppercase text-slate-600 tracking-widest border-b print:border-b-2 print:border-black">
                 <th className="px-4 py-3 w-24">Date</th>
-                <th className="px-4 py-3 print:w-[52%]">Narration</th>
+                <th className="px-4 py-3 print:w-[48%]">Narration</th>
                 <th className="px-4 py-3 w-56 print:w-[18%]">Reference</th>
                 <th className="px-4 py-3 text-right w-28">Debit</th>
                 <th className="px-4 py-3 text-right w-28">Credit</th>
@@ -527,7 +527,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
                   <td className="px-4 py-1.5 text-right font-medium text-emerald-600 print:text-black">
                     {entry.credit > 0 ? entry.credit.toLocaleString() : "-"}
                   </td>
-                  <td className="px-4 py-1.5 text-right font-medium bg-slate-50/20 italic text-slate-400 tracking-tighter">
+                  <td className="px-4 py-1.5 text-right font-medium bg-slate-50/20 text-slate-900 tracking-tight">
                     {(runningBalances.get(entry.id) || 0).toLocaleString()}
                   </td>
                   <td className="px-4 py-1.5 text-center print:hidden">
