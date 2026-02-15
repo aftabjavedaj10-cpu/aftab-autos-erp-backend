@@ -453,8 +453,8 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden print:rounded-none print:shadow-none print:border-black">
-        <div className="hidden print:block px-6 py-4 border-b border-black">
+      <div className="bg-white dark:bg-slate-900 rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden print:rounded-none print:shadow-none print:border-0">
+        <div className="hidden print:block px-6 py-4 print:border-0">
           <div className="flex items-start justify-between gap-3">
             <h2 className="text-2xl font-black text-slate-900 uppercase">
               {company?.name || "AFTAB AUTOS"}
@@ -474,7 +474,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
               <p>From: {formatDateDMY(startDate)} To: {formatDateDMY(endDate)}</p>
             </div>
             {company?.logoUrl ? (
-              <img src={company.logoUrl} alt="Company Logo" className="h-16 w-auto object-contain" />
+              <img src={company.logoUrl} alt="Company Logo" className="h-48 w-auto object-contain" />
             ) : null}
           </div>
         </div>
@@ -495,27 +495,27 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
             <tbody>
               {filteredEntries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-slate-50 text-[11px] border-b border-slate-200 print:border-black">
-                  <td className="px-4 py-1.5 font-bold text-slate-500 italic">
+                  <td className="px-4 py-1.5 font-medium text-slate-500 italic">
                     {formatDateDMY(entry.date)}
                   </td>
-                  <td className="px-4 py-1.5 font-black uppercase text-slate-900">
+                  <td className="px-4 py-1.5 font-medium uppercase text-slate-900">
                     <p>{entry.description}</p>
                     {showDetailedNarration && entry.detailNarration && (
-                      <p className="mt-0.5 whitespace-pre-line text-[9px] normal-case font-semibold text-slate-500">
+                      <p className="mt-0.5 whitespace-pre-line text-[9px] normal-case font-medium text-slate-500">
                         {entry.detailNarration}
                       </p>
                     )}
                   </td>
-                  <td className="px-4 py-1.5 text-[10px] font-black text-indigo-600 dark:text-indigo-300 uppercase">
+                  <td className="px-4 py-1.5 text-[10px] font-medium text-indigo-600 dark:text-indigo-300 uppercase print:text-black">
                     {entry.reference || ""}
                   </td>
-                  <td className="px-4 py-1.5 text-right font-black text-orange-600 print:text-black">
+                  <td className="px-4 py-1.5 text-right font-medium text-orange-600 print:text-black">
                     {entry.debit > 0 ? entry.debit.toLocaleString() : "-"}
                   </td>
-                  <td className="px-4 py-1.5 text-right font-black text-emerald-600 print:text-black">
+                  <td className="px-4 py-1.5 text-right font-medium text-emerald-600 print:text-black">
                     {entry.credit > 0 ? entry.credit.toLocaleString() : "-"}
                   </td>
-                  <td className="px-4 py-1.5 text-right font-black bg-slate-50/20 italic text-slate-400 tracking-tighter">
+                  <td className="px-4 py-1.5 text-right font-medium bg-slate-50/20 italic text-slate-400 tracking-tighter">
                     {(runningBalances.get(entry.id) || 0).toLocaleString()}
                   </td>
                 </tr>
