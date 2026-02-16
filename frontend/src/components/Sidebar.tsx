@@ -106,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [salesOpen, setSalesOpen] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLElement | null>(null);
   const [thumb, setThumb] = useState({ visible: false, top: 0, height: 0 });
 
   const effectiveCollapsed = isMobileOpen ? false : isCollapsed;
@@ -144,16 +144,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => {
     updateThumb();
-  }, [
-    updateThumb,
-    effectiveCollapsed,
-    isMobileOpen,
-    setupOpen,
-    posOpen,
-    salesOpen,
-    purchaseOpen,
-    inventoryOpen,
-  ]);
+  }, [updateThumb, setupOpen, posOpen, salesOpen, purchaseOpen, inventoryOpen, effectiveCollapsed, isMobileOpen]);
 
   useEffect(() => {
     const onResize = () => updateThumb();
@@ -194,129 +185,125 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      <div className="relative flex-1">
-        <div
-          ref={scrollRef}
-          onScroll={updateThumb}
-          className="h-full overflow-y-auto sidebar-native-scroll-hidden pr-1"
-        >
-          <nav className="space-y-2 pb-3">
-            {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 px-4">Main Menu</p>}
-            
-            {permissionFlags.dashboard && (
-              <SidebarItem 
-                icon={<FiBarChart2 />} 
-                label="Dashboard" 
-                isCollapsed={effectiveCollapsed}
-                active={activeTab === 'dashboard'} 
-                onClick={() => onTabChange('dashboard')} 
-              />
-            )}
+      <nav
+        ref={scrollRef}
+        onScroll={updateThumb}
+        className="relative flex-1 space-y-2 overflow-y-auto sidebar-native-scroll-hidden pr-1"
+      >
+        {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 px-4">Main Menu</p>}
+        
+        {permissionFlags.dashboard && (
+          <SidebarItem 
+            icon={<FiBarChart2 />} 
+            label="Dashboard" 
+            isCollapsed={effectiveCollapsed}
+            active={activeTab === 'dashboard'} 
+            onClick={() => onTabChange('dashboard')} 
+          />
+        )}
 
-            <SidebarDropdown 
-              icon={<FiCpu />} 
-              label="POS" 
-              isCollapsed={effectiveCollapsed}
-              isOpen={posOpen}
-              toggle={() => setPosOpen(!posOpen)}
-              activeValue={activeTab}
-              onItemClick={(val) => onTabChange(val)}
-              items={[
-                { label: "POS Terminal", value: "pos" },
-                { label: "Manage Terminals", value: "pos_terminals" }
-              ]}
-            />
+        <SidebarDropdown 
+          icon={<FiCpu />} 
+          label="POS" 
+          isCollapsed={effectiveCollapsed}
+          isOpen={posOpen}
+          toggle={() => setPosOpen(!posOpen)}
+          activeValue={activeTab}
+          onItemClick={(val) => onTabChange(val)}
+          items={[
+            { label: "POS Terminal", value: "pos" },
+            { label: "Manage Terminals", value: "pos_terminals" }
+          ]}
+        />
 
-            {setupItems.length > 0 && (
-              <SidebarDropdown 
-                icon={<FiPackage />} 
-                label="Setup" 
-                isCollapsed={effectiveCollapsed}
-                isOpen={setupOpen}
-                toggle={() => setSetupOpen(!setupOpen)}
-                activeValue={activeTab}
-                onItemClick={(val) => onTabChange(val)}
-                items={setupItems}
-              />
-            )}
-            
-            <SidebarDropdown 
-              icon={<FiShoppingCart />} 
-              label="Sales" 
-              isCollapsed={effectiveCollapsed}
-              isOpen={salesOpen}
-              toggle={() => setSalesOpen(!salesOpen)}
-              activeValue={activeTab}
-              onItemClick={(val) => onTabChange(val)}
-              items={[
-                { label: "Quotation", value: "quotation" },
-                { label: "Sales Order", value: "sales_order" },
-                { label: "Sales Invoice", value: "sales_invoice" },
-                { label: "Sales Return", value: "sales_return" },
-                { label: "Receive Payment", value: "receive_payment" }
-              ]}
-            />
-            
-            <SidebarDropdown 
-              icon={<FiShoppingBag />} 
-              label="Purchase" 
-              isCollapsed={effectiveCollapsed}
-              isOpen={purchaseOpen}
-              toggle={() => setPurchaseOpen(!purchaseOpen)}
-              activeValue={activeTab}
-              onItemClick={(val) => onTabChange(val)}
-              items={[
-                { label: "Purchase Order", value: "purchase_order" },
-                { label: "Purchase Invoice", value: "purchase_invoice" },
-                { label: "Purchase Return", value: "purchase_return" },
-                { label: "Make Payment", value: "make_payment" }
-              ]}
-            />
+        {setupItems.length > 0 && (
+          <SidebarDropdown 
+            icon={<FiPackage />} 
+            label="Setup" 
+            isCollapsed={effectiveCollapsed}
+            isOpen={setupOpen}
+            toggle={() => setSetupOpen(!setupOpen)}
+            activeValue={activeTab}
+            onItemClick={(val) => onTabChange(val)}
+            items={setupItems}
+          />
+        )}
+        
+        <SidebarDropdown 
+          icon={<FiShoppingCart />} 
+          label="Sales" 
+          isCollapsed={effectiveCollapsed}
+          isOpen={salesOpen}
+          toggle={() => setSalesOpen(!salesOpen)}
+          activeValue={activeTab}
+          onItemClick={(val) => onTabChange(val)}
+          items={[
+            { label: "Quotation", value: "quotation" },
+            { label: "Sales Order", value: "sales_order" },
+            { label: "Sales Invoice", value: "sales_invoice" },
+            { label: "Sales Return", value: "sales_return" },
+            { label: "Receive Payment", value: "receive_payment" }
+          ]}
+        />
+        
+        <SidebarDropdown 
+          icon={<FiShoppingBag />} 
+          label="Purchase" 
+          isCollapsed={effectiveCollapsed}
+          isOpen={purchaseOpen}
+          toggle={() => setPurchaseOpen(!purchaseOpen)}
+          activeValue={activeTab}
+          onItemClick={(val) => onTabChange(val)}
+          items={[
+            { label: "Purchase Order", value: "purchase_order" },
+            { label: "Purchase Invoice", value: "purchase_invoice" },
+            { label: "Purchase Return", value: "purchase_return" },
+            { label: "Make Payment", value: "make_payment" }
+          ]}
+        />
 
-            <SidebarDropdown
-              icon={<FiPackage />}
-              label="Inventory"
-              isCollapsed={effectiveCollapsed}
-              isOpen={inventoryOpen}
-              toggle={() => setInventoryOpen(!inventoryOpen)}
-              activeValue={activeTab}
-              onItemClick={(val) => onTabChange(val)}
-              items={[
-                { label: "Stock Adjustment", value: "stock_adjustment" },
-              ]}
-            />
+        <SidebarDropdown
+          icon={<FiPackage />}
+          label="Inventory"
+          isCollapsed={effectiveCollapsed}
+          isOpen={inventoryOpen}
+          toggle={() => setInventoryOpen(!inventoryOpen)}
+          activeValue={activeTab}
+          onItemClick={(val) => onTabChange(val)}
+          items={[
+            { label: "Stock Adjustment", value: "stock_adjustment" },
+          ]}
+        />
 
-            <SidebarItem 
-              icon={<FiClipboard />} 
-              label="Reports" 
-              isCollapsed={effectiveCollapsed}
-              active={activeTab === 'reports'} 
-              onClick={() => onTabChange('reports')} 
-            />
-            
-            {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-8 mb-4 px-4">Support</p>}
-            {permissionFlags.settings && (
-              <SidebarItem 
-                icon={<FiSettings />} 
-                label="Settings" 
-                isCollapsed={effectiveCollapsed} 
-                active={activeTab === 'settings'}
-                onClick={() => onTabChange('settings')}
-              />
-            )}
-            <SidebarItem icon={<FiHelpCircle />} label="Help Center" isCollapsed={effectiveCollapsed} />
-          </nav>
-        </div>
+        <SidebarItem 
+          icon={<FiClipboard />} 
+          label="Reports" 
+          isCollapsed={effectiveCollapsed}
+          active={activeTab === 'reports'} 
+          onClick={() => onTabChange('reports')} 
+        />
+        
+        {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-8 mb-4 px-4">Support</p>}
+        {permissionFlags.settings && (
+          <SidebarItem 
+            icon={<FiSettings />} 
+            label="Settings" 
+            isCollapsed={effectiveCollapsed} 
+            active={activeTab === 'settings'}
+            onClick={() => onTabChange('settings')}
+          />
+        )}
+        <SidebarItem icon={<FiHelpCircle />} label="Help Center" isCollapsed={effectiveCollapsed} />
 
         {thumb.visible && (
-          <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-1.5">
+          <div className="pointer-events-none absolute right-0 top-0 h-full w-1.5">
             <div
               className="absolute left-0 right-0 rounded-full bg-[#CBD5E1] dark:bg-[#334155]"
               style={{ top: `${thumb.top}px`, height: `${thumb.height}px` }}
             />
           </div>
         )}
-      </div>
+      </nav>
     </div>
   );
 };
