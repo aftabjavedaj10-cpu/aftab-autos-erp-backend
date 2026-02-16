@@ -6,29 +6,47 @@
 }
 
 /* Global themed scrollbar for app pages */
+html,
+body,
+#root,
 * {
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
 
+html::-webkit-scrollbar,
+body::-webkit-scrollbar,
+#root::-webkit-scrollbar,
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
   background: transparent;
 }
 
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track,
+#root::-webkit-scrollbar-track,
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 
+html::-webkit-scrollbar-track-piece,
+body::-webkit-scrollbar-track-piece,
+#root::-webkit-scrollbar-track-piece,
 *::-webkit-scrollbar-track-piece {
   background: transparent;
 }
 
+html::-webkit-scrollbar-corner,
+body::-webkit-scrollbar-corner,
+#root::-webkit-scrollbar-corner,
 *::-webkit-scrollbar-corner {
   background: transparent;
 }
 
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb,
+#root::-webkit-scrollbar-thumb,
 *::-webkit-scrollbar-thumb {
   background-color: #cbd5e1;
   border-radius: 999px;
@@ -36,10 +54,16 @@
   background-clip: padding-box;
 }
 
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover,
+#root::-webkit-scrollbar-thumb:hover,
 *::-webkit-scrollbar-thumb:hover {
   background-color: #b8c4d4;
 }
 
+html::-webkit-scrollbar-button,
+body::-webkit-scrollbar-button,
+#root::-webkit-scrollbar-button,
 *::-webkit-scrollbar-button {
   display: none;
   width: 0;
@@ -47,12 +71,38 @@
   background: transparent;
 }
 
+html::-webkit-scrollbar-button:start:decrement,
+html::-webkit-scrollbar-button:end:increment,
+html::-webkit-scrollbar-button:horizontal:start:decrement,
+html::-webkit-scrollbar-button:horizontal:end:increment,
+html::-webkit-scrollbar-button:vertical:start:decrement,
+html::-webkit-scrollbar-button:vertical:end:increment,
+html::-webkit-scrollbar-button:single-button,
+html::-webkit-scrollbar-button:double-button,
+body::-webkit-scrollbar-button:start:decrement,
+body::-webkit-scrollbar-button:end:increment,
+body::-webkit-scrollbar-button:horizontal:start:decrement,
+body::-webkit-scrollbar-button:horizontal:end:increment,
+body::-webkit-scrollbar-button:vertical:start:decrement,
+body::-webkit-scrollbar-button:vertical:end:increment,
+body::-webkit-scrollbar-button:single-button,
+body::-webkit-scrollbar-button:double-button,
+#root::-webkit-scrollbar-button:start:decrement,
+#root::-webkit-scrollbar-button:end:increment,
+#root::-webkit-scrollbar-button:horizontal:start:decrement,
+#root::-webkit-scrollbar-button:horizontal:end:increment,
+#root::-webkit-scrollbar-button:vertical:start:decrement,
+#root::-webkit-scrollbar-button:vertical:end:increment,
+#root::-webkit-scrollbar-button:single-button,
+#root::-webkit-scrollbar-button:double-button,
 *::-webkit-scrollbar-button:start:decrement,
 *::-webkit-scrollbar-button:end:increment,
 *::-webkit-scrollbar-button:horizontal:start:decrement,
 *::-webkit-scrollbar-button:horizontal:end:increment,
 *::-webkit-scrollbar-button:vertical:start:decrement,
-*::-webkit-scrollbar-button:vertical:end:increment {
+*::-webkit-scrollbar-button:vertical:end:increment,
+*::-webkit-scrollbar-button:single-button,
+*::-webkit-scrollbar-button:double-button {
   display: none;
   width: 0;
   height: 0;
@@ -63,10 +113,16 @@
   scrollbar-color: #334155 transparent;
 }
 
+.dark html::-webkit-scrollbar-thumb,
+.dark body::-webkit-scrollbar-thumb,
+.dark #root::-webkit-scrollbar-thumb,
 .dark *::-webkit-scrollbar-thumb {
   background-color: #334155;
 }
 
+.dark html::-webkit-scrollbar-thumb:hover,
+.dark body::-webkit-scrollbar-thumb:hover,
+.dark #root::-webkit-scrollbar-thumb:hover,
 .dark *::-webkit-scrollbar-thumb:hover {
   background-color: #3f5167;
 }
