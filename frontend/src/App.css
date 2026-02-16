@@ -42,21 +42,22 @@
 }
 /* Sidebar scrollbar */
 .sidebar-scroll::-webkit-scrollbar {
-  width: 8px;
-  background: transparent;
+  width: 8px !important;
+  height: 8px !important;
+  background: transparent !important;
 }
 
 .sidebar-scroll::-webkit-scrollbar-track {
-  background: transparent;
+  background: transparent !important;
   border-radius: 999px;
 }
 
 .sidebar-scroll::-webkit-scrollbar-track-piece {
-  background: transparent;
+  background: transparent !important;
 }
 
 .sidebar-scroll::-webkit-scrollbar-corner {
-  background: transparent;
+  background: transparent !important;
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
@@ -71,9 +72,22 @@
 }
 
 .sidebar-scroll::-webkit-scrollbar-button {
-  display: none;
-  width: 0;
-  height: 0;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+.sidebar-scroll::-webkit-scrollbar-button:start:decrement,
+.sidebar-scroll::-webkit-scrollbar-button:end:increment,
+.sidebar-scroll::-webkit-scrollbar-button:horizontal:start:decrement,
+.sidebar-scroll::-webkit-scrollbar-button:horizontal:end:increment,
+.sidebar-scroll::-webkit-scrollbar-button:vertical:start:decrement,
+.sidebar-scroll::-webkit-scrollbar-button:vertical:end:increment {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
 }
 
 /* Firefox */
