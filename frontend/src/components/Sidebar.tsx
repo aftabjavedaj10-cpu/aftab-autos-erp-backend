@@ -144,6 +144,8 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   useEffect(() => {
     updateThumb();
+    const id = window.setTimeout(updateThumb, 220);
+    return () => window.clearTimeout(id);
   }, [updateThumb, setupOpen, posOpen, salesOpen, purchaseOpen, inventoryOpen, effectiveCollapsed, isMobileOpen]);
 
   useEffect(() => {
@@ -185,11 +187,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      <div className="relative flex-1">
+      <div className="relative flex-1 min-h-0">
       <nav
         ref={scrollRef}
         onScroll={updateThumb}
-        className="h-full space-y-2 overflow-y-auto sidebar-native-scroll-hidden pr-2"
+        className="h-full min-h-0 space-y-2 overflow-y-auto sidebar-native-scroll-hidden pr-2"
       >
         {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 px-4">Main Menu</p>}
         
