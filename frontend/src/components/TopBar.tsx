@@ -135,11 +135,10 @@ const TopBar: React.FC<TopBarProps> = ({
           </div>
         )}
 
-        {pinnedReports.length > 0 && (
-          <div className="relative" ref={pinnedRef}>
+        <div className="relative" ref={pinnedRef}>
             <button
               onClick={() => setPinnedOpen((prev) => !prev)}
-              className="hidden md:flex items-center gap-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg px-3 py-2 transition-all border border-transparent dark:border-slate-800 text-slate-600 dark:text-slate-300"
+              className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg px-3 py-2 transition-all border border-transparent dark:border-slate-800 text-slate-600 dark:text-slate-300"
               title="Pinned reports"
             >
               <FiStar className="text-orange-500" />
@@ -148,22 +147,27 @@ const TopBar: React.FC<TopBarProps> = ({
             </button>
             {pinnedOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-[60]">
-                {pinnedReports.map((report) => (
-                  <button
-                    key={report.id}
-                    onClick={() => {
-                      setPinnedOpen(false);
-                      onSelectPinnedReport?.(report.tab || "reports");
-                    }}
-                    className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-slate-800 hover:text-orange-600 transition-colors"
-                  >
-                    {report.title}
-                  </button>
-                ))}
+                {pinnedReports.length === 0 ? (
+                  <div className="px-3 py-2 text-xs font-bold text-slate-400">
+                    No pinned reports
+                  </div>
+                ) : (
+                  pinnedReports.map((report) => (
+                    <button
+                      key={report.id}
+                      onClick={() => {
+                        setPinnedOpen(false);
+                        onSelectPinnedReport?.(report.tab || "reports");
+                      }}
+                      className="w-full text-left px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-slate-800 hover:text-orange-600 transition-colors"
+                    >
+                      {report.title}
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>
-        )}
 
         <button
           className="
