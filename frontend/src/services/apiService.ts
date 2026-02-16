@@ -526,6 +526,33 @@ const mapReceivePaymentToDb = (payment: any) =>
     ["customerId", "customerName", "totalAmount", "invoiceId"]
   );
 
+const mapMakePaymentFromDb = (row: any) => ({
+  id: row.id,
+  vendorId: row.vendor_id ?? row.vendorId,
+  vendorName: row.vendor_name ?? row.vendorName,
+  invoiceId: row.invoice_id ?? row.invoiceId ?? "",
+  reference: row.reference ?? "",
+  date: row.date,
+  status: row.status,
+  totalAmount: Number(row.total_amount ?? row.totalAmount ?? 0),
+  notes: row.notes ?? "",
+  createdAt: row.created_at ?? row.createdAt,
+  updatedAt: row.updated_at ?? row.updatedAt,
+});
+
+const mapMakePaymentToDb = (payment: any) =>
+  stripClientOnly(
+    {
+      ...payment,
+      vendor_id: payment.vendorId ?? payment.vendor_id,
+      vendor_name: payment.vendorName ?? payment.vendor_name,
+      invoice_id: payment.invoiceId ?? payment.invoice_id ?? null,
+      reference: payment.reference ?? null,
+      total_amount: payment.totalAmount ?? payment.total_amount ?? 0,
+    },
+    ["vendorId", "vendorName", "totalAmount", "invoiceId"]
+  );
+
 const mapPurchaseInvoiceFromDb = (row: any) => ({
   id: row.id,
   customerId: row.vendor_id ?? row.vendorId,
@@ -815,6 +842,7 @@ const PURCHASE_INVOICE_ID_PATTERN = /^PI-(\d{6})$/;
 const PURCHASE_ORDER_ID_PATTERN = /^PO-(\d{6})$/;
 const PURCHASE_RETURN_ID_PATTERN = /^PR-(\d{6})$/;
 const RECEIVE_PAYMENT_ID_PATTERN = /^RP-(\d{6})$/;
+const MAKE_PAYMENT_ID_PATTERN = /^MP-(\d{6})$/;
 const STOCK_ADJUSTMENT_ID_PATTERN = /^ADJ-(\d{6})$/;
 
 const parseSalesInvoiceNumber = (id?: string) => {
@@ -840,6 +868,14 @@ const parseReceivePaymentNumber = (id?: string) => {
 };
 
 const formatReceivePaymentId = (num: number) => `RP-${String(num).padStart(6, "0")}`;
+
+const parseMakePaymentNumber = (id?: string) => {
+  if (!id) return -1;
+  const match = id.match(MAKE_PAYMENT_ID_PATTERN);
+  return match ? Number(match[1]) : -1;
+};
+
+const formatMakePaymentId = (num: number) => `MP-${String(num).padStart(6, "0")}`;
 
 const parseQuotationNumber = (id?: string) => {
   if (!id) return -1;
@@ -869,6 +905,11 @@ const isReceivePaymentDuplicateKeyError = (err: unknown) => {
   return err.message.includes('duplicate key value violates unique constraint "receive_payments_pkey"');
 };
 
+const isMakePaymentDuplicateKeyError = (err: unknown) => {
+  if (!(err instanceof Error)) return false;
+  return err.message.includes('duplicate key value violates unique constraint "make_payments_pkey"');
+};
+
 const getLatestSalesInvoiceId = async () => {
   const rows = await apiCall("/sales_invoices?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
@@ -889,6 +930,12 @@ const getLatestSalesReturnId = async () => {
 
 const getLatestReceivePaymentId = async () => {
   const rows = await apiCall("/receive_payments?select=id&order=created_at.desc&limit=1");
+  if (!Array.isArray(rows) || rows.length === 0) return null;
+  return rows[0]?.id ?? null;
+};
+
+const getLatestMakePaymentId = async () => {
+  const rows = await apiCall("/make_payments?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
   return rows[0]?.id ?? null;
 };
@@ -1459,6 +1506,56 @@ export const receivePaymentAPI = {
   delete: async (id: string) => {
     await ensurePermission("sales_invoices.delete");
     return apiCall(`/receive_payments?id=eq.${id}`, "DELETE");
+  },
+};
+
+// ============ MAKE PAYMENTS ============
+export const makePaymentAPI = {
+  getAll: async () => {
+    await ensurePermission("sales_invoices.read");
+    const rows = await apiCall("/make_payments?select=*&order=created_at.desc");
+    return Array.isArray(rows) ? rows.map(mapMakePaymentFromDb) : rows;
+  },
+  getById: async (id: string) => {
+    await ensurePermission("sales_invoices.read");
+    const row = await getFirst(`/make_payments?select=*&id=eq.${id}`);
+    return mapMakePaymentFromDb(row);
+  },
+  create: async (payment: any) => {
+    await ensurePermission("sales_invoices.write");
+    const withCompany = attachOwnership(payment);
+    let payload = mapMakePaymentToDb(withCompany);
+    let created: any = null;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        created = await apiCall("/make_payments", "POST", payload, true).then(firstRow);
+        break;
+      } catch (err) {
+        if (!isMakePaymentDuplicateKeyError(err) || attempt === 2) {
+          throw err;
+        }
+        const latestId = await getLatestMakePaymentId();
+        const currentNum = parseMakePaymentNumber(payload?.id);
+        const latestNum = parseMakePaymentNumber(latestId ?? undefined);
+        const nextNum = Math.max(currentNum, latestNum, 0) + 1;
+        payload = { ...payload, id: formatMakePaymentId(nextNum) };
+      }
+    }
+    return mapMakePaymentFromDb(created);
+  },
+  update: async (id: string, payment: any) => {
+    await ensurePermission("sales_invoices.write");
+    const row = await apiCall(
+      `/make_payments?id=eq.${id}`,
+      "PATCH",
+      mapMakePaymentToDb(payment),
+      true
+    ).then(firstRow);
+    return mapMakePaymentFromDb(row);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("sales_invoices.delete");
+    return apiCall(`/make_payments?id=eq.${id}`, "DELETE");
   },
 };
 
@@ -2039,6 +2136,7 @@ export default {
   salesInvoiceAPI,
   salesReturnAPI,
   receivePaymentAPI,
+  makePaymentAPI,
   purchaseInvoiceAPI,
   purchaseOrderAPI,
   purchaseReturnAPI,

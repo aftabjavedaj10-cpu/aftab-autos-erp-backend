@@ -36,7 +36,7 @@ import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
 import MakePaymentFormPage from "./MakePaymentForm";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -70,14 +70,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [salesOrders, setSalesOrders] = useState<SalesOrderDoc[]>([]);
   const [salesReturns, setSalesReturns] = useState<SalesInvoice[]>([]);
   const [receivePayments, setReceivePayments] = useState<ReceivePaymentDoc[]>([]);
-  const [makePayments, setMakePayments] = useState<MakePaymentDoc[]>(() => {
-    try {
-      const raw = localStorage.getItem("makePayments");
-      return raw ? (JSON.parse(raw) as MakePaymentDoc[]) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [makePayments, setMakePayments] = useState<MakePaymentDoc[]>([]);
   const [editingSalesOrder, setEditingSalesOrder] = useState<SalesOrderDoc | undefined>(undefined);
   const [editingSalesReturn, setEditingSalesReturn] = useState<SalesInvoice | undefined>(undefined);
   const [editingReceivePayment, setEditingReceivePayment] = useState<ReceivePaymentDoc | undefined>(undefined);
@@ -196,6 +189,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           quotationData,
           salesReturnData,
           receivePaymentData,
+          makePaymentData,
           ledgerData,
         ] = await Promise.all([
           productAPI.getAll().catch(() => []),
@@ -209,6 +203,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           quotationAPI.getAll().catch(() => []),
           salesReturnAPI.getAll().catch(() => []),
           receivePaymentAPI.getAll().catch(() => []),
+          makePaymentAPI.getAll().catch(() => []),
           companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
         ]);
 
@@ -240,6 +235,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         setReceivePayments(
           Array.isArray(receivePaymentData) ? receivePaymentData : receivePaymentData.data || []
         );
+        setMakePayments(
+          Array.isArray(makePaymentData) ? makePaymentData : makePaymentData.data || []
+        );
       } catch (err) {
         console.error("Failed to fetch data:", err);
         setError("Failed to load data from server. Please refresh the page.");
@@ -256,14 +254,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     const timer = window.setTimeout(() => setError(null), 5000);
     return () => window.clearTimeout(timer);
   }, [error]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("makePayments", JSON.stringify(makePayments));
-    } catch {
-      // ignore storage errors
-    }
-  }, [makePayments]);
 
   const handleAddProduct = () => {
     setEditingProduct(undefined);
@@ -1078,8 +1068,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             docs={makePayments}
             onAddClick={handleAddMakePayment}
             onEditClick={handleEditMakePayment}
-            onDelete={(id) => {
-              setMakePayments((prev) => prev.filter((d) => d.id !== id));
+            onDelete={async (id) => {
+              try {
+                await makePaymentAPI.delete(id);
+                setMakePayments((prev) => prev.filter((d) => d.id !== id));
+              } catch (err: any) {
+                setError(err?.message || "Failed to delete make payment");
+              }
             }}
           />
         )}
@@ -1097,15 +1092,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setEditingMakePayment(undefined);
               setActiveTab("make_payment");
             }}
-            onSave={(doc, stayOnPage) => {
-              setMakePayments((prev) => upsertSalesModuleDoc(prev, doc));
-              if (stayOnPage) {
+            onSave={async (doc, stayOnPage) => {
+              try {
+                const saved = editingMakePayment?.id
+                  ? await makePaymentAPI.update(doc.id, doc)
+                  : await makePaymentAPI.create(doc);
+                setMakePayments((prev) => upsertSalesModuleDoc(prev, saved));
+                if (stayOnPage) {
+                  setEditingMakePayment(undefined);
+                  setActiveTab("add_make_payment");
+                  return;
+                }
                 setEditingMakePayment(undefined);
-                setActiveTab("add_make_payment");
-                return;
+                setActiveTab("make_payment");
+              } catch (err: any) {
+                setError(err?.message || "Failed to save make payment");
               }
-              setEditingMakePayment(undefined);
-              setActiveTab("make_payment");
             }}
           />
         )}
