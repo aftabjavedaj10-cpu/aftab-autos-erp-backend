@@ -156,7 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className={`
-      fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar-warm dark:bg-slate-950 border-r border-orange-200 dark:border-slate-900 pl-4 overflow-hidden transition-all duration-300 ease-in-out
+      fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar-warm dark:bg-slate-950 border-r border-orange-200 dark:border-slate-900 pl-4 pt-4 overflow-hidden transition-all duration-300 ease-in-out
       lg:sticky lg:h-screen lg:translate-x-0 print:hidden
       ${isMobileOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0'}
       ${effectiveCollapsed ? 'lg:w-20' : 'lg:w-64'}
