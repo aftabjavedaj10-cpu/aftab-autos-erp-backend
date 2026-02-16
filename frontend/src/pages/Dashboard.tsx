@@ -1348,6 +1348,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onBack={() => setActiveTab("reports")}
             vendors={vendors}
             purchaseInvoices={purchaseInvoices}
+            purchaseReturns={purchaseReturns}
+            makePayments={makePayments}
             company={activeCompany || undefined}
             onViewPurchaseInvoice={(id) => {
               const invoice = purchaseInvoices.find((inv) => String(inv.id) === String(id));

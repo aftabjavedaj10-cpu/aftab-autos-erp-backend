@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
 import type { Company, SalesInvoice, Vendor } from "../types";
+import type { MakePaymentDoc } from "./MakePayment";
 import { formatDateDMY } from "../services/dateFormat";
 import { FiCalendar, FiEye } from "react-icons/fi";
 
@@ -90,6 +91,8 @@ interface VendorLedgerPageProps {
   onBack: () => void;
   vendors: Vendor[];
   purchaseInvoices: SalesInvoice[];
+  purchaseReturns: SalesInvoice[];
+  makePayments: MakePaymentDoc[];
   company?: Company;
   onViewPurchaseInvoice?: (id: string) => void;
 }
@@ -98,6 +101,8 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   onBack,
   vendors,
   purchaseInvoices,
+  purchaseReturns,
+  makePayments,
   company,
   onViewPurchaseInvoice,
 }) => {
@@ -195,8 +200,36 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         return String(a.id || "").localeCompare(String(b.id || ""));
       });
 
+    const linkedPaymentInvoiceIds = new Set(
+      makePayments
+        .filter((pay) => {
+          const statusRaw = String((pay as any).status || "").toLowerCase();
+          const statusOk =
+            isLedgerVisibleStatus((pay as any).status) ||
+            (includeVoid && statusRaw === "void") ||
+            (includeDeleted && statusRaw === "deleted");
+          const byId =
+            selectedVendorId &&
+            pay.vendorId &&
+            String(pay.vendorId) === String(selectedVendorId);
+          const byName =
+            String(pay.vendorName || "").toLowerCase() ===
+            String(selectedVendor?.name || "").toLowerCase();
+          return statusOk && Boolean(byId || byName);
+        })
+        .map((pay) => {
+          const against = String((pay as any).invoiceId || "").trim();
+          if (against) return against;
+          const ref = String((pay as any).reference || "").trim();
+          return /^PI-\d+$/i.test(ref) ? ref : "";
+        })
+        .filter(Boolean)
+        .map((id) => id.toUpperCase())
+    );
+
     vendorInvoices.forEach((inv) => {
       const manualRef = String(inv.reference || "").trim();
+      const invoiceId = String(inv.id || "").toUpperCase();
       entries.push({
         id: `bill-${inv.id}`,
         date: inv.date,
@@ -211,7 +244,8 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
         credit: 0,
       });
       const paid = Number(inv.amountReceived || 0);
-      if (paid > 0) {
+      const hasLinkedMakePayment = linkedPaymentInvoiceIds.has(invoiceId);
+      if (paid > 0 && !hasLinkedMakePayment) {
         entries.push({
           id: `pay-${inv.id}`,
           date: inv.date,
@@ -228,8 +262,72 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
       }
     });
 
+    const vendorReturns = purchaseReturns
+      .filter(
+        (ret) =>
+          String(ret.customerId || "") === String(vendorId) &&
+          (isLedgerVisibleStatus((ret as any).status) ||
+            (includeVoid && String((ret as any).status || "").toLowerCase() === "void") ||
+            (includeDeleted && String((ret as any).status || "").toLowerCase() === "deleted"))
+      )
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return String(a.id || "").localeCompare(String(b.id || ""));
+      });
+
+    vendorReturns.forEach((ret) => {
+      const manualRef = String(ret.reference || "").trim();
+      entries.push({
+        id: `ret-${ret.id}`,
+        date: ret.date,
+        postedAt: String((ret as any).createdAt || (ret as any).updatedAt || ret.date || ""),
+        orderHint: 30,
+        description: `Purchase Return - ${ret.id}`,
+        detailNarration: buildItemsNarration(ret.items || []),
+        reference: manualRef,
+        type: "Return",
+        debit: 0,
+        credit: Number(ret.totalAmount || 0),
+      });
+    });
+
+    const vendorPayments = makePayments
+      .filter((pay) => {
+        const statusRaw = String((pay as any).status || "").toLowerCase();
+        const statusOk =
+          isLedgerVisibleStatus((pay as any).status) ||
+          (includeVoid && statusRaw === "void") ||
+          (includeDeleted && statusRaw === "deleted");
+        const byId =
+          selectedVendorId &&
+          pay.vendorId &&
+          String(pay.vendorId) === String(selectedVendorId);
+        const byName =
+          String(pay.vendorName || "").toLowerCase() ===
+          String(selectedVendor?.name || "").toLowerCase();
+        return statusOk && Boolean(byId || byName);
+      })
+      .sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        return String(a.id || "").localeCompare(String(b.id || ""));
+      });
+
+    vendorPayments.forEach((pay) => {
+      entries.push({
+        id: `manual-pay-${pay.id}`,
+        date: pay.date,
+        postedAt: String(pay.createdAt || pay.updatedAt || pay.date || ""),
+        orderHint: 40,
+        description: "Payment Made",
+        reference: String(pay.reference || "").trim(),
+        type: "Payment",
+        debit: 0,
+        credit: Number(pay.totalAmount || 0),
+      });
+    });
+
     return entries.sort(compareLedgerEntries);
-  }, [vendors, selectedVendorId, purchaseInvoices, includeVoid, includeDeleted]);
+  }, [vendors, selectedVendorId, selectedVendor, purchaseInvoices, purchaseReturns, makePayments, includeVoid, includeDeleted]);
 
   const filteredEntries = useMemo(() => {
     return rawEntries.filter((entry) => {
