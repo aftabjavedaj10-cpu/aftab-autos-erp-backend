@@ -185,10 +185,11 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
+      <div className="relative flex-1">
       <nav
         ref={scrollRef}
         onScroll={updateThumb}
-        className="relative flex-1 space-y-2 overflow-y-auto sidebar-native-scroll-hidden pr-1"
+        className="h-full space-y-2 overflow-y-auto sidebar-native-scroll-hidden pr-2"
       >
         {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 px-4">Main Menu</p>}
         
@@ -295,15 +296,16 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
         <SidebarItem icon={<FiHelpCircle />} label="Help Center" isCollapsed={effectiveCollapsed} />
 
-        {thumb.visible && (
-          <div className="pointer-events-none absolute right-0 top-0 h-full w-1.5">
-            <div
-              className="absolute left-0 right-0 rounded-full bg-[#CBD5E1] dark:bg-[#334155]"
-              style={{ top: `${thumb.top}px`, height: `${thumb.height}px` }}
-            />
-          </div>
-        )}
       </nav>
+      {thumb.visible && (
+        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-1.5">
+          <div
+            className="absolute left-0 right-0 rounded-full bg-[#CBD5E1] dark:bg-[#334155]"
+            style={{ top: `${thumb.top}px`, height: `${thumb.height}px` }}
+          />
+        </div>
+      )}
+      </div>
     </div>
   );
 };
