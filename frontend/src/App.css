@@ -25,14 +25,14 @@
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(234, 88, 12, 0.6);
+  background-color: rgba(251, 146, 60, 0.55);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
 .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(194, 65, 12, 0.85);
+  background-color: rgba(249, 115, 22, 0.7);
 }
 
 .sidebar-scroll::-webkit-scrollbar-button {
@@ -57,7 +57,7 @@
 /* Firefox */
 .sidebar-scroll {
   scrollbar-width: thin;
-  scrollbar-color: rgba(234, 88, 12, 0.7) transparent;
+  scrollbar-color: rgba(251, 146, 60, 0.6) transparent;
   scrollbar-gutter: auto;
 }
 
@@ -66,14 +66,14 @@
 }
 
 .dark .sidebar-scroll::-webkit-scrollbar-thumb {
-  background-color: rgba(148, 163, 184, 0.55);
+  background-color: rgba(203, 213, 225, 0.38);
   border-color: rgba(2, 6, 23, 0.95);
 }
 
 .dark .sidebar-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(148, 163, 184, 0.75);
+  background-color: rgba(203, 213, 225, 0.55);
 }
 
 .dark .sidebar-scroll {
-  scrollbar-color: rgba(148, 163, 184, 0.7) transparent;
+  scrollbar-color: rgba(203, 213, 225, 0.5) transparent;
 }
