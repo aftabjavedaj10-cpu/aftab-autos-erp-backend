@@ -92,6 +92,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>(undefined);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
   const [editingStockAdjustment, setEditingStockAdjustment] = useState<StockLedgerEntry | undefined>(undefined);
+  const [pendingFilterTarget, setPendingFilterTarget] = useState<string>("");
+  const [pendingFilterTick, setPendingFilterTick] = useState(0);
 
   const nextAdjustmentNo = useMemo(() => {
     const maxNo = stockLedger
@@ -632,7 +634,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           pinnedReports={pinnedReports}
           onSelectPinnedReport={(tab) => setActiveTab(tab)}
           pendingItems={pendingItems}
-          onSelectPendingItem={(tab) => setActiveTab(tab)}
+          onSelectPendingItem={(tab) => {
+            setPendingFilterTarget(tab);
+            setPendingFilterTick((prev) => prev + 1);
+            setActiveTab(tab);
+          }}
         />
 
         <div className="p-6">
@@ -886,6 +892,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={quotationInvoices}
             onAddClick={handleAddQuotation}
             onEditClick={handleEditQuotation}
+            statusFilterPreset={pendingFilterTarget === "quotation" ? "Pending" : undefined}
+            statusFilterPresetTick={pendingFilterTick}
             onDelete={(id) => {
               quotationAPI.delete(id).then(() => {
                 setQuotationInvoices((prev) => prev.filter((inv) => inv.id !== id));
@@ -986,6 +994,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             docs={salesOrders}
             onAddClick={handleAddSalesOrder}
             onEditClick={handleEditSalesOrder}
+            statusFilterPreset={pendingFilterTarget === "sales_order" ? "Pending" : undefined}
+            statusFilterPresetTick={pendingFilterTick}
             onDelete={(id) => setSalesOrders((prev) => prev.filter((d) => d.id !== id))}
           />
         )}
@@ -1014,6 +1024,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={salesReturns}
             onAddClick={handleAddSalesReturn}
             onEditClick={handleEditSalesReturn}
+            statusFilterPreset={pendingFilterTarget === "sales_return" ? "Pending" : undefined}
+            statusFilterPresetTick={pendingFilterTick}
             onDelete={async (id) => {
               try {
                 await salesReturnAPI.delete(id);
@@ -1076,6 +1088,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             docs={receivePayments}
             onAddClick={handleAddReceivePayment}
             onEditClick={handleEditReceivePayment}
+            statusFilterPreset={pendingFilterTarget === "receive_payment" ? "Pending" : undefined}
+            statusFilterPresetTick={pendingFilterTick}
             onDelete={async (id) => {
               try {
                 await receivePaymentAPI.delete(id);
@@ -1125,6 +1139,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             docs={makePayments}
             onAddClick={handleAddMakePayment}
             onEditClick={handleEditMakePayment}
+            statusFilterPreset={pendingFilterTarget === "make_payment" ? "Pending" : undefined}
+            statusFilterPresetTick={pendingFilterTick}
             onDelete={async (id) => {
               try {
                 await makePaymentAPI.delete(id);
@@ -1174,6 +1190,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={salesInvoices}
             onAddClick={handleAddSalesInvoice}
             onEditClick={handleEditSalesInvoice}
+            statusFilterPreset={pendingFilterTarget === "sales_invoice" ? "Pending" : undefined}
+            statusFilterPresetTick={pendingFilterTick}
             onDelete={async (id) => {
               try {
                 const current = salesInvoices.find((inv) => inv.id === id);
@@ -1221,6 +1239,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={purchaseInvoices}
             onAddClick={handleAddPurchaseInvoice}
             onEditClick={handleEditPurchaseInvoice}
+            statusFilterPreset={pendingFilterTarget === "purchase_invoice" ? "Pending" : undefined}
+            statusFilterPresetTick={pendingFilterTick}
             onDelete={async (id) => {
               try {
                 const current = purchaseInvoices.find((inv) => inv.id === id);
@@ -1268,6 +1288,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={purchaseOrders}
             onAddClick={handleAddPurchaseOrder}
             onEditClick={handleEditPurchaseOrder}
+            statusFilterPreset={pendingFilterTarget === "purchase_order" ? "Pending" : undefined}
+            statusFilterPresetTick={pendingFilterTick}
             onDelete={async (id) => {
               try {
                 const current = purchaseOrders.find((inv) => inv.id === id);
@@ -1290,6 +1312,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={purchaseReturns}
             onAddClick={handleAddPurchaseReturn}
             onEditClick={handleEditPurchaseReturn}
+            statusFilterPreset={pendingFilterTarget === "purchase_return" ? "Pending" : undefined}
+            statusFilterPresetTick={pendingFilterTick}
             onDelete={async (id) => {
               try {
                 const current = purchaseReturns.find((inv) => inv.id === id);

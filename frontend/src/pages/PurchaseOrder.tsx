@@ -46,6 +46,8 @@ interface PurchaseOrderPageProps {
   onAddClick: () => void;
   onEditClick: (invoice: SalesInvoice) => void;
   onDelete: (id: string) => void;
+  statusFilterPreset?: string;
+  statusFilterPresetTick?: number;
 }
 
 const PurchaseOrderPage: React.FC<PurchaseOrderPageProps> = ({
@@ -53,6 +55,8 @@ const PurchaseOrderPage: React.FC<PurchaseOrderPageProps> = ({
   onAddClick,
   onEditClick,
   onDelete,
+  statusFilterPreset,
+  statusFilterPresetTick,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [refSearch, setRefSearch] = useState("");
@@ -120,6 +124,11 @@ const PurchaseOrderPage: React.FC<PurchaseOrderPageProps> = ({
     setCurrentPage(1);
     setSelectedIds(new Set());
   }, [searchQuery, refSearch, productSearch, statusFilter, startDate, endDate]);
+
+  useEffect(() => {
+    if (!statusFilterPreset) return;
+    setStatusFilter(statusFilterPreset);
+  }, [statusFilterPreset, statusFilterPresetTick]);
 
   const paginatedInvoices = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;

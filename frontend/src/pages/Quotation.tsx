@@ -47,6 +47,8 @@ interface QuotationPageProps {
   pageTitle?: string;
   pageSubtitle?: string;
   addButtonLabel?: string;
+  statusFilterPreset?: string;
+  statusFilterPresetTick?: number;
 }
 
 const QuotationPage: React.FC<QuotationPageProps> = ({
@@ -57,6 +59,8 @@ const QuotationPage: React.FC<QuotationPageProps> = ({
   pageTitle = "Quotations",
   pageSubtitle = "Sales Quotations & Customer Estimates",
   addButtonLabel = "Issue New Quotation",
+  statusFilterPreset,
+  statusFilterPresetTick,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [refSearch, setRefSearch] = useState("");
@@ -117,6 +121,11 @@ const QuotationPage: React.FC<QuotationPageProps> = ({
     setCurrentPage(1);
     setSelectedIds(new Set());
   }, [searchQuery, refSearch, productSearch, statusFilter, startDate, endDate]);
+
+  useEffect(() => {
+    if (!statusFilterPreset) return;
+    setStatusFilter(statusFilterPreset);
+  }, [statusFilterPreset, statusFilterPresetTick]);
 
   const paginatedInvoices = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;

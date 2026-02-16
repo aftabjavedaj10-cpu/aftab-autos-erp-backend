@@ -22,6 +22,8 @@ interface ReceivePaymentPageProps {
   onAddClick: () => void;
   onEditClick: (doc: ReceivePaymentDoc) => void;
   onDelete: (id: string) => void;
+  statusFilterPreset?: string;
+  statusFilterPresetTick?: number;
 }
 
 const isLinkedPayment = (doc: ReceivePaymentDoc) => {
@@ -36,6 +38,8 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
   onAddClick,
   onEditClick,
   onDelete,
+  statusFilterPreset,
+  statusFilterPresetTick,
 }) => {
   const [sourceFilter, setSourceFilter] = useState<"manual" | "linked" | "all">("manual");
 
@@ -131,6 +135,8 @@ const ReceivePaymentPage: React.FC<ReceivePaymentPageProps> = ({
         getAgainstInvoiceValue={(invoice) =>
           docs.find((doc) => doc.id === invoice.id)?.invoiceId || ""
         }
+        statusFilterPreset={statusFilterPreset}
+        statusFilterPresetTick={statusFilterPresetTick}
       />
     </div>
   );

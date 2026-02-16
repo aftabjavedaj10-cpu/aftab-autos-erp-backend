@@ -7,6 +7,8 @@ interface SalesReturnPageProps {
   onAddClick: () => void;
   onEditClick: (invoice: SalesInvoice) => void;
   onDelete: (id: string) => void;
+  statusFilterPreset?: string;
+  statusFilterPresetTick?: number;
 }
 
 const SalesReturnPage: React.FC<SalesReturnPageProps> = ({
@@ -14,6 +16,8 @@ const SalesReturnPage: React.FC<SalesReturnPageProps> = ({
   onAddClick,
   onEditClick,
   onDelete,
+  statusFilterPreset,
+  statusFilterPresetTick,
 }) => {
   return (
     <SalesInvoicePage
@@ -24,6 +28,8 @@ const SalesReturnPage: React.FC<SalesReturnPageProps> = ({
       pageTitle="Sales Return"
       pageSubtitle="Customer return records"
       addButtonLabel="Add Sales Return"
+      statusFilterPreset={statusFilterPreset}
+      statusFilterPresetTick={statusFilterPresetTick}
     />
   );
 };

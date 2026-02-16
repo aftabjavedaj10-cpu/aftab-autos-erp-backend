@@ -16,6 +16,8 @@ interface SalesOrderPageProps {
   onAddClick: () => void;
   onEditClick: (doc: SalesOrderDoc) => void;
   onDelete: (id: string) => void;
+  statusFilterPreset?: string;
+  statusFilterPresetTick?: number;
 }
 
 const SalesOrderPage: React.FC<SalesOrderPageProps> = ({
@@ -23,6 +25,8 @@ const SalesOrderPage: React.FC<SalesOrderPageProps> = ({
   onAddClick,
   onEditClick,
   onDelete,
+  statusFilterPreset,
+  statusFilterPresetTick,
 }) => {
   const mappedInvoices = useMemo<SalesInvoice[]>(
     () =>
@@ -60,9 +64,10 @@ const SalesOrderPage: React.FC<SalesOrderPageProps> = ({
       pageTitle="Sales Order"
       pageSubtitle="Confirmed customer orders"
       addButtonLabel="Add Sales Order"
+      statusFilterPreset={statusFilterPreset}
+      statusFilterPresetTick={statusFilterPresetTick}
     />
   );
 };
 
 export default SalesOrderPage;
-

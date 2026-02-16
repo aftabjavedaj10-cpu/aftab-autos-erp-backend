@@ -46,6 +46,8 @@ interface PurchaseReturnPageProps {
   onAddClick: () => void;
   onEditClick: (invoice: SalesInvoice) => void;
   onDelete: (id: string) => void;
+  statusFilterPreset?: string;
+  statusFilterPresetTick?: number;
 }
 
 const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
@@ -53,6 +55,8 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
   onAddClick,
   onEditClick,
   onDelete,
+  statusFilterPreset,
+  statusFilterPresetTick,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [refSearch, setRefSearch] = useState("");
@@ -120,6 +124,11 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
     setCurrentPage(1);
     setSelectedIds(new Set());
   }, [searchQuery, refSearch, productSearch, statusFilter, startDate, endDate]);
+
+  useEffect(() => {
+    if (!statusFilterPreset) return;
+    setStatusFilter(statusFilterPreset);
+  }, [statusFilterPreset, statusFilterPresetTick]);
 
   const paginatedInvoices = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;

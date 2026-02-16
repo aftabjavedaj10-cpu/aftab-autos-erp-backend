@@ -21,6 +21,8 @@ interface MakePaymentPageProps {
   onAddClick: () => void;
   onEditClick: (doc: MakePaymentDoc) => void;
   onDelete: (id: string) => void;
+  statusFilterPreset?: string;
+  statusFilterPresetTick?: number;
 }
 
 const isLinkedPayment = (doc: MakePaymentDoc) => {
@@ -35,6 +37,8 @@ const MakePaymentPage: React.FC<MakePaymentPageProps> = ({
   onAddClick,
   onEditClick,
   onDelete,
+  statusFilterPreset,
+  statusFilterPresetTick,
 }) => {
   const [sourceFilter, setSourceFilter] = useState<"manual" | "linked" | "all">("manual");
 
@@ -132,6 +136,8 @@ const MakePaymentPage: React.FC<MakePaymentPageProps> = ({
         getAgainstInvoiceValue={(invoice) =>
           docs.find((doc) => doc.id === invoice.id)?.invoiceId || ""
         }
+        statusFilterPreset={statusFilterPreset}
+        statusFilterPresetTick={statusFilterPresetTick}
       />
     </div>
   );

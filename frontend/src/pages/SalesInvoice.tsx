@@ -56,6 +56,8 @@ interface SalesInvoicePageProps {
   getAgainstInvoiceValue?: (invoice: SalesInvoice) => string;
   entityColumnLabel?: string;
   searchPlaceholder?: string;
+  statusFilterPreset?: string;
+  statusFilterPresetTick?: number;
 }
 
 const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
@@ -73,6 +75,8 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
   getAgainstInvoiceValue,
   entityColumnLabel = "Customer Entity",
   searchPlaceholder = "Invoice # or Customer...",
+  statusFilterPreset,
+  statusFilterPresetTick,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [refSearch, setRefSearch] = useState("");
@@ -140,6 +144,11 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
     setCurrentPage(1);
     setSelectedIds(new Set());
   }, [searchQuery, refSearch, productSearch, statusFilter, startDate, endDate]);
+
+  useEffect(() => {
+    if (!statusFilterPreset) return;
+    setStatusFilter(statusFilterPreset);
+  }, [statusFilterPreset, statusFilterPresetTick]);
 
   const paginatedInvoices = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
