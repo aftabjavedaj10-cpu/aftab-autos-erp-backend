@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Sidebar from "../components/Sidebar";
 import TopBar from "../components/TopBar";
 import StatCard from "../components/StatCard";
@@ -94,6 +94,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [editingStockAdjustment, setEditingStockAdjustment] = useState<StockLedgerEntry | undefined>(undefined);
   const [pendingFilterTarget, setPendingFilterTarget] = useState<string>("");
   const [pendingFilterTick, setPendingFilterTick] = useState(0);
+  const mainScrollRef = useRef<HTMLElement | null>(null);
+  const [mainThumb, setMainThumb] = useState({ visible: false, top: 0, height: 0 });
+
+  const updateMainThumb = useCallback(() => {
+    const el = mainScrollRef.current;
+    if (!el) return;
+    const { scrollTop, scrollHeight, clientHeight } = el;
+    if (scrollHeight <= clientHeight + 1) {
+      setMainThumb({ visible: false, top: 0, height: 0 });
+      return;
+    }
+    const height = Math.max(36, (clientHeight * clientHeight) / scrollHeight);
+    const maxTop = clientHeight - height;
+    const top = (scrollTop / (scrollHeight - clientHeight)) * maxTop;
+    setMainThumb({ visible: true, top, height });
+  }, []);
 
   const nextAdjustmentNo = useMemo(() => {
     const maxNo = stockLedger
@@ -610,6 +626,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     refreshStockLedgerOnOpen();
   }, [activeTab]);
 
+  useEffect(() => {
+    updateMainThumb();
+    const id = window.setTimeout(updateMainThumb, 220);
+    return () => window.clearTimeout(id);
+  }, [updateMainThumb, activeTab, loading, pendingFilterTick]);
+
+  useEffect(() => {
+    const onResize = () => updateMainThumb();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [updateMainThumb]);
+
   return (
     <div className="min-h-screen flex bg-[#FEF3E2] dark:bg-[#020617]">
       <Sidebar
@@ -621,7 +649,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         onMobileClose={() => setIsMobileOpen(false)}
       />
 
-      <main className="flex-1 overflow-auto">
+      <div className="relative flex-1 min-w-0">
+      <main
+        ref={mainScrollRef}
+        onScroll={updateMainThumb}
+        className="flex-1 h-screen overflow-y-auto sidebar-native-scroll-hidden"
+      >
         <TopBar
           onMenuClick={() => setIsMobileOpen(true)}
           title={activeTab.replace("_", " ")}
@@ -1822,6 +1855,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         )}
         </div>
       </main>
+      {mainThumb.visible && (
+        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-1.5">
+          <div
+            className="absolute left-0 right-0 rounded-full bg-[#CBD5E1] dark:bg-[#334155]"
+            style={{ top: `${mainThumb.top}px`, height: `${mainThumb.height}px` }}
+          />
+        </div>
+      )}
+      </div>
     </div>
   );
 };
