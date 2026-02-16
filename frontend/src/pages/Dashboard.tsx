@@ -631,6 +631,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           onThemeToggle={onThemeToggle}
           onOpenSettings={() => setActiveTab("settings")}
           onOpenProfile={() => setActiveTab("settings")}
+          onOpenCompanies={() => setActiveTab("settings")}
           pinnedReports={pinnedReports}
           onSelectPinnedReport={(tab) => setActiveTab(tab)}
           pendingItems={pendingItems}

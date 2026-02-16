@@ -8,6 +8,7 @@ import {
   FiMoon,
   FiSettings,
   FiStar,
+  FiClock,
   FiSun,
   FiUser,
 } from "react-icons/fi";
@@ -21,6 +22,7 @@ interface TopBarProps {
   onThemeToggle?: () => void;
   onOpenSettings?: () => void;
   onOpenProfile?: () => void;
+  onOpenCompanies?: () => void;
   pinnedReports?: Array<{ id: number; title: string; tab?: string }>;
   onSelectPinnedReport?: (tab: string) => void;
   pendingItems?: Array<{ key: string; label: string; count: number; tab: string }>;
@@ -36,6 +38,7 @@ const TopBar: React.FC<TopBarProps> = ({
   onThemeToggle,
   onOpenSettings,
   onOpenProfile,
+  onOpenCompanies,
   pinnedReports = [],
   onSelectPinnedReport,
   pendingItems = [],
@@ -104,14 +107,13 @@ const TopBar: React.FC<TopBarProps> = ({
           <div className="relative" ref={pendingRef}>
             <button
               onClick={() => setPendingOpen((prev) => !prev)}
-              className="hidden md:flex items-center gap-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg px-3 py-2 transition-all border border-transparent dark:border-slate-800 text-slate-600 dark:text-slate-300"
+              className="hidden md:flex items-center justify-center relative bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg w-9 h-9 transition-all border border-transparent dark:border-slate-800 text-slate-600 dark:text-slate-300"
               title="Pending documents"
             >
-              <span className="text-xs font-black uppercase tracking-wider">Pending</span>
-              <span className="inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-orange-600 text-white text-[10px] font-black px-1">
+              <FiClock />
+              <span className="absolute -top-1 -right-1 inline-flex min-w-5 h-5 items-center justify-center rounded-full bg-orange-600 text-white text-[10px] font-black px-1">
                 {pendingItems.reduce((sum, item) => sum + Number(item.count || 0), 0)}
               </span>
-              <FiChevronDown className="text-slate-500 dark:text-slate-400" />
             </button>
             {pendingOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-[60]">
@@ -138,12 +140,10 @@ const TopBar: React.FC<TopBarProps> = ({
         <div className="relative" ref={pinnedRef}>
             <button
               onClick={() => setPinnedOpen((prev) => !prev)}
-              className="flex items-center gap-2 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg px-3 py-2 transition-all border border-transparent dark:border-slate-800 text-slate-600 dark:text-slate-300"
+              className="flex items-center justify-center bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg w-9 h-9 transition-all border border-transparent dark:border-slate-800 text-slate-600 dark:text-slate-300"
               title="Pinned reports"
             >
               <FiStar className="text-orange-500" />
-              <span className="text-xs font-black uppercase tracking-wider">Pinned</span>
-              <FiChevronDown className="text-slate-500 dark:text-slate-400" />
             </button>
             {pinnedOpen && (
               <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-[60]">
@@ -223,6 +223,20 @@ const TopBar: React.FC<TopBarProps> = ({
               >
                 <FiUser />
                 Profile
+              </button>
+              <button
+                onClick={() => {
+                  setMenuOpen(false);
+                  if (onOpenCompanies) {
+                    onOpenCompanies();
+                  } else {
+                    onOpenSettings?.();
+                  }
+                }}
+                className="w-full mt-1 flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-slate-800 hover:text-orange-600 transition-colors"
+              >
+                <FiSettings />
+                Companies
               </button>
               <button
                 onClick={() => {
