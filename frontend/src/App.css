@@ -77,3 +77,15 @@
 .dark .sidebar-scroll {
   scrollbar-color: #334155 transparent;
 }
+
+/* Sidebar custom-scroll wrapper: hide native scrollbar completely */
+.sidebar-native-scroll-hidden {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar-native-scroll-hidden::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
