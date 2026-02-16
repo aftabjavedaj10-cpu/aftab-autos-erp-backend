@@ -1382,7 +1382,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
             <div className="bg-orange-50 dark:bg-orange-500/5 p-3 rounded-lg border border-orange-100 dark:border-orange-500/10 mt-4">
               <div className="flex justify-between items-center">
                 <span className="text-[10px] font-black text-orange-700 dark:text-orange-400 uppercase tracking-tight">
-                  Cash Received
+                  Cash Paid
                 </span>
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] text-orange-600 font-black">Rs.</span>

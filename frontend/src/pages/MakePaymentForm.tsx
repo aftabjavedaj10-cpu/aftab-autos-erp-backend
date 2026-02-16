@@ -207,6 +207,10 @@ const MakePaymentFormPage: React.FC<MakePaymentFormPageProps> = ({
   }, [docs]);
 
   const handleSave = (status: SaveStatus) => {
+    if (status === "Void" && isLinkedPayment) {
+      setError("Linked payments are controlled by purchase invoice and cannot be voided manually.");
+      return;
+    }
     if (!paymentNo.trim()) {
       setError("Payment number is required.");
       return;

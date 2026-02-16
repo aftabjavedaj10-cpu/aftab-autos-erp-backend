@@ -35,6 +35,7 @@ import ReceivePaymentPage, { type ReceivePaymentDoc } from "./ReceivePayment";
 import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
 import MakePaymentFormPage from "./MakePaymentForm";
+import { ALL_REPORTS } from "../constants";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
@@ -461,10 +462,29 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     return `RP-${String(maxNo + 1).padStart(6, "0")}`;
   };
 
+  const getNextMakePaymentId = (docs: MakePaymentDoc[]) => {
+    const maxNo = docs.reduce((max, row) => {
+      const match = String(row.id || "").match(/^MP-(\d{6})$/);
+      const value = match ? Number(match[1]) : 0;
+      return value > max ? value : max;
+    }, 0);
+    return `MP-${String(maxNo + 1).padStart(6, "0")}`;
+  };
+
   const findLinkedReceivePayments = (invoiceId: string) => {
     const target = String(invoiceId || "").toUpperCase();
     if (!target) return [] as ReceivePaymentDoc[];
     return receivePayments.filter((doc) => {
+      const against = String(doc.invoiceId || "").toUpperCase();
+      const legacyRef = String(doc.reference || "").toUpperCase();
+      return against === target || legacyRef === target;
+    });
+  };
+
+  const findLinkedMakePayments = (invoiceId: string) => {
+    const target = String(invoiceId || "").toUpperCase();
+    if (!target) return [] as MakePaymentDoc[];
+    return makePayments.filter((doc) => {
       const against = String(doc.invoiceId || "").toUpperCase();
       const legacyRef = String(doc.reference || "").toUpperCase();
       return against === target || legacyRef === target;
@@ -530,6 +550,39 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     return session?.user?.email || "Admin";
   }, []);
 
+  const pinnedReports = useMemo(
+    () => ALL_REPORTS.filter((report) => pinnedReportIds.includes(report.id)),
+    [pinnedReportIds]
+  );
+
+  const pendingItems = useMemo(() => {
+    const countPending = (rows: Array<{ status?: string }>) =>
+      rows.filter((row) => String(row?.status || "").trim().toLowerCase() === "pending").length;
+
+    const items = [
+      { key: "quotation", label: "Quotations", count: countPending(quotationInvoices), tab: "quotation" },
+      { key: "sales_order", label: "Sales Orders", count: countPending(salesOrders as any), tab: "sales_order" },
+      { key: "sales_invoice", label: "Sales Invoices", count: countPending(salesInvoices), tab: "sales_invoice" },
+      { key: "sales_return", label: "Sales Returns", count: countPending(salesReturns), tab: "sales_return" },
+      { key: "receive_payment", label: "Receive Payments", count: countPending(receivePayments as any), tab: "receive_payment" },
+      { key: "purchase_order", label: "Purchase Orders", count: countPending(purchaseOrders), tab: "purchase_order" },
+      { key: "purchase_invoice", label: "Purchase Invoices", count: countPending(purchaseInvoices), tab: "purchase_invoice" },
+      { key: "purchase_return", label: "Purchase Returns", count: countPending(purchaseReturns), tab: "purchase_return" },
+      { key: "make_payment", label: "Make Payments", count: countPending(makePayments as any), tab: "make_payment" },
+    ];
+    return items.filter((item) => item.count > 0);
+  }, [
+    quotationInvoices,
+    salesOrders,
+    salesInvoices,
+    salesReturns,
+    receivePayments,
+    purchaseOrders,
+    purchaseInvoices,
+    purchaseReturns,
+    makePayments,
+  ]);
+
   const handleTogglePinReport = (id: number) => {
     setPinnedReportIds((prev) => {
       const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
@@ -576,6 +629,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           onThemeToggle={onThemeToggle}
           onOpenSettings={() => setActiveTab("settings")}
           onOpenProfile={() => setActiveTab("settings")}
+          pinnedReports={pinnedReports}
+          onSelectPinnedReport={(tab) => setActiveTab(tab)}
+          pendingItems={pendingItems}
+          onSelectPendingItem={(tab) => setActiveTab(tab)}
         />
 
         <div className="p-6">
@@ -1175,6 +1232,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 const softDeleted = { ...current, status: "Deleted" as const };
                 const updated = await purchaseInvoiceAPI.update(id, softDeleted);
                 setPurchaseInvoices((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
+
+                const linkedPayments = findLinkedMakePayments(id);
+                if (linkedPayments.length > 0) {
+                  const paymentUpdates = await Promise.all(
+                    linkedPayments.map((doc) =>
+                      makePaymentAPI.update(doc.id, { ...doc, status: "Deleted" })
+                    )
+                  );
+                  setMakePayments((prev) =>
+                    prev.map((doc) => {
+                      const next = paymentUpdates.find((row) => row.id === doc.id);
+                      return next || doc;
+                    })
+                  );
+                }
+
                 const companyId = getActiveCompanyId();
                 const ledgerData = companyId
                   ? await stockLedgerAPI.listRecent(companyId, 5000)
@@ -1563,6 +1636,46 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   }
                   return [saved, ...prev];
                 });
+
+                // Auto-create/update make payment from cash paid on purchase invoice.
+                const paidAmount = Number(saved.amountReceived || 0);
+                const linkedPayments = findLinkedMakePayments(saved.id);
+                const linkedPayment = linkedPayments[0];
+
+                if (paidAmount > 0) {
+                  const paymentPayload: MakePaymentDoc = {
+                    id: linkedPayment?.id || getNextMakePaymentId(makePayments),
+                    vendorId: saved.customerId,
+                    vendorName: saved.customerName,
+                    invoiceId: saved.id,
+                    reference: saved.reference || "",
+                    date: saved.date,
+                    status: saved.status === "Void" || saved.status === "Deleted" ? saved.status : "Approved",
+                    totalAmount: paidAmount,
+                    notes: linkedPayment?.notes || `Auto payment from ${saved.id}`,
+                  };
+                  const paymentSaved = linkedPayment
+                    ? await makePaymentAPI.update(linkedPayment.id, paymentPayload)
+                    : await makePaymentAPI.create(paymentPayload);
+
+                  if (linkedPayments.length > 1) {
+                    const duplicates = linkedPayments.slice(1);
+                    await Promise.all(duplicates.map((doc) => makePaymentAPI.delete(doc.id)));
+                    const duplicateIds = new Set(duplicates.map((doc) => doc.id));
+                    setMakePayments((prev) =>
+                      upsertSalesModuleDoc(
+                        prev.filter((doc) => !duplicateIds.has(doc.id)),
+                        paymentSaved
+                      )
+                    );
+                  } else {
+                    setMakePayments((prev) => upsertSalesModuleDoc(prev, paymentSaved));
+                  }
+                } else if (linkedPayments.length > 0) {
+                  await Promise.all(linkedPayments.map((doc) => makePaymentAPI.delete(doc.id)));
+                  const idsToDelete = new Set(linkedPayments.map((doc) => doc.id));
+                  setMakePayments((prev) => prev.filter((doc) => !idsToDelete.has(doc.id)));
+                }
 
                 const companyId = getActiveCompanyId();
                 const ledgerData = companyId
