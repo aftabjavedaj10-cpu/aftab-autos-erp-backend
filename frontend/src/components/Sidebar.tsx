@@ -106,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [salesOpen, setSalesOpen] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
-  const scrollRef = useRef<HTMLElement | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
   const [thumb, setThumb] = useState({ visible: false, top: 0, height: 0 });
 
   const effectiveCollapsed = isMobileOpen ? false : isCollapsed;
@@ -156,43 +156,44 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className={`
-      fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar-warm dark:bg-slate-950 border-r border-orange-200 dark:border-slate-900 p-4 space-y-8 overflow-hidden transition-all duration-300 ease-in-out
+      fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar-warm dark:bg-slate-950 border-r border-orange-200 dark:border-slate-900 p-4 overflow-hidden transition-all duration-300 ease-in-out
       lg:sticky lg:h-screen lg:translate-x-0 print:hidden
       ${isMobileOpen ? 'translate-x-0 w-64' : '-translate-x-full lg:translate-x-0'}
       ${effectiveCollapsed ? 'lg:w-20' : 'lg:w-64'}
     `}>
-      <div className={`flex items-center justify-between px-2 flex-shrink-0 ${effectiveCollapsed ? 'flex-col space-y-4' : 'space-x-2'}`}>
-        <div className="flex items-center space-x-2 overflow-hidden">
-          <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center font-black text-white shrink-0 shadow-lg overflow-hidden">
-            {companyLogo ? (
-              <img src={companyLogo} alt="L" className="w-full h-full object-cover" />
-            ) : 'A'}
-          </div>
-          {!effectiveCollapsed && <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase truncate">AFTAB AUTOS</span>}
-        </div>
-        
-        <button 
-          onClick={onToggle}
-          className="hidden lg:block p-1.5 rounded-lg bg-orange-100/50 dark:bg-slate-900 text-orange-700 dark:text-slate-400 hover:bg-orange-200 dark:hover:text-white transition-colors"
-          title={effectiveCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-        >
-          {effectiveCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
-        </button>
-
-        <button 
-          onClick={onMobileClose}
-          className="lg:hidden p-1.5 rounded-lg bg-orange-100/50 dark:bg-slate-900 text-orange-700 dark:text-slate-400 hover:bg-orange-200 dark:hover:text-white transition-colors"
-        >
-          <FiX />
-        </button>
-      </div>
-
       <div className="relative flex-1 min-h-0">
-      <nav
+      <div
         ref={scrollRef}
         onScroll={updateThumb}
-        className="h-full min-h-0 space-y-2 overflow-y-auto sidebar-native-scroll-hidden pr-2"
+        className="h-full min-h-0 overflow-y-auto sidebar-native-scroll-hidden pr-2"
       >
+        <div className={`flex items-center justify-between px-2 ${effectiveCollapsed ? 'flex-col space-y-4' : 'space-x-2'}`}>
+          <div className="flex items-center space-x-2 overflow-hidden">
+            <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center font-black text-white shrink-0 shadow-lg overflow-hidden">
+              {companyLogo ? (
+                <img src={companyLogo} alt="L" className="w-full h-full object-cover" />
+              ) : 'A'}
+            </div>
+            {!effectiveCollapsed && <span className="text-xl font-black text-slate-900 dark:text-white tracking-tighter uppercase truncate">AFTAB AUTOS</span>}
+          </div>
+          
+          <button 
+            onClick={onToggle}
+            className="hidden lg:block p-1.5 rounded-lg bg-orange-100/50 dark:bg-slate-900 text-orange-700 dark:text-slate-400 hover:bg-orange-200 dark:hover:text-white transition-colors"
+            title={effectiveCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {effectiveCollapsed ? <FiChevronRight /> : <FiChevronLeft />}
+          </button>
+
+          <button 
+            onClick={onMobileClose}
+            className="lg:hidden p-1.5 rounded-lg bg-orange-100/50 dark:bg-slate-900 text-orange-700 dark:text-slate-400 hover:bg-orange-200 dark:hover:text-white transition-colors"
+          >
+            <FiX />
+          </button>
+        </div>
+
+        <div className="mt-8 space-y-2">
         {!effectiveCollapsed && <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 px-4">Main Menu</p>}
         
         {permissionFlags.dashboard && (
@@ -298,7 +299,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         )}
         <SidebarItem icon={<FiHelpCircle />} label="Help Center" isCollapsed={effectiveCollapsed} />
 
-      </nav>
+        </div>
+      </div>
       {thumb.visible && (
         <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-1.5">
           <div
