@@ -4,6 +4,7 @@
 CREATE TABLE IF NOT EXISTS products (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
+  urdu_name VARCHAR(255),
   product_code VARCHAR(100) UNIQUE NOT NULL,
   barcode VARCHAR(100),
   category VARCHAR(100),
@@ -21,6 +22,10 @@ CREATE TABLE IF NOT EXISTS products (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Backfill for existing databases
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS urdu_name VARCHAR(255);
 
 -- Customers table
 CREATE TABLE IF NOT EXISTS customers (

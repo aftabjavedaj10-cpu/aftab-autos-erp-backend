@@ -238,6 +238,7 @@ const mapProductToDb = (product: any) =>
     {
       ...product,
       product_code: product.productCode ?? product.product_code,
+      urdu_name: product.urduName ?? product.urdu_name,
       vendor_id: product.vendorId ?? product.vendor_id,
       cost_price: product.costPrice ?? product.cost_price,
       reorder_point: product.reorderPoint ?? product.reorder_point,
