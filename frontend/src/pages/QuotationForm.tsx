@@ -122,13 +122,12 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
     const urdu = String((matched as any)?.urduName || "").trim();
     if (!urdu) return english;
     return (
-      <>
+      <span className="inline-flex flex-col gap-0.5">
         <span>{english}</span>
-        <span>{" | "}</span>
-        <span dir="rtl" className="font-urdu inline-block">
+        <span dir="rtl" className="font-urdu text-right">
           {urdu}
         </span>
-      </>
+      </span>
     );
   };
 
