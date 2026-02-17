@@ -1,5 +1,6 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FiChevronDown, FiMove } from "react-icons/fi";
 import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem, Vendor } from "../types";
 import { getPrintTemplateSettings } from "../services/printSettings";
 
@@ -1165,7 +1166,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                             e.dataTransfer.setData("text/plain", item.productId);
                           }}
                         >
-                          ::
+                          <FiMove size={13} />
                         </div>
                       </td>
                       <td className="px-3 py-2 text-center">
@@ -1466,7 +1467,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                 onClick={() => setIsPrintMenuOpen((prev) => !prev)}
                 className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-lg text-[10px] font-black text-slate-500 hover:text-orange-600"
               >
-                v
+                <FiChevronDown size={13} />
               </button>
             </div>
             {isPrintMenuOpen && (
@@ -1532,7 +1533,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                     isLocked ? "opacity-60 cursor-not-allowed" : ""
                   }`}
                 >
-                  v
+                  <FiChevronDown size={13} />
                 </button>
               </div>
               {isSaveMenuOpen && (
