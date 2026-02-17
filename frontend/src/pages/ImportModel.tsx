@@ -195,7 +195,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
                 obj[field.key] = normalized.includes('service') ? 'Service' : 'Product';
               } else if (field.key === 'vendorId' && entityName === 'Products' && val) {
                 // AUTOMATIC VENDOR DETECTION
-                const cleanVal = val.trim().toLowerCase();
+                const cleanVal = String(val).trim().toLowerCase();
                 // 1. Try to find vendor by exact ID or Code
                 let matchedVendor = vendors.find(v => 
                   v.id.toLowerCase() === cleanVal || 
