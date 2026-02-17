@@ -237,7 +237,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                   <input 
                     type="text" 
                     placeholder="اردو نام"
-                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white font-urdu"
                     value={formData.urduName}
                     onChange={(e) => setFormData({...formData, urduName: e.target.value})}
                   />
