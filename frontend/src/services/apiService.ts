@@ -221,6 +221,22 @@ const attachCompanyId = (record: any) => {
 
 const attachOwnership = (record: any) => attachCompanyId(attachOwnerId(record));
 
+const normalizeBulkRows = (rows: any[]) => {
+  if (!Array.isArray(rows) || rows.length === 0) return rows;
+  const keySet = new Set<string>();
+  rows.forEach((row) => {
+    Object.keys(row || {}).forEach((k) => keySet.add(k));
+  });
+  const keys = [...keySet];
+  return rows.map((row) => {
+    const normalized: Record<string, any> = {};
+    keys.forEach((k) => {
+      normalized[k] = Object.prototype.hasOwnProperty.call(row || {}, k) ? row[k] : null;
+    });
+    return normalized;
+  });
+};
+
 const mapProductFromDb = (row: any) => ({
   ...row,
   productCode: row.product_code ?? row.productCode,
@@ -1108,10 +1124,11 @@ export const productAPI = {
   },
   import: async (products: any[]) => {
     await ensurePermission("products.write");
+    const rows = normalizeBulkRows(products.map(attachOwnership).map(mapProductToDb));
     return apiCall(
       "/products",
       "POST",
-      products.map(attachOwnership).map(mapProductToDb),
+      rows,
       true
     );
   },
@@ -1149,10 +1166,11 @@ export const customerAPI = {
   },
   import: async (customers: any[]) => {
     await ensurePermission("customers.write");
+    const rows = normalizeBulkRows(customers.map(attachOwnership).map(mapCustomerToDb));
     return apiCall(
       "/customers",
       "POST",
-      customers.map(attachOwnership).map(mapCustomerToDb),
+      rows,
       true
     );
   },
@@ -1190,10 +1208,11 @@ export const vendorAPI = {
   },
   import: async (vendors: any[]) => {
     await ensurePermission("vendors.write");
+    const rows = normalizeBulkRows(vendors.map(attachOwnership).map(mapVendorToDb));
     return apiCall(
       "/vendors",
       "POST",
-      vendors.map(attachOwnership).map(mapVendorToDb),
+      rows,
       true
     );
   },
