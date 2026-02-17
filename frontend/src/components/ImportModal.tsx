@@ -151,24 +151,21 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
       if (p >= 100) {
         clearInterval(interval);
         
-        const importedData = csvRows.map((row, idx) => {
+        const importedData = csvRows.map((row) => {
           const obj: any = {
             totalOrders: 0,
             balance: 'Rs. 0.00'
           };
           
           if (entityName === 'Products') {
-            obj.id = `P-IMP-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`;
             obj.productType = 'Product';
             obj.warehouse = WAREHOUSES[0];
             obj.brandName = 'Generic';
             obj.vendorId = 'V-PENDING';
           } else if (entityName === 'Vendors') {
-            obj.id = `V-IMP-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`;
             obj.country = 'Pakistan';
             obj.openingBalance = 'Rs. 0.00';
           } else if (entityName === 'Customers') {
-            obj.id = `C-IMP-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`;
             obj.country = 'Pakistan';
             obj.openingBalance = 'Rs. 0.00';
           }
