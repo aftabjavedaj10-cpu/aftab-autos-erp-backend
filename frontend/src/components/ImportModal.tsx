@@ -24,6 +24,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
   const entityFields = {
     Products: [
       { key: 'name', label: 'Product Name', required: true },
+      { key: 'urduName', label: 'Urdu Name', required: false },
       { key: 'productCode', label: 'Part Number / Code', required: true },
       { key: 'brandName', label: 'Brand Name', required: false },
       { key: 'productType', label: 'Type (Product/Service)', required: false },
