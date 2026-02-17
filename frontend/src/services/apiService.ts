@@ -241,6 +241,14 @@ const normalizeBulkRows = (rows: any[]) => {
   });
 };
 
+const chunkRows = <T,>(rows: T[], size: number) => {
+  const chunks: T[][] = [];
+  for (let i = 0; i < rows.length; i += size) {
+    chunks.push(rows.slice(i, i + size));
+  }
+  return chunks;
+};
+
 const mapProductFromDb = (row: any) => ({
   ...row,
   productCode: row.product_code ?? row.productCode,
@@ -1129,13 +1137,17 @@ export const productAPI = {
   import: async (products: any[]) => {
     await ensurePermission("products.write");
     const rows = normalizeBulkRows(products.map(attachOwnership).map(mapProductToDb));
-    return apiCall(
-      "/products?on_conflict=product_code",
-      "POST",
-      rows,
-      true,
-      { Prefer: "resolution=merge-duplicates,return=representation" }
-    );
+    const chunks = chunkRows(rows, 100);
+    for (const chunk of chunks) {
+      await apiCall(
+        "/products?on_conflict=product_code",
+        "POST",
+        chunk,
+        false,
+        { Prefer: "resolution=merge-duplicates,return=minimal" }
+      );
+    }
+    return null;
   },
 };
 
