@@ -155,21 +155,18 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
       if (p >= 100) {
         clearInterval(interval);
         
-        const importedData = csvRows.map((row, idx) => {
+        const importedData = csvRows.map((row) => {
           const obj: any = {};
           
           if (entityName === 'Products') {
-            obj.id = `P-IMP-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`;
             obj.productType = 'Product';
             obj.warehouse = WAREHOUSES[0];
             obj.brandName = 'Generic';
-            obj.vendorId = 'V-PENDING'; // Default fallback
+            obj.vendorId = null;
           } else if (entityName === 'Vendors') {
-            obj.id = `V-IMP-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`;
             obj.country = 'Pakistan';
             obj.openingBalance = 'Rs. 0.00';
           } else if (entityName === 'Customers') {
-            obj.id = `C-IMP-${Date.now()}-${idx}-${Math.floor(Math.random() * 1000)}`;
             obj.country = 'Pakistan';
             obj.openingBalance = 'Rs. 0.00';
           }
@@ -215,9 +212,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
                 if (matchedVendor) {
                   obj.vendorId = matchedVendor.id;
                 } else {
-                  // If we can't find it, keep the original string to maybe show a warning later
-                  // but for functional ERP we use the fallback
-                  obj.vendorId = 'V-PENDING';
+                  obj.vendorId = null;
                 }
               } else {
                 obj[field.key] = val;

@@ -161,7 +161,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
             obj.productType = 'Product';
             obj.warehouse = WAREHOUSES[0];
             obj.brandName = 'Generic';
-            obj.vendorId = 'V-PENDING';
+            obj.vendorId = null;
           } else if (entityName === 'Vendors') {
             obj.country = 'Pakistan';
             obj.openingBalance = 'Rs. 0.00';
@@ -207,7 +207,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
                 if (matchedVendor) {
                   obj.vendorId = matchedVendor.id;
                 } else {
-                  obj.vendorId = 'V-PENDING';
+                  obj.vendorId = null;
                 }
               } else {
                 obj[field.key] = val;
