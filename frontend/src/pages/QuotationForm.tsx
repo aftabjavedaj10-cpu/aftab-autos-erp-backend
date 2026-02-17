@@ -1,5 +1,6 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FiChevronDown, FiMove } from "react-icons/fi";
 import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types";
 import { getPrintTemplateSettings } from "../services/printSettings";
 
@@ -667,7 +668,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 p-1"
                   >
-                    ?
+                    x
                   </button>
                 )}
               </div>
@@ -974,7 +975,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                             e.dataTransfer.setData("text/plain", item.productId);
                           }}
                         >
-                          ::
+                          <FiMove size={13} />
                         </div>
                       </td>
                       <td className="px-3 py-2 text-center">
@@ -985,7 +986,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                             isLocked ? "opacity-50 cursor-not-allowed" : "hover:text-rose-500"
                           }`}
                         >
-                          ?
+                          x
                         </button>
                       </td>
                     </tr>
@@ -1213,7 +1214,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                   isLocked ? "opacity-60 cursor-not-allowed" : ""
                 }`}
               >
-                ?
+                <FiChevronDown size={13} />
               </button>
             </div>
             {isPrintMenuOpen && (
@@ -1278,7 +1279,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                   isLocked ? "opacity-60 cursor-not-allowed" : ""
                 }`}
               >
-                ?
+                <FiChevronDown size={13} />
               </button>
             </div>
             {isSaveMenuOpen && (
@@ -1392,7 +1393,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                 className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600"
                 aria-label="Close image preview"
               >
-                ?
+                x
               </button>
             </div>
             <div className="bg-slate-50 dark:bg-slate-950/40 p-3">
