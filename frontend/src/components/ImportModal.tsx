@@ -192,8 +192,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
               } else if (field.key === 'vendorId' && entityName === 'Products' && val) {
                 const cleanVal = String(val).trim().toLowerCase();
                 let matchedVendor = vendors.find(v => 
-                  v.id.toLowerCase() === cleanVal || 
-                  (v.vendorCode && v.vendorCode.toLowerCase() === cleanVal)
+                  String(v.id).toLowerCase() === cleanVal || 
+                  (v.vendorCode && String(v.vendorCode).toLowerCase() === cleanVal)
                 );
                 
                 if (!matchedVendor) {

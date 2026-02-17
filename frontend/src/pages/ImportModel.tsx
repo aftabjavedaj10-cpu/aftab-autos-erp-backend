@@ -198,8 +198,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
                 const cleanVal = String(val).trim().toLowerCase();
                 // 1. Try to find vendor by exact ID or Code
                 let matchedVendor = vendors.find(v => 
-                  v.id.toLowerCase() === cleanVal || 
-                  (v.vendorCode && v.vendorCode.toLowerCase() === cleanVal)
+                  String(v.id).toLowerCase() === cleanVal || 
+                  (v.vendorCode && String(v.vendorCode).toLowerCase() === cleanVal)
                 );
                 
                 // 2. Try to find by Company Name if not found by ID
