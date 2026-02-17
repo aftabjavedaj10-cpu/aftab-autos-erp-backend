@@ -19,7 +19,7 @@ export const ALL_REPORTS: ReportDefinition[] = [
     title: "Stock Ledger",
     description: "Track all inventory movements, in/out flows, and running stock.",
     category: "Inventory",
-    icon: "??",
+    icon: "SL",
     tab: "report_stock_ledger",
   },
   {
@@ -27,7 +27,7 @@ export const ALL_REPORTS: ReportDefinition[] = [
     title: "Customer Ledger",
     description: "Per-customer balances, invoices, and payment history.",
     category: "Sales",
-    icon: "??",
+    icon: "CL",
     tab: "report_customer_ledger",
   },
   {
@@ -35,7 +35,7 @@ export const ALL_REPORTS: ReportDefinition[] = [
     title: "Vendor Ledger",
     description: "Payables, bills, and settlement history by vendor.",
     category: "Financial",
-    icon: "??",
+    icon: "VL",
     tab: "report_vendor_ledger",
   },
   {

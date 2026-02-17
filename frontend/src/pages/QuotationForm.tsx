@@ -974,7 +974,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                             e.dataTransfer.setData("text/plain", item.productId);
                           }}
                         >
-                          ??
+                          ::
                         </div>
                       </td>
                       <td className="px-3 py-2 text-center">

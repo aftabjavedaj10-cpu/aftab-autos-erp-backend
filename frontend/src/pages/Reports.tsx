@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { FiArrowRight, FiBarChart2, FiFolder, FiSearch, FiStar } from "react-icons/fi";
 import { ALL_REPORTS } from "../constants";
 import type { ReportDefinition } from "../constants";
 
@@ -23,11 +24,11 @@ const ReportCard: React.FC<{
       }`}
       title={isPinned ? "Unpin from dashboard" : "Pin to dashboard"}
     >
-      <span className="text-[12px]">{isPinned ? "★" : "☆"}</span>
+      <FiStar className="text-[12px]" />
     </button>
 
     <div className="flex items-start justify-between mb-4">
-      <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-center text-2xl group-hover:scale-110 group-hover:bg-orange-50 dark:group-hover:bg-orange-900/20 transition-all">
+      <div className="w-12 h-12 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex items-center justify-center text-base font-black group-hover:scale-110 group-hover:bg-orange-50 dark:group-hover:bg-orange-900/20 transition-all">
         {report.icon}
       </div>
       <div className="text-right pr-6">
@@ -47,7 +48,7 @@ const ReportCard: React.FC<{
         Access Analytics
       </span>
       <span className="text-sm opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all text-orange-600">
-        ➜
+        <FiArrowRight />
       </span>
     </div>
   </div>
@@ -94,7 +95,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 bg-slate-950 dark:bg-orange-600 rounded-xl flex items-center justify-center text-white text-xl shadow-lg">
-              📊
+              <FiBarChart2 />
             </div>
             <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter uppercase leading-none">
               Intelligence Command
@@ -107,7 +108,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
 
         <div className="relative w-full md:w-80">
           <span className="absolute inset-y-0 left-4 flex items-center text-slate-400 pointer-events-none text-sm">
-            🔍
+            <FiSearch />
           </span>
           <input
             type="text"
@@ -138,7 +139,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
                   onClick={(e) => togglePin(e, rep.id)}
                   className="absolute top-3 right-3 text-orange-400 hover:text-orange-500 transition-colors z-10"
                 >
-                  <span className="text-lg">★</span>
+                  <FiStar className="text-lg" />
                 </button>
                 <div className="flex justify-between items-start mb-6">
                   <span className="text-2xl opacity-80 group-hover:scale-110 transition-transform">
@@ -188,7 +189,9 @@ const ReportsPage: React.FC<ReportsPageProps> = ({
 
       {filteredReports.length === 0 && (
         <div className="text-center py-20 bg-white/50 dark:bg-slate-900/50 rounded-[2rem] border border-dashed border-slate-200 dark:border-slate-800">
-          <span className="text-4xl mb-4 block opacity-20">📂</span>
+          <span className="text-4xl mb-4 block opacity-20 flex justify-center">
+            <FiFolder />
+          </span>
           <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest">
             Query Empty
           </h3>

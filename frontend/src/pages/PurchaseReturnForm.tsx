@@ -834,7 +834,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 p-1"
                   >
-                    ?
+                    x
                   </button>
                 )}
               </div>
@@ -1165,7 +1165,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                             e.dataTransfer.setData("text/plain", item.productId);
                           }}
                         >
-                          ??
+                          ::
                         </div>
                       </td>
                       <td className="px-3 py-2 text-center">
@@ -1176,7 +1176,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                             isLocked ? "opacity-50 cursor-not-allowed" : "hover:text-rose-500"
                           }`}
                         >
-                          ?
+                          x
                         </button>
                       </td>
                     </tr>
@@ -1466,7 +1466,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                 onClick={() => setIsPrintMenuOpen((prev) => !prev)}
                 className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-lg text-[10px] font-black text-slate-500 hover:text-orange-600"
               >
-                ?
+                v
               </button>
             </div>
             {isPrintMenuOpen && (
@@ -1532,7 +1532,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                     isLocked ? "opacity-60 cursor-not-allowed" : ""
                   }`}
                 >
-                  ?
+                  v
                 </button>
               </div>
               {isSaveMenuOpen && (
@@ -1627,7 +1627,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                 className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600"
                 aria-label="Close image preview"
               >
-                ?
+                x
               </button>
             </div>
             <div className="bg-slate-50 dark:bg-slate-950/40 p-3">
