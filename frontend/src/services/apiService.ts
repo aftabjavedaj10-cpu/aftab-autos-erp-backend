@@ -262,31 +262,43 @@ const mapProductFromDb = (row: any) => ({
 });
 
 const mapProductToDb = (product: any) =>
-  stripClientOnly(
-    {
-      ...product,
-      product_code: product.productCode ?? product.product_code,
-      urdu_name: product.urduName ?? product.urdu_name,
-      vendor_id: product.vendorId ?? product.vendor_id,
-      cost_price: product.costPrice ?? product.cost_price,
-      reorder_point: product.reorderPoint ?? product.reorder_point,
-      brand_name: product.brandName ?? product.brand_name,
-      product_type: product.productType ?? product.product_type,
-      is_active: product.isActive ?? product.is_active ?? true,
-    },
-    [
-      "productCode",
-      "urduName",
-      "vendorId",
-      "costPrice",
-      "reorderPoint",
-      "brandName",
-      "productType",
-      "stockAvailable",
-      "stockOnHand",
-      "stockReserved",
-    ]
-  );
+  (() => {
+    const rawVendorId = product.vendorId ?? product.vendor_id;
+    const parsedVendorId: number | null =
+      rawVendorId === null || rawVendorId === undefined || String(rawVendorId).trim() === ""
+        ? null
+        : Number(String(rawVendorId).trim());
+    const vendorId =
+      parsedVendorId !== null && Number.isInteger(parsedVendorId) && parsedVendorId > 0
+        ? parsedVendorId
+        : null;
+
+    return stripClientOnly(
+      {
+        ...product,
+        product_code: product.productCode ?? product.product_code,
+        urdu_name: product.urduName ?? product.urdu_name,
+        vendor_id: vendorId,
+        cost_price: product.costPrice ?? product.cost_price,
+        reorder_point: product.reorderPoint ?? product.reorder_point,
+        brand_name: product.brandName ?? product.brand_name,
+        product_type: product.productType ?? product.product_type,
+        is_active: product.isActive ?? product.is_active ?? true,
+      },
+      [
+        "productCode",
+        "urduName",
+        "vendorId",
+        "costPrice",
+        "reorderPoint",
+        "brandName",
+        "productType",
+        "stockAvailable",
+        "stockOnHand",
+        "stockReserved",
+      ]
+    );
+  })();
 
 const sanitizeProductPayload = (payload: any) => {
   const clean = { ...(payload || {}) };
