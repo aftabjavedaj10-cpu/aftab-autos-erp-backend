@@ -325,7 +325,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleAddCategory = () => {
     setEditingCategory(undefined);
-    setActiveTab('categories');
+    setActiveTab('add_category');
   };
 
   const handleEditCategory = (category: Category) => {
