@@ -146,13 +146,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
     if (!printSettings.showUrduName) return english;
     const matched = products.find((p) => String(p.id) === String(item.productId));
     const urdu = String((matched as any)?.urduName || "").trim();
-    return urdu || english;
-  };
-
-  const isPrintableUrdu = (item: SalesInvoiceItem) => {
-    if (!printSettings.showUrduName) return false;
-    const matched = products.find((p) => String(p.id) === String(item.productId));
-    return Boolean(String((matched as any)?.urduName || "").trim());
+    return urdu ? `${english} | ${urdu}` : english;
   };
 
   useEffect(() => {
@@ -1633,7 +1627,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
               <tbody>
                 {formData.items.map((item) => (
                   <tr key={item.productId} className="border-b border-black/10">
-                    <td className={`py-2 ${isPrintableUrdu(item) ? "font-urdu text-right" : ""}`} dir={isPrintableUrdu(item) ? "rtl" : undefined}>{getPrintableProductLabel(item)}</td>
+                    <td className="py-2">{getPrintableProductLabel(item)}</td>
                     <td className="text-right py-2">{item.unitPrice.toFixed(2)}</td>
                     <td className="text-right py-2">{item.quantity}</td>
                     <td className="text-right py-2">
@@ -1719,7 +1713,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                   return (
                     <React.Fragment key={item.productId}>
                       <tr className="border-b border-black/20">
-                        <td className={`py-1 font-semibold ${isPrintableUrdu(item) ? "font-urdu text-right" : ""}`} dir={isPrintableUrdu(item) ? "rtl" : undefined} colSpan={5}>{getPrintableProductLabel(item)}</td>
+                        <td className="py-1 font-semibold" colSpan={5}>{getPrintableProductLabel(item)}</td>
                       </tr>
                       <tr className="border-b border-black/20">
                         <td className="py-1" />
@@ -1785,7 +1779,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
               <tbody>
                 {formData.items.map((item) => (
                   <tr key={item.productId}>
-                    <td className={isPrintableUrdu(item) ? "font-urdu text-right" : ""} dir={isPrintableUrdu(item) ? "rtl" : undefined}>{getPrintableProductLabel(item)}</td>
+                    <td>{getPrintableProductLabel(item)}</td>
                     <td className="text-right">{item.quantity}</td>
                     <td className="text-right">{(item.quantity * item.unitPrice).toFixed(2)}</td>
                   </tr>
@@ -1812,7 +1806,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 <tbody>
                   {(printItems.length > 0 ? printItems : formData.items).map((item, idx) => (
                     <tr key={`${item.productId}-${idx}`} className="border-b border-black/20">
-                      <td className={`py-1 ${isPrintableUrdu(item) ? "font-urdu text-right" : ""}`} dir={isPrintableUrdu(item) ? "rtl" : undefined}>{getPrintableProductLabel(item)}</td>
+                      <td className="py-1">{getPrintableProductLabel(item)}</td>
                       <td className="py-1">{item.productCode || "-"}</td>
                       <td className="text-right py-1 font-black">{item.quantity} {item.unit || "PC"}</td>
                     </tr>
