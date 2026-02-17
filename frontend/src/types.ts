@@ -1,6 +1,7 @@
 export interface Product {
   id: string;
   name: string;
+  urduName?: string;
   productCode: string;
   barcode: string;
   brandName?: string;

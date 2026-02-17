@@ -224,6 +224,7 @@ const attachOwnership = (record: any) => attachCompanyId(attachOwnerId(record));
 const mapProductFromDb = (row: any) => ({
   ...row,
   productCode: row.product_code ?? row.productCode,
+  urduName: row.urdu_name ?? row.urduName,
   vendorId: row.vendor_id ?? row.vendorId,
   costPrice: row.cost_price ?? row.costPrice,
   reorderPoint: row.reorder_point ?? row.reorderPoint,
@@ -246,6 +247,7 @@ const mapProductToDb = (product: any) =>
     },
     [
       "productCode",
+      "urduName",
       "vendorId",
       "costPrice",
       "reorderPoint",

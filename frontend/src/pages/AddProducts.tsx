@@ -17,6 +17,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
   const isEdit = !!product;
   const [formData, setFormData] = useState({
     name: product?.name || '',
+    urduName: (product as any)?.urduName || '',
     productCode: product?.productCode || '',
     brandName: product?.brandName || '',
     productType: product?.productType || 'Product' as 'Product' | 'Service',
@@ -78,7 +79,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     onSave({ ...product, ...formData }, stayOnPage);
     if (stayOnPage && !isEdit) {
       setFormData({ 
-        name: '', productCode: '', brandName: '', productType: 'Product', warehouse: WAREHOUSES[0],
+        name: '', urduName: '', productCode: '', brandName: '', productType: 'Product', warehouse: WAREHOUSES[0],
         category: '', price: '', costPrice: '', barcode: '', 
         vendorId: vendors[0]?.id || '', stock: 0, unit: 'Piece', 
         reorderPoint: 10, description: '', image: '', isActive: true
@@ -164,6 +165,35 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
         <div className="lg:col-span-2">
           <form onSubmit={(e) => e.preventDefault()} className="space-y-8">
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
+              <div className="p-6 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 uppercase text-xs tracking-widest">
+                  <span className="text-orange-500">●</span> Product Status
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Product Status</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {formData.isActive ? 'Visible in lists and usable in invoices.' : 'Hidden from lists (can be reactivated anytime).'}
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only"
+                      checked={formData.isActive}
+                      onChange={() => setFormData({ ...formData, isActive: !formData.isActive })}
+                    />
+                    <div className={`w-12 h-6 rounded-full transition-all ${formData.isActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                      <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform translate-y-0.5 ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}`}></div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
               <div className="p-6 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex justify-between items-center">
                 <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 uppercase text-xs tracking-widest">
                   <span className="text-orange-500">📄</span> Basic Information
@@ -198,6 +228,19 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                   />
                   {errors.name && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.name}</p>}
+                </div>
+
+                <div className="md:col-span-1">
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                    Urdu Name
+                  </label>
+                  <input 
+                    type="text" 
+                    placeholder="اردو نام"
+                    className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white"
+                    value={formData.urduName}
+                    onChange={(e) => setFormData({...formData, urduName: e.target.value})}
+                  />
                 </div>
 
                 <div>
@@ -412,27 +455,6 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                       value={formData.productType === 'Service' ? 0 : formData.reorderPoint}
                       onChange={(e) => setFormData({...formData, reorderPoint: parseInt(e.target.value) || 0})}
                     />
-                  </div>
-                </div>
-                <div className="md:col-span-2">
-                  <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-4 py-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Product Status</p>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        {formData.isActive ? 'Visible in lists and usable in invoices.' : 'Hidden from lists (can be reactivated anytime).'}
-                      </p>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={formData.isActive}
-                        onChange={() => setFormData({ ...formData, isActive: !formData.isActive })}
-                      />
-                      <div className={`w-12 h-6 rounded-full transition-all ${formData.isActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
-                        <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform translate-y-0.5 ${formData.isActive ? 'translate-x-6' : 'translate-x-1'}`}></div>
-                      </div>
-                    </label>
                   </div>
                 </div>
               </div>
