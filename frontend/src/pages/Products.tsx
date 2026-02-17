@@ -134,15 +134,12 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
 
   return (
     <div className="animate-in fade-in duration-500 relative">
-      {searchQuery.trim().length > 0 && (
-        <div className="fixed inset-0 z-[40] bg-slate-950/65 backdrop-blur-[1px] pointer-events-none" />
-      )}
       {!canRead && (
         <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300 rounded-2xl font-bold text-sm">
           You do not have permission to view products.
         </div>
       )}
-      <div className="relative z-[41] flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Product List</h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium">Manage your car parts and inventory stock.</p>
@@ -170,7 +167,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
         </div>
       )}
 
-      <div className="relative z-[41] bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden mb-6">
+      <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden mb-6 relative">
         <div className="p-8 border-b border-slate-50 dark:border-slate-800 grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative col-span-1 md:col-span-1">
               <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">🔍</span>

@@ -1071,9 +1071,20 @@ const ensurePermission = async (permission: string) => {
 export const productAPI = {
   getAll: async () => {
     await ensurePermission("products.read");
-    return apiCall("/products?select=*&order=id.desc").then((rows) =>
-      Array.isArray(rows) ? rows.map(mapProductFromDb) : rows
-    );
+    const pageSize = 1000;
+    let offset = 0;
+    let allRows: any[] = [];
+    while (true) {
+      const rows = await apiCall(
+        `/products?select=*&order=id.desc&limit=${pageSize}&offset=${offset}`
+      );
+      const batch = Array.isArray(rows) ? rows : [];
+      allRows = allRows.concat(batch);
+      if (batch.length < pageSize) break;
+      offset += pageSize;
+      if (offset > 1000000) break;
+    }
+    return allRows.map(mapProductFromDb);
   },
   getById: (id: string) =>
     getFirst(`/products?select=*&id=eq.${id}`).then(mapProductFromDb),

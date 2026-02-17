@@ -227,7 +227,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
         ]);
 
-        const normalizedProducts = Array.isArray(productsData) ? productsData : productsData.data || [];
+        const normalizedProducts = Array.isArray(productsData) ? productsData : (productsData as any)?.data || [];
         const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : ledgerData.data || [];
         setStockLedger(normalizedLedger);
         setProducts(mergeStockToProducts(normalizedProducts, normalizedLedger));
