@@ -152,10 +152,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
         clearInterval(interval);
         
         const importedData = csvRows.map((row) => {
-          const obj: any = {
-            totalOrders: 0,
-            balance: 'Rs. 0.00'
-          };
+          const obj: any = {};
           
           if (entityName === 'Products') {
             obj.productType = 'Product';
