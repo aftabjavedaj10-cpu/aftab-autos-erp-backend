@@ -68,7 +68,8 @@ const apiCall = async (
   path: string,
   method: "GET" | "POST" | "PATCH" | "DELETE" = "GET",
   body?: any,
-  preferReturn = false
+  preferReturn = false,
+  extraHeaders?: Record<string, string>
 ) => {
   startGlobalLoading();
   try {
@@ -84,6 +85,9 @@ const apiCall = async (
 
     if (preferReturn) {
       headers["Prefer"] = "return=representation";
+    }
+    if (extraHeaders) {
+      Object.assign(headers, extraHeaders);
     }
 
     const options: RequestInit = {
@@ -1126,10 +1130,11 @@ export const productAPI = {
     await ensurePermission("products.write");
     const rows = normalizeBulkRows(products.map(attachOwnership).map(mapProductToDb));
     return apiCall(
-      "/products",
+      "/products?on_conflict=product_code",
       "POST",
       rows,
-      true
+      true,
+      { Prefer: "resolution=merge-duplicates,return=representation" }
     );
   },
 };
