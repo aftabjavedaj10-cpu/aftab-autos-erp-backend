@@ -148,7 +148,16 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
     if (!printSettings.showUrduName) return english;
     const matched = products.find((p) => String(p.id) === String(item.productId));
     const urdu = String((matched as any)?.urduName || "").trim();
-    return urdu ? `${english} | ${urdu}` : english;
+    if (!urdu) return english;
+    return (
+      <>
+        <span>{english}</span>
+        <span>{" | "}</span>
+        <span dir="rtl" className="font-urdu inline-block">
+          {urdu}
+        </span>
+      </>
+    );
   };
 
   useEffect(() => {
