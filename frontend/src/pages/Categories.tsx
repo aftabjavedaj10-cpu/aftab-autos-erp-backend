@@ -1,17 +1,19 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import type { Category } from '../types';
 import { hasPermission } from '../services/supabaseAuth';
+import ImportModal from '../components/ImportModal';
 
 interface CategoriesPageProps {
   categories: Category[];
   onAddClick: () => void;
   onEditClick: (category: Category) => void;
   onDelete: (id: string) => void;
+  onImportComplete: (data: Category[]) => void;
 }
 
 const CATEGORY_TYPES = ['All Types', 'product', 'customer', 'vendor'];
 
-const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick, onEditClick, onDelete }) => {
+const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick, onEditClick, onDelete, onImportComplete }) => {
   const canRead = hasPermission('categories.read');
   const canWrite = hasPermission('categories.write');
   const canDelete = hasPermission('categories.delete');
@@ -20,9 +22,16 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
   const [successMsg, setSuccessMsg] = useState('');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+
+  const handleImport = (data: any[]) => {
+    onImportComplete(data);
+    setSuccessMsg(`Successfully imported ${data.length} categories.`);
+    setTimeout(() => setSuccessMsg(''), 5000);
+  };
 
   const filteredCategories = useMemo(() => {
     return categories.filter(c => {
@@ -81,17 +90,25 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
           <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight uppercase">Categories</h1>
           <p className="text-slate-500 dark:text-slate-400 font-medium">Organize products, customers, and suppliers into categories.</p>
         </div>
-        <button 
-          onClick={onAddClick}
-          className="min-w-[170px] h-[48px] bg-orange-600 hover:bg-orange-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
-        >
-          <span>➕</span> Add Category
-        </button>
+        <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
+          <button 
+            onClick={() => setIsImportModalOpen(true)}
+            className="min-w-[170px] h-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-3 px-6 rounded-2xl transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+          >
+            <span>📥</span> Import Excel
+          </button>
+          <button 
+            onClick={onAddClick}
+            className="min-w-[170px] h-[48px] bg-orange-600 hover:bg-orange-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+          >
+            <span>➕</span> Add Category
+          </button>
+        </div>
       </div>
 
       {successMsg && (
         <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm animate-in slide-in-from-top-4 duration-300 flex items-center gap-3">
-          <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs">✓</div>
+          <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs">âœ“</div>
           {successMsg}
         </div>
       )}
@@ -99,7 +116,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden relative">
         <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1 max-w-md">
-            <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">🔍</span>
+            <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">ðŸ”</span>
             <input 
               type="text" 
               placeholder="Search categories..." 
@@ -122,7 +139,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
         <div className="overflow-x-hidden">
           {paginatedCategories.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">📂</div>
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">ðŸ“‚</div>
               <p className="text-slate-600 dark:text-slate-400 font-bold mb-2">No categories found</p>
               <p className="text-slate-500 dark:text-slate-500 text-sm">Create a new category to get started</p>
             </div>
@@ -137,7 +154,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                         className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
                       >
                         {selectedIds.size === paginatedIds.length && paginatedIds.length > 0 && (
-                          <span className="text-white text-[10px]">✓</span>
+                          <span className="text-white text-[10px]">âœ“</span>
                         )}
                       </button>
                       {selectedIds.size > 0 && (
@@ -165,7 +182,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                         className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${category.id && selectedIds.has(category.id) ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
                       >
                         {category.id && selectedIds.has(category.id) && (
-                          <span className="text-white text-[10px]">✓</span>
+                          <span className="text-white text-[10px]">âœ“</span>
                         )}
                       </button>
                     </div>
@@ -186,7 +203,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                         className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-orange-600 transition-all shadow-sm"
                         title="Edit"
                       >
-                        <span className="text-xs">✏️</span>
+                        <span className="text-xs">âœï¸</span>
                       </button>
                       <button 
                         onClick={() => { if (category.id) { setSelectedIds(new Set([category.id])); setIsConfirmModalOpen(true); } }}
@@ -215,7 +232,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
               disabled={currentPage === 1}
               className="px-3 py-1.5 text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
             >
-              ← Previous
+              â† Previous
             </button>
             <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 px-2">
               Page {filteredCategories.length === 0 ? 0 : currentPage} of {Math.ceil(filteredCategories.length / rowsPerPage) || 1}
@@ -225,7 +242,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
               disabled={currentPage * rowsPerPage >= filteredCategories.length}
               className="px-3 py-1.5 text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
             >
-              Next →
+              Next â†’
             </button>
           </div>
         </div>
@@ -247,7 +264,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                   onClick={() => setIsConfirmModalOpen(true)}
                   className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-rose-600/20 flex items-center gap-2 group"
                 >
-                  <span>🗑️</span> Delete Selected
+                  <span>ðŸ—‘ï¸</span> Delete Selected
                 </button>
                 <button 
                   onClick={() => setSelectedIds(new Set())}
@@ -267,7 +284,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
           <div className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
              <div className="bg-rose-600 h-1.5 w-full"></div>
              <div className="p-10 text-center">
-                <div className="w-20 h-20 bg-rose-50 dark:bg-rose-950/30 text-rose-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-6 border border-rose-100 dark:border-rose-900/40">⚠️</div>
+                <div className="w-20 h-20 bg-rose-50 dark:bg-rose-950/30 text-rose-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-6 border border-rose-100 dark:border-rose-900/40">âš ï¸</div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">Delete Categories?</h3>
                 <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 px-4">
                   Are you sure you want to delete <span className="text-rose-600 font-black">{selectedIds.size} categories</span>? This action cannot be undone.
@@ -290,11 +307,18 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
           </div>
         </div>
       )}
+      <ImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        entityName="Categories"
+        onImportComplete={handleImport}
+      />
     </div>
   );
 };
 
 export default CategoriesPage;
+
 
 
 

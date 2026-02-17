@@ -1288,6 +1288,18 @@ export const categoryAPI = {
     await ensurePermission("categories.delete");
     return apiCall(`/categories?id=${buildInFilter(ids)}`, "DELETE");
   },
+  import: async (categories: any[]) => {
+    await ensurePermission("categories.write");
+    const rows = normalizeBulkRows(
+      categories.map(attachOwnership).map((category) =>
+        mapCategoryToDb({
+          ...category,
+          type: category?.type || "product",
+        })
+      )
+    );
+    return apiCall("/categories", "POST", rows, true);
+  },
 };
 
 // ============ SALES INVOICES ============

@@ -342,6 +342,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     });
   };
 
+  const handleImportCategories = (newCategories: Category[]) => {
+    categoryAPI.import(newCategories).then(async () => {
+      const categoriesData = await categoryAPI.getAll().catch(() => []);
+      setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
+    }).catch(err => {
+      setError("Failed to import categories");
+      console.error(err);
+    });
+  };
+
   const handleDeleteProduct = async (id: string) => {
     try {
       const used = await productAPI.isUsed(id);
@@ -358,8 +368,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   };
 
   const handleImportProducts = (newProducts: Product[]) => {
-    productAPI.import(newProducts).then(() => {
-      setProducts([...products, ...newProducts]);
+    productAPI.import(newProducts).then(async () => {
+      const companyId = getActiveCompanyId();
+      const [productsData, ledgerData] = await Promise.all([
+        productAPI.getAll().catch(() => []),
+        companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
+      ]);
+      const normalizedProducts = Array.isArray(productsData)
+        ? productsData
+        : (productsData as any)?.data || [];
+      const normalizedLedger = Array.isArray(ledgerData)
+        ? ledgerData
+        : (ledgerData as any)?.data || [];
+      setStockLedger(normalizedLedger);
+      setProducts(mergeStockToProducts(normalizedProducts, normalizedLedger));
     }).catch(err => {
       setError("Failed to import products");
       console.error(err);
@@ -884,6 +906,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onAddClick={handleAddCategory}
             onEditClick={handleEditCategory}
             onDelete={handleDeleteCategory}
+            onImportComplete={handleImportCategories}
           />
         )}
 

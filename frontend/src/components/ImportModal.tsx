@@ -6,7 +6,7 @@ import type { Vendor } from '../types';
 interface ImportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  entityName: 'Products' | 'Customers' | 'Vendors';
+  entityName: 'Products' | 'Customers' | 'Vendors' | 'Categories';
   vendors?: Vendor[];
   onImportComplete: (data: any[]) => void;
 }
@@ -61,7 +61,12 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
       { key: 'city', label: 'City', required: false },
       { key: 'state', label: 'State', required: false },
       { key: 'country', label: 'Country', required: false },
-    ]
+    ],
+    Categories: [
+      { key: 'name', label: 'Category Name', required: true },
+      { key: 'type', label: 'Type (product/customer/vendor)', required: false },
+      { key: 'description', label: 'Description', required: false },
+    ],
   };
 
   const currentFields = entityFields[entityName] || [];
@@ -162,6 +167,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
             obj.warehouse = WAREHOUSES[0];
             obj.brandName = 'Generic';
             obj.vendorId = null;
+          } else if (entityName === 'Categories') {
+            obj.type = 'product';
           } else if (entityName === 'Vendors') {
             obj.country = 'Pakistan';
             obj.openingBalance = 'Rs. 0.00';
@@ -210,6 +217,12 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
 
                   obj.vendorId = matchedVendor ? matchedVendor.id : null;
                 }
+              } else if (field.key === 'type' && entityName === 'Categories') {
+                const normalized = String(val ?? '').trim().toLowerCase();
+                obj.type =
+                  normalized === 'customer' || normalized === 'vendor'
+                    ? normalized
+                    : 'product';
               } else {
                 obj[field.key] = val;
               }
