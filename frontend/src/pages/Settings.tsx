@@ -24,6 +24,7 @@ import {
   setProfile,
   hasPermission,
 } from "../services/supabaseAuth";
+import { DEFAULT_PRINT_TEMPLATE_SETTINGS } from "../services/printSettings";
 
 const ROLE_OPTIONS: UserRole[] = ["admin", "manager", "staff"];
 
@@ -76,14 +77,7 @@ const SettingsPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<"company" | "members" | "roles" | "print">(
     "company"
   );
-  const [printSettings, setPrintSettings] = useState({
-    defaultTemplate: "invoice",
-    showCompanyLogo: true,
-    showCompanyAddress: true,
-    showTaxId: true,
-    showNotes: true,
-    footerText: "",
-  });
+  const [printSettings, setPrintSettings] = useState(DEFAULT_PRINT_TEMPLATE_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -1456,6 +1450,20 @@ const SettingsPage: React.FC = () => {
                       setPrintSettings((prev) => ({
                         ...prev,
                         showNotes: e.target.checked,
+                      }))
+                    }
+                  />
+                </label>
+
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                  <span>Show Urdu Name In Print</span>
+                  <input
+                    type="checkbox"
+                    checked={Boolean((printSettings as any).showUrduName)}
+                    onChange={(e) =>
+                      setPrintSettings((prev) => ({
+                        ...prev,
+                        showUrduName: e.target.checked,
                       }))
                     }
                   />

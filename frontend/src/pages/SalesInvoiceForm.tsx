@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types";
 import type { ReceivePaymentDoc } from "./ReceivePayment";
+import { getPrintTemplateSettings } from "../services/printSettings";
 
 interface SalesInvoiceFormPageProps {
   invoice?: SalesInvoice;
@@ -119,6 +120,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const [savePrices, setSavePrices] = useState(true);
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
+  const [printSettings, setPrintSettings] = useState(() => getPrintTemplateSettings());
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const COPY_SEED_KEY = "sales-invoice-copy-seed";
@@ -140,6 +142,10 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const printMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    setPrintSettings(getPrintTemplateSettings());
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
       if (searchContainerRef.current && !searchContainerRef.current.contains(target)) {
@@ -158,6 +164,20 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  const getPrintableProductLabel = (item: SalesInvoiceItem) => {
+    const english = String(item.productName || "").trim();
+    if (!printSettings.showUrduName) return english;
+    const matched = products.find((p) => String(p.id) === String(item.productId));
+    const urdu = String((matched as any)?.urduName || "").trim();
+    return urdu || english;
+  };
+
+  const isPrintableUrdu = (item: SalesInvoiceItem) => {
+    if (!printSettings.showUrduName) return false;
+    const matched = products.find((p) => String(p.id) === String(item.productId));
+    return Boolean(String((matched as any)?.urduName || "").trim());
+  };
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -1734,7 +1754,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <tbody>
                 {formData.items.map((item) => (
                   <tr key={item.productId} className="border-b border-black/10">
-                    <td className="py-2">{item.productName}</td>
+                    <td className={`py-2 ${isPrintableUrdu(item) ? "font-urdu text-right" : ""}`} dir={isPrintableUrdu(item) ? "rtl" : undefined}>{getPrintableProductLabel(item)}</td>
                     <td className="text-right py-2">{item.unitPrice.toFixed(2)}</td>
                     <td className="text-right py-2">{item.quantity}</td>
                     <td className="text-right py-2">
@@ -1821,7 +1841,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   return (
                     <React.Fragment key={item.productId}>
                       <tr className="border-b border-black/20">
-                        <td className="py-1 font-semibold" colSpan={5}>{item.productName}</td>
+                        <td className={`py-1 font-semibold ${isPrintableUrdu(item) ? "font-urdu text-right" : ""}`} dir={isPrintableUrdu(item) ? "rtl" : undefined} colSpan={5}>{getPrintableProductLabel(item)}</td>
                       </tr>
                       <tr className="border-b border-black/20">
                         <td className="py-1" />
@@ -1889,7 +1909,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <tbody>
                 {formData.items.map((item) => (
                   <tr key={item.productId}>
-                    <td>{item.productName}</td>
+                    <td className={isPrintableUrdu(item) ? "font-urdu text-right" : ""} dir={isPrintableUrdu(item) ? "rtl" : undefined}>{getPrintableProductLabel(item)}</td>
                     <td className="text-right">{item.quantity}</td>
                     <td className="text-right">{(item.quantity * item.unitPrice).toFixed(2)}</td>
                   </tr>
@@ -1916,7 +1936,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 <tbody>
                   {(printItems.length > 0 ? printItems : formData.items).map((item, idx) => (
                     <tr key={`${item.productId}-${idx}`} className="border-b border-black/20">
-                      <td className="py-1">{item.productName}</td>
+                      <td className={`py-1 ${isPrintableUrdu(item) ? "font-urdu text-right" : ""}`} dir={isPrintableUrdu(item) ? "rtl" : undefined}>{getPrintableProductLabel(item)}</td>
                       <td className="py-1">{item.productCode || "-"}</td>
                       <td className="text-right py-1 font-black">{item.quantity} {item.unit || "PC"}</td>
                     </tr>
