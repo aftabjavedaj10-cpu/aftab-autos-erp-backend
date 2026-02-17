@@ -108,7 +108,9 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
 
       {successMsg && (
         <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm animate-in slide-in-from-top-4 duration-300 flex items-center gap-3">
-          <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs">âœ“</div>
+          <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+          </div>
           {successMsg}
         </div>
       )}
@@ -116,7 +118,9 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden relative">
         <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1 max-w-md">
-            <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">ðŸ”</span>
+            <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+            </span>
             <input 
               type="text" 
               placeholder="Search categories..." 
@@ -139,7 +143,9 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
         <div className="overflow-x-hidden">
           {paginatedCategories.length === 0 ? (
             <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">ðŸ“‚</div>
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-slate-500 dark:text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" /></svg>
+              </div>
               <p className="text-slate-600 dark:text-slate-400 font-bold mb-2">No categories found</p>
               <p className="text-slate-500 dark:text-slate-500 text-sm">Create a new category to get started</p>
             </div>
@@ -154,7 +160,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                         className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
                       >
                         {selectedIds.size === paginatedIds.length && paginatedIds.length > 0 && (
-                          <span className="text-white text-[10px]">âœ“</span>
+                          <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                         )}
                       </button>
                       {selectedIds.size > 0 && (
@@ -182,7 +188,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                         className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${category.id && selectedIds.has(category.id) ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
                       >
                         {category.id && selectedIds.has(category.id) && (
-                          <span className="text-white text-[10px]">âœ“</span>
+                          <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                         )}
                       </button>
                     </div>
@@ -203,7 +209,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                         className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-orange-600 transition-all shadow-sm"
                         title="Edit"
                       >
-                        <span className="text-xs">âœï¸</span>
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z" /></svg>
                       </button>
                       <button 
                         onClick={() => { if (category.id) { setSelectedIds(new Set([category.id])); setIsConfirmModalOpen(true); } }}
@@ -232,7 +238,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
               disabled={currentPage === 1}
               className="px-3 py-1.5 text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
             >
-              â† Previous
+              Previous
             </button>
             <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 px-2">
               Page {filteredCategories.length === 0 ? 0 : currentPage} of {Math.ceil(filteredCategories.length / rowsPerPage) || 1}
@@ -242,7 +248,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
               disabled={currentPage * rowsPerPage >= filteredCategories.length}
               className="px-3 py-1.5 text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
             >
-              Next â†’
+              Next
             </button>
           </div>
         </div>
@@ -264,7 +270,8 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                   onClick={() => setIsConfirmModalOpen(true)}
                   className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-rose-600/20 flex items-center gap-2 group"
                 >
-                  <span>ðŸ—‘ï¸</span> Delete Selected
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                  Delete Selected
                 </button>
                 <button 
                   onClick={() => setSelectedIds(new Set())}
@@ -284,7 +291,9 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
           <div className="relative bg-white dark:bg-slate-900 w-full max-w-md rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
              <div className="bg-rose-600 h-1.5 w-full"></div>
              <div className="p-10 text-center">
-                <div className="w-20 h-20 bg-rose-50 dark:bg-rose-950/30 text-rose-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-6 border border-rose-100 dark:border-rose-900/40">âš ï¸</div>
+                <div className="w-20 h-20 bg-rose-50 dark:bg-rose-950/30 text-rose-600 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-rose-100 dark:border-rose-900/40">
+                  <svg className="w-9 h-9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.72 3h16.92a2 2 0 0 0 1.72-3l-8.47-14.14a2 2 0 0 0-3.42 0Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>
+                </div>
                 <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">Delete Categories?</h3>
                 <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed mb-8 px-4">
                   Are you sure you want to delete <span className="text-rose-600 font-black">{selectedIds.size} categories</span>? This action cannot be undone.
