@@ -189,25 +189,26 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
               } else if (field.key === 'productType') {
                 const normalized = String(val ?? '').toLowerCase();
                 obj[field.key] = normalized.includes('service') ? 'Service' : 'Product';
-              } else if (field.key === 'vendorId' && entityName === 'Products' && val) {
-                const cleanVal = String(val).trim().toLowerCase();
-                let matchedVendor = vendors.find(v => 
-                  String(v.id).toLowerCase() === cleanVal || 
-                  (v.vendorCode && String(v.vendorCode).toLowerCase() === cleanVal)
-                );
-                
-                if (!matchedVendor) {
-                  matchedVendor = vendors.find(v => v.name.toLowerCase() === cleanVal);
-                }
-
-                if (!matchedVendor) {
-                  matchedVendor = vendors.find(v => v.name.toLowerCase().includes(cleanVal));
-                }
-
-                if (matchedVendor) {
-                  obj.vendorId = matchedVendor.id;
-                } else {
+              } else if (field.key === 'vendorId' && entityName === 'Products') {
+                const rawVendor = String(val ?? '').trim();
+                if (!rawVendor) {
                   obj.vendorId = null;
+                } else {
+                  const cleanVal = rawVendor.toLowerCase();
+                  let matchedVendor = vendors.find(v => 
+                    String(v.id).toLowerCase() === cleanVal || 
+                    (v.vendorCode && String(v.vendorCode).toLowerCase() === cleanVal)
+                  );
+
+                  if (!matchedVendor) {
+                    matchedVendor = vendors.find(v => v.name.toLowerCase() === cleanVal);
+                  }
+
+                  if (!matchedVendor) {
+                    matchedVendor = vendors.find(v => v.name.toLowerCase().includes(cleanVal));
+                  }
+
+                  obj.vendorId = matchedVendor ? matchedVendor.id : null;
                 }
               } else {
                 obj[field.key] = val;

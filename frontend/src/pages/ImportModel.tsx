@@ -190,29 +190,29 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
               } else if (field.key === 'productType') {
                 const normalized = String(val ?? '').toLowerCase();
                 obj[field.key] = normalized.includes('service') ? 'Service' : 'Product';
-              } else if (field.key === 'vendorId' && entityName === 'Products' && val) {
-                // AUTOMATIC VENDOR DETECTION
-                const cleanVal = String(val).trim().toLowerCase();
-                // 1. Try to find vendor by exact ID or Code
-                let matchedVendor = vendors.find(v => 
-                  String(v.id).toLowerCase() === cleanVal || 
-                  (v.vendorCode && String(v.vendorCode).toLowerCase() === cleanVal)
-                );
-                
-                // 2. Try to find by Company Name if not found by ID
-                if (!matchedVendor) {
-                  matchedVendor = vendors.find(v => v.name.toLowerCase() === cleanVal);
-                }
-
-                // 3. Try partial name match if still not found
-                if (!matchedVendor) {
-                  matchedVendor = vendors.find(v => v.name.toLowerCase().includes(cleanVal));
-                }
-
-                if (matchedVendor) {
-                  obj.vendorId = matchedVendor.id;
-                } else {
+              } else if (field.key === 'vendorId' && entityName === 'Products') {
+                const rawVendor = String(val ?? '').trim();
+                if (!rawVendor) {
                   obj.vendorId = null;
+                } else {
+                  const cleanVal = rawVendor.toLowerCase();
+                  // 1. Try to find vendor by exact ID or Code
+                  let matchedVendor = vendors.find(v => 
+                    String(v.id).toLowerCase() === cleanVal || 
+                    (v.vendorCode && String(v.vendorCode).toLowerCase() === cleanVal)
+                  );
+                  
+                  // 2. Try to find by Company Name if not found by ID
+                  if (!matchedVendor) {
+                    matchedVendor = vendors.find(v => v.name.toLowerCase() === cleanVal);
+                  }
+
+                  // 3. Try partial name match if still not found
+                  if (!matchedVendor) {
+                    matchedVendor = vendors.find(v => v.name.toLowerCase().includes(cleanVal));
+                  }
+
+                  obj.vendorId = matchedVendor ? matchedVendor.id : null;
                 }
               } else {
                 obj[field.key] = val;
