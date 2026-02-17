@@ -1865,7 +1865,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
             page-break-after: always;
           }
           .print-sheet-80mm {
-            width: 76mm !important;
+            width: 68mm !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             background: #fff !important;
@@ -1877,4 +1877,6 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 };
 
 export default PurchaseOrderFormPage;
+
+
 

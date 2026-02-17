@@ -1950,7 +1950,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
             page-break-after: always;
           }
           .print-sheet-80mm {
-            width: 76mm !important;
+            width: 68mm !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             background: #fff !important;
@@ -1962,4 +1962,6 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 };
 
 export default PurchaseInvoiceFormPage;
+
+
 
