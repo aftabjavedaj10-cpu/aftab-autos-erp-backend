@@ -138,7 +138,10 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
   };
 
   const finalizeImport = () => {
-    const missing = currentFields.filter(f => f.required && mappings[f.key] === undefined);
+    const missing = currentFields.filter((f) => {
+      const mapped = mappings[f.key];
+      return f.required && (!Number.isInteger(mapped) || mapped < 0);
+    });
     if (missing.length > 0) {
       alert(`Please map the required fields: ${missing.map(m => m.label).join(', ')}`);
       return;
@@ -173,19 +176,22 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
 
           currentFields.forEach(field => {
             const colIdx = mappings[field.key];
-            if (colIdx !== undefined) {
+            if (Number.isInteger(colIdx) && colIdx >= 0) {
               let val = row[colIdx];
               
               if (field.key === 'stock' || field.key === 'reorderPoint') {
                 obj[field.key] = parseInt(val) || 0;
-              } else if (field.key === 'price' || field.key === 'costPrice' || field.key === 'openingBalance') {
+              } else if (field.key === 'price' || field.key === 'costPrice') {
+                const numeric = Number(String(val ?? '').replace(/[^0-9.-]/g, ''));
+                obj[field.key] = Number.isFinite(numeric) ? numeric : 0;
+              } else if (field.key === 'openingBalance') {
                 if (typeof val === 'string' && val.trim() !== '') {
                   obj[field.key] = val.startsWith('Rs.') ? val : `Rs. ${val}`;
                 } else if (val) {
                   obj[field.key] = `Rs. ${val}`;
                 }
               } else if (field.key === 'productType') {
-                const normalized = val.toLowerCase();
+                const normalized = String(val ?? '').toLowerCase();
                 obj[field.key] = normalized.includes('service') ? 'Service' : 'Product';
               } else if (field.key === 'vendorId' && entityName === 'Products' && val) {
                 // AUTOMATIC VENDOR DETECTION
@@ -333,7 +339,13 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
                       <span className="text-slate-300 dark:text-slate-600 text-base group-hover:text-orange-400">→</span>
                       <select 
                         value={mappings[field.key] ?? ''}
-                        onChange={(e) => setMappings({...mappings, [field.key]: parseInt(e.target.value)})}
+                        onChange={(e) =>
+                          setMappings({
+                            ...mappings,
+                            [field.key]:
+                              e.target.value === '' ? undefined as any : parseInt(e.target.value, 10),
+                          })
+                        }
                         className={`bg-white dark:bg-slate-900 border rounded-lg py-1.5 px-3 text-[10px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 min-w-[160px] transition-all ${
                           mappings[field.key] !== undefined ? 'border-emerald-500/50 text-emerald-600' : 'border-slate-200 dark:border-slate-700'
                         }`}
