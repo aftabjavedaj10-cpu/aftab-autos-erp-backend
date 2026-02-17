@@ -695,7 +695,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
             onClick={onBack}
             className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-400 hover:text-orange-600 shadow-sm transition-all active:scale-95"
           >
-            <span className="text-lg">←</span>
+            <span className="text-lg">?</span>
           </button>
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -862,7 +862,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 p-1"
                   >
-                    ✕
+                    ?
                   </button>
                 )}
               </div>
@@ -1019,7 +1019,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                       }`}
                     >
                       {selectedItemIds.size === formData.items.length && formData.items.length > 0 && (
-                        <span className="text-white text-[8px]">✓</span>
+                        <span className="text-white text-[8px]">?</span>
                       )}
                     </button>
                   </th>
@@ -1084,7 +1084,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                           }`}
                         >
                           {selectedItemIds.has(item.productId) && (
-                            <span className="text-white text-[8px]">✓</span>
+                            <span className="text-white text-[8px]">?</span>
                           )}
                         </button>
                       </td>
@@ -1193,7 +1193,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                             e.dataTransfer.setData("text/plain", item.productId);
                           }}
                         >
-                          ⋮⋮
+                          ??
                         </div>
                       </td>
                       <td className="px-3 py-2 text-center">
@@ -1204,7 +1204,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                             isLocked ? "opacity-50 cursor-not-allowed" : "hover:text-rose-500"
                           }`}
                         >
-                          ✕
+                          ?
                         </button>
                       </td>
                     </tr>
@@ -1494,7 +1494,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                 onClick={() => setIsPrintMenuOpen((prev) => !prev)}
                 className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-lg text-[10px] font-black text-slate-500 hover:text-orange-600"
               >
-                ▴
+                ?
               </button>
             </div>
             {isPrintMenuOpen && (
@@ -1560,7 +1560,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                     isLocked ? "opacity-60 cursor-not-allowed" : ""
                   }`}
                 >
-                  ▴
+                  ?
                 </button>
               </div>
               {isSaveMenuOpen && (
@@ -1655,7 +1655,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                 className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600"
                 aria-label="Close image preview"
               >
-                ✕
+                ?
               </button>
             </div>
             <div className="bg-slate-50 dark:bg-slate-950/40 p-3">
@@ -1950,7 +1950,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
             page-break-after: always;
           }
           .print-sheet-80mm {
-            width: 72mm !important;
+            width: 76mm !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             background: #fff !important;
@@ -1962,3 +1962,4 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 };
 
 export default PurchaseInvoiceFormPage;
+

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Company, Product, SalesInvoice, Vendor } from "../types";
 import type { MakePaymentDoc } from "./MakePayment";
 
@@ -248,7 +248,7 @@ const MakePaymentFormPage: React.FC<MakePaymentFormPageProps> = ({
 <html><head><meta charset="utf-8"/><title>${modeTitle}</title>
 <style>
 body{font-family:Arial,sans-serif;padding:14px;color:#111}
-.box{max-width:${mode === "receipt" || mode === "token" ? "72mm" : mode === "a5" ? "148mm" : "190mm"};margin:0 auto}
+.box{max-width:${mode === "receipt" || mode === "token" ? "76mm" : mode === "a5" ? "148mm" : "190mm"};margin:0 auto}
 .line{display:flex;justify-content:space-between;margin:4px 0}
 .head{font-size:20px;font-weight:700;text-align:center;margin-bottom:8px}
 .small{font-size:12px}
@@ -586,3 +586,4 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
 };
 
 export default MakePaymentFormPage;
+

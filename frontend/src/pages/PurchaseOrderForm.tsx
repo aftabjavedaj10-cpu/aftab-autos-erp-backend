@@ -687,7 +687,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
             onClick={onBack}
             className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-400 hover:text-orange-600 shadow-sm transition-all active:scale-95"
           >
-            <span className="text-lg">←</span>
+            <span className="text-lg">?</span>
           </button>
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -827,7 +827,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 p-1"
                   >
-                    ✕
+                    ?
                   </button>
                 )}
               </div>
@@ -984,7 +984,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                       }`}
                     >
                       {selectedItemIds.size === formData.items.length && formData.items.length > 0 && (
-                        <span className="text-white text-[8px]">✓</span>
+                        <span className="text-white text-[8px]">?</span>
                       )}
                     </button>
                   </th>
@@ -1049,7 +1049,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                           }`}
                         >
                           {selectedItemIds.has(item.productId) && (
-                            <span className="text-white text-[8px]">✓</span>
+                            <span className="text-white text-[8px]">?</span>
                           )}
                         </button>
                       </td>
@@ -1158,7 +1158,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                             e.dataTransfer.setData("text/plain", item.productId);
                           }}
                         >
-                          ⋮⋮
+                          ??
                         </div>
                       </td>
                       <td className="px-3 py-2 text-center">
@@ -1169,7 +1169,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                             isLocked ? "opacity-50 cursor-not-allowed" : "hover:text-rose-500"
                           }`}
                         >
-                          ✕
+                          ?
                         </button>
                       </td>
                     </tr>
@@ -1412,7 +1412,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 onClick={() => setIsPrintMenuOpen((prev) => !prev)}
                 className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-l-0 border-slate-200 dark:border-slate-800 rounded-r-lg text-[10px] font-black text-slate-500 hover:text-orange-600"
               >
-                ▴
+                ?
               </button>
             </div>
             {isPrintMenuOpen && (
@@ -1478,7 +1478,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                     isLocked ? "opacity-60 cursor-not-allowed" : ""
                   }`}
                 >
-                  ▴
+                  ?
                 </button>
               </div>
               {isSaveMenuOpen && (
@@ -1573,7 +1573,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 className="w-8 h-8 rounded-md border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600"
                 aria-label="Close image preview"
               >
-                ✕
+                ?
               </button>
             </div>
             <div className="bg-slate-50 dark:bg-slate-950/40 p-3">
@@ -1865,7 +1865,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
             page-break-after: always;
           }
           .print-sheet-80mm {
-            width: 72mm !important;
+            width: 76mm !important;
             margin: 0 !important;
             box-sizing: border-box !important;
             background: #fff !important;
@@ -1877,3 +1877,4 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 };
 
 export default PurchaseOrderFormPage;
+
