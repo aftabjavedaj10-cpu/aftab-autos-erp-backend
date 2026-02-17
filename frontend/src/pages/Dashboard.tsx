@@ -48,9 +48,17 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeToggle }) => {
+  const activeTabStorageKey = `dashboard_active_tab_${getUserId() || "anon"}_${getActiveCompanyId() || "default"}`;
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const saved = localStorage.getItem(activeTabStorageKey);
+      return saved || "dashboard";
+    } catch {
+      return "dashboard";
+    }
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noCompany, setNoCompany] = useState(false);
@@ -97,6 +105,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [pendingFilterTick, setPendingFilterTick] = useState(0);
   const mainScrollRef = useRef<HTMLElement | null>(null);
   const [mainThumb, setMainThumb] = useState({ visible: false, top: 0, height: 0 });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(activeTabStorageKey, activeTab);
+    } catch {
+      // ignore storage write errors
+    }
+  }, [activeTab, activeTabStorageKey]);
 
   const updateMainThumb = useCallback(() => {
     const el = mainScrollRef.current;
