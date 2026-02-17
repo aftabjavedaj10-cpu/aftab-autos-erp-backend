@@ -6,6 +6,7 @@ import ProductsPage from "./Products";
 import ReportsPage from "./Reports";
 import CustomerLedgerPage from "./CustomerLedger";
 import VendorLedgerPage from "./VendorLedger";
+import LowInventoryReportPage from "./LowInventoryReport";
 import StockLedgerPage from "./StockLedger";
 import StockAdjustmentPage from "./StockAdjustment";
 import AddStockAdjustmentPage from "./AddStockAdjustment";
@@ -1488,6 +1489,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setEditingPurchaseInvoice(invoice);
               setActiveTab("add_purchase_invoice");
             }}
+          />
+        )}
+
+        {activeTab === "report_low_inventory" && (
+          <LowInventoryReportPage
+            onBack={() => setActiveTab("reports")}
+            products={products}
+            categories={categories}
+            vendors={vendors}
           />
         )}
 
