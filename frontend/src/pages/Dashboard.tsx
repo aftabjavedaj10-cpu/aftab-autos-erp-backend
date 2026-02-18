@@ -807,13 +807,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     return () => window.removeEventListener("resize", onResize);
   }, [updateMainThumb]);
 
+  const shouldAutoCollapseSidebar =
+    activeTab.startsWith("add_") ||
+    activeTab === "reports" ||
+    activeTab.startsWith("report_");
+  const sidebarCollapsed = shouldAutoCollapseSidebar ? true : isCollapsed;
+
   return (
     <div className="min-h-screen flex bg-[#FEF3E2] dark:bg-[#020617]">
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        isCollapsed={isCollapsed}
-        onToggle={() => setIsCollapsed(!isCollapsed)}
+        isCollapsed={sidebarCollapsed}
+        onToggle={() => {
+          if (shouldAutoCollapseSidebar) return;
+          setIsCollapsed(!isCollapsed);
+        }}
         isMobileOpen={isMobileOpen}
         onMobileClose={() => setIsMobileOpen(false)}
       />
