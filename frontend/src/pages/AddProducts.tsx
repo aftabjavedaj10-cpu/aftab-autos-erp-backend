@@ -30,6 +30,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     stock: product?.stock || 0,
     unit: product?.unit || 'Piece',
     reorderPoint: product?.reorderPoint || 10,
+    reorderQty: (product as any)?.reorderQty || 1,
     description: product?.description || '',
     image: product?.image || '',
     isActive: product?.isActive ?? true
@@ -82,7 +83,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
         name: '', urduName: '', productCode: '', brandName: '', productType: 'Product', warehouse: WAREHOUSES[0],
         category: '', price: '', costPrice: '', barcode: '', 
         vendorId: vendors[0]?.id || '', stock: 0, unit: 'Piece', 
-        reorderPoint: 10, description: '', image: '', isActive: true
+        reorderPoint: 10, reorderQty: 1, description: '', image: '', isActive: true
       });
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
@@ -437,7 +438,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Initial Stock</label>
                     <input 
@@ -456,6 +457,17 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                       className={`w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white ${formData.productType === 'Service' ? 'opacity-50 cursor-not-allowed' : ''}`}
                       value={formData.productType === 'Service' ? 0 : formData.reorderPoint}
                       onChange={(e) => setFormData({...formData, reorderPoint: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Reorder Qty</label>
+                    <input 
+                      type="number"
+                      min={1}
+                      disabled={formData.productType === 'Service'}
+                      className={`w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white ${formData.productType === 'Service' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      value={formData.productType === 'Service' ? 0 : formData.reorderQty}
+                      onChange={(e) => setFormData({...formData, reorderQty: Math.max(1, parseInt(e.target.value) || 1)})}
                     />
                   </div>
                 </div>

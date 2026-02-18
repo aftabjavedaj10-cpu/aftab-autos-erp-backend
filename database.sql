@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS products (
   cost_price DECIMAL(10, 2) NOT NULL,
   stock INTEGER DEFAULT 0,
   reorder_point INTEGER DEFAULT 10,
+  reorder_qty INTEGER DEFAULT 1,
   unit VARCHAR(50) DEFAULT 'pcs',
   warehouse VARCHAR(100) DEFAULT 'Main',
   brand_name VARCHAR(100),
@@ -26,6 +27,9 @@ CREATE TABLE IF NOT EXISTS products (
 -- Backfill for existing databases
 ALTER TABLE products
 ADD COLUMN IF NOT EXISTS urdu_name VARCHAR(255);
+
+ALTER TABLE products
+ADD COLUMN IF NOT EXISTS reorder_qty INTEGER DEFAULT 1;
 
 -- Customers table
 CREATE TABLE IF NOT EXISTS customers (

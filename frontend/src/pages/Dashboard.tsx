@@ -525,7 +525,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     const newItems = selectedProducts.map((p) => {
       const onHand = Number(p.stockOnHand ?? p.stockAvailable ?? p.stock ?? 0);
       const reorderPoint = Number(p.reorderPoint ?? 0);
-      const qty = Math.max(1, reorderPoint - onHand);
+      const configuredReorderQty = Number((p as any).reorderQty ?? 1);
+      const qty = Math.max(1, Number.isFinite(configuredReorderQty) ? configuredReorderQty : Math.max(1, reorderPoint - onHand));
       const unitPrice = parseCurrencyNumber(p.costPrice);
       return {
         productId: String(p.id),

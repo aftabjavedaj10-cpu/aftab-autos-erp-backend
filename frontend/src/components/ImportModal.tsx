@@ -37,6 +37,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
       { key: 'warehouse', label: 'Warehouse Location', required: false },
       { key: 'stock', label: 'Initial Stock', required: false },
       { key: 'reorderPoint', label: 'Alert Level', required: false },
+      { key: 'reorderQty', label: 'Reorder Qty', required: false },
     ],
     Customers: [
       { key: 'customerCode', label: 'Customer Code', required: true },
@@ -184,6 +185,8 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
               
               if (field.key === 'stock' || field.key === 'reorderPoint') {
                 obj[field.key] = parseInt(val) || 0;
+              } else if (field.key === 'reorderQty') {
+                obj[field.key] = Math.max(1, parseInt(val) || 1);
               } else if (field.key === 'price' || field.key === 'costPrice') {
                 const numeric = Number(String(val ?? '').replace(/[^0-9.-]/g, ''));
                 obj[field.key] = Number.isFinite(numeric) ? numeric : 0;
