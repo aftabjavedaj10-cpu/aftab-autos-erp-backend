@@ -36,8 +36,11 @@ import ReceivePaymentPage, { type ReceivePaymentDoc } from "./ReceivePayment";
 import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
 import MakePaymentFormPage from "./MakePaymentForm";
+import POSPage from "./POSPage";
+import POSProductFormPage from "./POSProductFormPage";
+import POSTerminalsPage from "./POSTerminalsPage";
 import { ALL_REPORTS } from "../constants";
-import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
+import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company, POSTerminal, User } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
@@ -103,6 +106,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [editingStockAdjustment, setEditingStockAdjustment] = useState<StockLedgerEntry | undefined>(undefined);
   const [pendingFilterTarget, setPendingFilterTarget] = useState<string>("");
   const [pendingFilterTick, setPendingFilterTick] = useState(0);
+  const [posTerminals, setPOSTerminals] = useState<POSTerminal[]>([]);
   const autoCollapsedTabsRef = useRef<Set<string>>(new Set());
   const mainScrollRef = useRef<HTMLElement | null>(null);
   const [mainThumb, setMainThumb] = useState({ visible: false, top: 0, height: 0 });
@@ -114,6 +118,40 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       // ignore storage write errors
     }
   }, [activeTab, activeTabStorageKey]);
+
+  const posTerminalStorageKey = `pos_terminals_${getActiveCompanyId() || "default"}`;
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(posTerminalStorageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setPOSTerminals(parsed);
+          return;
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+    setPOSTerminals([
+      {
+        id: "TERM-001",
+        name: "Main Terminal",
+        location: "Front Desk",
+        status: "Active",
+        assignedUserId: getUserId() || "admin",
+        lastSynced: "Never",
+      },
+    ]);
+  }, [posTerminalStorageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(posTerminalStorageKey, JSON.stringify(posTerminals));
+    } catch {
+      // ignore storage errors
+    }
+  }, [posTerminals, posTerminalStorageKey]);
 
   const updateMainThumb = useCallback(() => {
     const el = mainScrollRef.current;
@@ -738,6 +776,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     return session?.user?.email || "Admin";
   }, []);
 
+  const posUsers = useMemo<User[]>(
+    () => [
+      {
+        id: getUserId() || "admin",
+        name: userLabel || "Admin",
+        email: userLabel,
+      },
+    ],
+    [userLabel]
+  );
+
   const pinnedReports = useMemo(
     () => ALL_REPORTS.filter((report) => pinnedReportIds.includes(report.id)),
     [pinnedReportIds]
@@ -914,6 +963,98 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               <StatCard title="Categories" value={categories.length.toString()} icon="📂" />
             </div>
           </>
+        )}
+
+        {activeTab === "pos" && (
+          <POSPage
+            products={products.filter((p) => (p.isActive ?? true) && String(p.productType || "Product") === "Product")}
+            customers={customers}
+            terminalName={activeCompany?.name || "Main"}
+            onExit={() => setActiveTab("dashboard")}
+            onOpenTerminals={() => setActiveTab("pos_terminals")}
+            onOpenNewProduct={() => {
+              setEditingProduct(undefined);
+              setActiveTab("pos_new_product");
+            }}
+            onCompleteSale={async (invoiceDraft) => {
+              try {
+                const nextId = getNextSalesInvoiceId();
+                const payload: SalesInvoice = {
+                  ...invoiceDraft,
+                  id: nextId,
+                  status: "Approved",
+                  paymentStatus: "Paid",
+                };
+                const saved = await salesInvoiceAPI.create(payload);
+                setSalesInvoices((prev) => [saved, ...prev]);
+
+                const companyId = getActiveCompanyId();
+                const ledgerData = companyId
+                  ? await stockLedgerAPI.listRecent(companyId, 5000)
+                  : [];
+                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+                setStockLedger(normalizedLedger);
+                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+              } catch (err: any) {
+                setError(err?.message || "Failed to complete POS sale");
+              }
+            }}
+          />
+        )}
+
+        {activeTab === "pos_terminals" && (
+          <POSTerminalsPage
+            terminals={posTerminals}
+            users={posUsers}
+            onSave={(terminal) => {
+              setPOSTerminals((prev) => {
+                const exists = prev.some((t) => t.id === terminal.id);
+                if (exists) return prev.map((t) => (t.id === terminal.id ? terminal : t));
+                return [terminal, ...prev];
+              });
+            }}
+            onDelete={(id) => {
+              setPOSTerminals((prev) => prev.filter((t) => t.id !== id));
+            }}
+          />
+        )}
+
+        {activeTab === "pos_new_product" && (
+          <POSProductFormPage
+            product={editingProduct}
+            categories={categories}
+            vendors={vendors}
+            onBack={() => {
+              setEditingProduct(undefined);
+              setActiveTab("pos");
+            }}
+            onSave={(product, stayOnPage) => {
+              const saveProduct = () => {
+                if (product.id) {
+                  return productAPI.update(product.id, product).then(() => {
+                    setProducts(products.map((p) => (p.id === product.id ? product : p)));
+                  });
+                }
+                return productAPI.create(product).then((res: any) => {
+                  const newProduct = { ...product, id: res.id || `prod_${Date.now()}` };
+                  setProducts([...products, newProduct]);
+                });
+              };
+
+              saveProduct()
+                .then(() => {
+                  if (!stayOnPage) {
+                    setEditingProduct(undefined);
+                    setActiveTab("pos");
+                  }
+                })
+                .catch((err) => {
+                  setError("Failed to save product");
+                  console.error(err);
+                });
+            }}
+            onAddCategory={handleAddCategoryToState}
+          />
         )}
 
         {activeTab === "products" && (

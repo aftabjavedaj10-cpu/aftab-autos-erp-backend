@@ -165,3 +165,18 @@ export interface Profile {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export interface User {
+  id: string;
+  name: string;
+  email?: string;
+}
+
+export interface POSTerminal {
+  id: string;
+  name: string;
+  location: string;
+  status: "Active" | "Inactive";
+  assignedUserId?: string;
+  lastSynced?: string;
+}
