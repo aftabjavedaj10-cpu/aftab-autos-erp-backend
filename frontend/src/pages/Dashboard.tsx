@@ -39,6 +39,7 @@ import MakePaymentFormPage from "./MakePaymentForm";
 import POSPage from "./POSPage";
 import POSProductFormPage from "./POSProductFormPage";
 import POSTerminalsPage from "./POSTerminalsPage";
+import POSTerminalFormPage from "./POSTerminalFormPage";
 import { ALL_REPORTS } from "../constants";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company, POSTerminal, User } from "../types";
 import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
@@ -107,6 +108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [pendingFilterTarget, setPendingFilterTarget] = useState<string>("");
   const [pendingFilterTick, setPendingFilterTick] = useState(0);
   const [posTerminals, setPOSTerminals] = useState<POSTerminal[]>([]);
+  const [editingPOSTerminal, setEditingPOSTerminal] = useState<POSTerminal | undefined>(undefined);
   const autoCollapsedTabsRef = useRef<Set<string>>(new Set());
   const mainScrollRef = useRef<HTMLElement | null>(null);
   const [mainThumb, setMainThumb] = useState({ visible: false, top: 0, height: 0 });
@@ -971,7 +973,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             customers={customers}
             terminalName={activeCompany?.name || "Main"}
             onExit={() => setActiveTab("dashboard")}
-            onOpenTerminals={() => setActiveTab("pos_terminals")}
+            onOpenTerminals={() => {
+              setEditingPOSTerminal(undefined);
+              setActiveTab("pos_terminal_form");
+            }}
             onOpenNewProduct={() => {
               setEditingProduct(undefined);
               setActiveTab("pos_new_product");
@@ -1015,6 +1020,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             }}
             onDelete={(id) => {
               setPOSTerminals((prev) => prev.filter((t) => t.id !== id));
+            }}
+          />
+        )}
+
+        {activeTab === "pos_terminal_form" && (
+          <POSTerminalFormPage
+            terminal={editingPOSTerminal}
+            users={posUsers}
+            onBack={() => {
+              setEditingPOSTerminal(undefined);
+              setActiveTab("pos");
+            }}
+            onSave={(terminal) => {
+              setPOSTerminals((prev) => {
+                const exists = prev.some((t) => t.id === terminal.id);
+                if (exists) return prev.map((t) => (t.id === terminal.id ? terminal : t));
+                return [terminal, ...prev];
+              });
+              setEditingPOSTerminal(undefined);
+              setActiveTab("pos");
             }}
           />
         )}

@@ -221,7 +221,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           onItemClick={(val) => onTabChange(val)}
           items={[
             { label: "POS Terminal", value: "pos" },
-            { label: "Manage Terminals", value: "pos_terminals" }
           ]}
         />
 
