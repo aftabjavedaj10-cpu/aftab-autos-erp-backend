@@ -564,7 +564,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       });
       const totalAmount = merged.reduce((sum, i) => sum + Number(i.total || 0), 0);
       const updatedDoc: SalesInvoice = {
-        ...existing,
+        id: existing.id,
+        customerId: vendorId,
+        customerName: String(vendor.name || ""),
+        reference: existing.reference || "",
+        vehicleNumber: existing.vehicleNumber || "",
+        date: existing.date,
+        dueDate: existing.dueDate || existing.date,
+        status: existing.status || "Draft",
+        paymentStatus: existing.paymentStatus || "Unpaid",
+        notes: existing.notes || "",
+        overallDiscount: Number(existing.overallDiscount || 0),
+        amountReceived: Number(existing.amountReceived || 0),
         items: merged,
         totalAmount,
       };

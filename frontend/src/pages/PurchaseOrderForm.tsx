@@ -88,7 +88,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 
   const [formData, setFormData] = useState({
     id: invoice?.id || nextInvoiceId,
-    customerId: invoice?.customerId || "",
+    customerId: invoice?.customerId ? String(invoice.customerId) : "",
     reference: invoice?.reference || "",
     vehicleNumber: invoice?.vehicleNumber || "",
     date: invoice?.date || new Date().toISOString().split("T")[0],
@@ -492,7 +492,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
       return;
     }
 
-    const customer = customers.find((c) => c.id === formData.customerId);
+    const customer = customers.find((c) => String(c.id) === String(formData.customerId));
     const finalPaymentStatus = computePaymentStatus();
     const finalStatus = status === "Draft" ? "Draft" : status;
     const invoiceData: SalesInvoice = {
@@ -546,7 +546,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   };
 
   const currentCustomer = useMemo(() => {
-    return customers.find((c) => c.id === formData.customerId);
+    return customers.find((c) => String(c.id) === String(formData.customerId));
   }, [formData.customerId, customers]);
 
   useEffect(() => {
@@ -559,7 +559,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
     if (invoice) {
       setFormData({
         id: invoice.id,
-        customerId: invoice.customerId || "",
+        customerId: invoice.customerId ? String(invoice.customerId) : "",
         reference: invoice.reference || "",
         vehicleNumber: invoice.vehicleNumber || "",
         date: invoice.date || new Date().toISOString().split("T")[0],
