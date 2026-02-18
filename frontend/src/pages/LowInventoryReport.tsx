@@ -221,6 +221,7 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
                 <th className="px-4 py-3 w-40">Product Code</th>
                 <th className="px-4 py-3">Product Name</th>
                 <th className="px-4 py-3 text-right w-40">Alert Level</th>
+                <th className="px-4 py-3 text-right w-40">Reorder Qty</th>
                 <th className="px-4 py-3 text-right w-40">Stock In Hand</th>
               </tr>
             </thead>
@@ -240,12 +241,13 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
                   <td className="px-4 py-1.5 font-medium text-slate-700 uppercase">{row.productCode || "-"}</td>
                   <td className="px-4 py-1.5 font-medium text-slate-900 uppercase">{row.name || "-"}</td>
                   <td className="px-4 py-1.5 text-right font-black text-amber-600">{row.reorderPoint.toLocaleString()}</td>
+                  <td className="px-4 py-1.5 text-right font-black text-sky-700">{Number((row as any).reorderQty ?? 1).toLocaleString()}</td>
                   <td className="px-4 py-1.5 text-right font-black text-rose-600">{row.stockInHand.toLocaleString()}</td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">
+                  <td colSpan={6} className="px-6 py-10 text-center text-[11px] font-black text-slate-400 uppercase tracking-widest">
                     No low inventory products found.
                   </td>
                 </tr>
