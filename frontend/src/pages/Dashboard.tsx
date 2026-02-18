@@ -480,6 +480,124 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_order");
   };
 
+  const parseCurrencyNumber = (value: unknown) => {
+    const numeric = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(numeric) ? numeric : 0;
+  };
+
+  const getNextPurchaseOrderId = () => {
+    const maxNo = purchaseOrders.reduce((max, row) => {
+      const match = String(row.id || "").match(/^PO-(\d{6})$/);
+      const value = match ? Number(match[1]) : 0;
+      return value > max ? value : max;
+    }, 0);
+    return `PO-${String(maxNo + 1).padStart(6, "0")}`;
+  };
+
+  const handleLowInventoryBulkAddToPurchaseOrder = async ({
+    productIds,
+    purchaseOrderId,
+  }: {
+    productIds: string[];
+    purchaseOrderId?: string;
+  }) => {
+    const selectedProducts = products.filter((p) => productIds.includes(String(p.id)));
+    if (selectedProducts.length === 0) return;
+
+    const vendorIds = Array.from(
+      new Set(
+        selectedProducts
+          .map((p) => String(p.vendorId || "").trim())
+          .filter((id) => id.length > 0)
+      )
+    );
+    if (vendorIds.length !== 1) {
+      throw new Error("Selected products must belong to one vendor.");
+    }
+
+    const vendorId = vendorIds[0];
+    const vendor = vendors.find((v) => String(v.id) === vendorId);
+    if (!vendor) {
+      throw new Error("Vendor not found for selected products.");
+    }
+
+    const nowDate = new Date().toISOString().split("T")[0];
+    const newItems = selectedProducts.map((p) => {
+      const onHand = Number(p.stockOnHand ?? p.stockAvailable ?? p.stock ?? 0);
+      const reorderPoint = Number(p.reorderPoint ?? 0);
+      const qty = Math.max(1, reorderPoint - onHand);
+      const unitPrice = parseCurrencyNumber(p.costPrice);
+      return {
+        productId: String(p.id),
+        productCode: String(p.productCode || ""),
+        productName: String(p.name || ""),
+        unit: String(p.unit || "pcs"),
+        quantity: qty,
+        unitPrice,
+        discountValue: 0,
+        discountType: "fixed",
+        tax: 0,
+        total: qty * unitPrice,
+      };
+    });
+
+    if (purchaseOrderId) {
+      const existing = purchaseOrders.find((po) => String(po.id) === String(purchaseOrderId));
+      if (!existing) throw new Error("Selected purchase order not found.");
+      if (String(existing.customerId || "") !== vendorId) {
+        throw new Error("Selected purchase order vendor does not match selected products.");
+      }
+
+      const merged = [...(existing.items || [])];
+      newItems.forEach((incoming) => {
+        const idx = merged.findIndex((i) => String(i.productId) === String(incoming.productId));
+        if (idx >= 0) {
+          const nextQty = Number(merged[idx].quantity || 0) + Number(incoming.quantity || 0);
+          merged[idx] = {
+            ...merged[idx],
+            quantity: nextQty,
+            total: nextQty * Number(merged[idx].unitPrice || 0),
+          };
+        } else {
+          merged.push(incoming);
+        }
+      });
+      const totalAmount = merged.reduce((sum, i) => sum + Number(i.total || 0), 0);
+      const updatedDoc: SalesInvoice = {
+        ...existing,
+        items: merged,
+        totalAmount,
+      };
+      const saved = await purchaseOrderAPI.update(existing.id, updatedDoc);
+      setPurchaseOrders((prev) => prev.map((po) => (po.id === saved.id ? saved : po)));
+      setEditingPurchaseOrder(saved);
+      setActiveTab("add_purchase_order");
+      return;
+    }
+
+    const totalAmount = newItems.reduce((sum, i) => sum + Number(i.total || 0), 0);
+    const newDoc: SalesInvoice = {
+      id: getNextPurchaseOrderId(),
+      customerId: vendorId,
+      customerName: String(vendor.name || ""),
+      reference: "",
+      vehicleNumber: "",
+      date: nowDate,
+      dueDate: nowDate,
+      status: "Draft",
+      paymentStatus: "Unpaid",
+      notes: "Created from Low Inventory Report",
+      overallDiscount: 0,
+      amountReceived: 0,
+      items: newItems,
+      totalAmount,
+    };
+    const saved = await purchaseOrderAPI.create(newDoc);
+    setPurchaseOrders((prev) => [saved, ...prev]);
+    setEditingPurchaseOrder(saved);
+    setActiveTab("add_purchase_order");
+  };
+
   const handleAddPurchaseReturn = () => {
     setEditingPurchaseReturn(undefined);
     setActiveTab("add_purchase_return");
@@ -1537,6 +1655,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             products={products}
             categories={categories}
             vendors={vendors}
+            purchaseOrders={purchaseOrders}
+            onBulkAddToPurchaseOrder={handleLowInventoryBulkAddToPurchaseOrder}
           />
         )}
 
