@@ -103,6 +103,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [editingStockAdjustment, setEditingStockAdjustment] = useState<StockLedgerEntry | undefined>(undefined);
   const [pendingFilterTarget, setPendingFilterTarget] = useState<string>("");
   const [pendingFilterTick, setPendingFilterTick] = useState(0);
+  const autoCollapsedTabsRef = useRef<Set<string>>(new Set());
   const mainScrollRef = useRef<HTMLElement | null>(null);
   const [mainThumb, setMainThumb] = useState({ visible: false, top: 0, height: 0 });
 
@@ -808,21 +809,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   }, [updateMainThumb]);
 
   const shouldAutoCollapseSidebar =
-    activeTab.startsWith("add_") ||
-    activeTab === "reports" ||
-    activeTab.startsWith("report_");
-  const sidebarCollapsed = shouldAutoCollapseSidebar ? true : isCollapsed;
+    activeTab.startsWith("add_") || activeTab === "reports" || activeTab.startsWith("report_");
+
+  useEffect(() => {
+    if (!shouldAutoCollapseSidebar) return;
+    if (autoCollapsedTabsRef.current.has(activeTab)) return;
+    autoCollapsedTabsRef.current.add(activeTab);
+    setIsCollapsed(true);
+  }, [activeTab, shouldAutoCollapseSidebar]);
 
   return (
     <div className="min-h-screen flex bg-[#FEF3E2] dark:bg-[#020617]">
       <Sidebar
         activeTab={activeTab}
         onTabChange={setActiveTab}
-        isCollapsed={sidebarCollapsed}
-        onToggle={() => {
-          if (shouldAutoCollapseSidebar) return;
-          setIsCollapsed(!isCollapsed);
-        }}
+        isCollapsed={isCollapsed}
+        onToggle={() => setIsCollapsed(!isCollapsed)}
         isMobileOpen={isMobileOpen}
         onMobileClose={() => setIsMobileOpen(false)}
       />

@@ -44,11 +44,12 @@ const SidebarDropdown: React.FC<{
   isOpen: boolean; 
   isCollapsed: boolean;
   toggle: () => void;
+  onCollapsedClick?: () => void;
   onItemClick: (value: string) => void;
-}> = ({ icon, label, items, activeValue, isOpen, isCollapsed, toggle, onItemClick }) => (
+}> = ({ icon, label, items, activeValue, isOpen, isCollapsed, toggle, onCollapsedClick, onItemClick }) => (
   <div className="space-y-1">
     <div 
-      onClick={isCollapsed ? undefined : toggle}
+      onClick={isCollapsed ? onCollapsedClick : toggle}
       className={`flex items-center space-x-3 px-4 py-3 rounded-lg cursor-pointer transition-all 
         ${isCollapsed ? 'justify-center px-0' : ''} 
         ${(isOpen || items.some(i => i.value === activeValue)) && !isCollapsed 
@@ -212,6 +213,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           isCollapsed={effectiveCollapsed}
           isOpen={posOpen}
           toggle={() => setPosOpen(!posOpen)}
+          onCollapsedClick={() => {
+            if (effectiveCollapsed) onToggle();
+            setPosOpen(true);
+          }}
           activeValue={activeTab}
           onItemClick={(val) => onTabChange(val)}
           items={[
@@ -227,6 +232,10 @@ const Sidebar: React.FC<SidebarProps> = ({
             isCollapsed={effectiveCollapsed}
             isOpen={setupOpen}
             toggle={() => setSetupOpen(!setupOpen)}
+            onCollapsedClick={() => {
+              if (effectiveCollapsed) onToggle();
+              setSetupOpen(true);
+            }}
             activeValue={activeTab}
             onItemClick={(val) => onTabChange(val)}
             items={setupItems}
@@ -239,6 +248,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           isCollapsed={effectiveCollapsed}
           isOpen={salesOpen}
           toggle={() => setSalesOpen(!salesOpen)}
+          onCollapsedClick={() => {
+            if (effectiveCollapsed) onToggle();
+            setSalesOpen(true);
+          }}
           activeValue={activeTab}
           onItemClick={(val) => onTabChange(val)}
           items={[
@@ -256,6 +269,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           isCollapsed={effectiveCollapsed}
           isOpen={purchaseOpen}
           toggle={() => setPurchaseOpen(!purchaseOpen)}
+          onCollapsedClick={() => {
+            if (effectiveCollapsed) onToggle();
+            setPurchaseOpen(true);
+          }}
           activeValue={activeTab}
           onItemClick={(val) => onTabChange(val)}
           items={[
@@ -272,6 +289,10 @@ const Sidebar: React.FC<SidebarProps> = ({
           isCollapsed={effectiveCollapsed}
           isOpen={inventoryOpen}
           toggle={() => setInventoryOpen(!inventoryOpen)}
+          onCollapsedClick={() => {
+            if (effectiveCollapsed) onToggle();
+            setInventoryOpen(true);
+          }}
           activeValue={activeTab}
           onItemClick={(val) => onTabChange(val)}
           items={[
