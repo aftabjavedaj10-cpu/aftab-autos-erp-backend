@@ -52,17 +52,20 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
     return ['All Categories', 'No Category', ...list];
   }, [categories]);
 
-  const getVendorName = (vendorId: string) => {
-    return vendors.find(v => v.id === vendorId)?.name || 'Unknown Supplier';
+  const getVendorName = (vendorId: string | number) => {
+    const normalized = String(vendorId ?? "");
+    return vendors.find(v => String(v.id) === normalized)?.name || 'Unknown Supplier';
   };
 
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const isActive = p.isActive ?? true;
-      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            (p.productCode?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-                            p.barcode.includes(searchQuery);
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        String(p.name ?? "").toLowerCase().includes(query) ||
+        String(p.id ?? "").toLowerCase().includes(query) ||
+        String(p.productCode ?? "").toLowerCase().includes(query) ||
+        String(p.barcode ?? "").toLowerCase().includes(query);
       
       let matchesCategory = true;
       if (selectedCategory === 'All Categories') {
