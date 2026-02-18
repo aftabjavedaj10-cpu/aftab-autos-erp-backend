@@ -18,6 +18,7 @@ interface PurchaseOrderFormPageProps {
     savePrices: boolean,
     salesPriceUpdates?: Record<string, number>
   ) => void;
+  onConvertToPurchaseInvoice?: (invoice: SalesInvoice) => void;
   onNavigate?: (invoice: SalesInvoice) => void;
   onNavigateNew?: () => void;
   formTitleNew?: string;
@@ -35,6 +36,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   company,
   onBack,
   onSave,
+  onConvertToPurchaseInvoice,
   onNavigate,
   onNavigateNew,
   formTitleNew = "New Purchase Order",
@@ -543,6 +545,20 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
       // Ignore session storage errors
     }
     onNavigateNew?.();
+  };
+
+  const handleConvertToPurchaseInvoice = () => {
+    if (!isApproved) return;
+    const customer = customers.find((c) => String(c.id) === String(formData.customerId));
+    const draftInvoice: SalesInvoice = {
+      ...formData,
+      status: "Draft",
+      paymentStatus: "Unpaid",
+      amountReceived: 0,
+      customerName: customer?.name || "Unknown",
+      totalAmount: totals.netTotal,
+    };
+    onConvertToPurchaseInvoice?.(draftInvoice);
   };
 
   const currentCustomer = useMemo(() => {
@@ -1508,13 +1524,22 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
           )}
 
           {isApproved && (
-            <button
-              type="button"
-              onClick={handleReviseAction}
-              className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
-            >
-              {isApproved && isRevising ? "Save Revision" : "Revise"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleConvertToPurchaseInvoice}
+                className="px-4 py-2 bg-orange-600 border border-orange-500 rounded-lg text-[10px] font-black uppercase tracking-widest text-white hover:bg-orange-700 transition-colors"
+              >
+                Convert To Purchase Invoice
+              </button>
+              <button
+                type="button"
+                onClick={handleReviseAction}
+                className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
+              >
+                {isApproved && isRevising ? "Save Revision" : "Revise"}
+              </button>
+            </>
           )}
         </div>
       </div>

@@ -75,6 +75,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<SalesInvoice | undefined>(undefined);
   const [editingPurchaseReturn, setEditingPurchaseReturn] = useState<SalesInvoice | undefined>(undefined);
   const [salesInvoiceForceNewMode, setSalesInvoiceForceNewMode] = useState(false);
+  const [purchaseInvoiceForceNewMode, setPurchaseInvoiceForceNewMode] = useState(false);
   const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
   const [editingQuotationInvoice, setEditingQuotationInvoice] = useState<SalesInvoice | undefined>(undefined);
   const [salesOrders, setSalesOrders] = useState<SalesOrderDoc[]>([]);
@@ -463,11 +464,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleAddPurchaseInvoice = () => {
     setEditingPurchaseInvoice(undefined);
+    setPurchaseInvoiceForceNewMode(false);
     setActiveTab("add_purchase_invoice");
   };
 
   const handleEditPurchaseInvoice = (invoice: SalesInvoice) => {
     setEditingPurchaseInvoice(invoice);
+    setPurchaseInvoiceForceNewMode(false);
     setActiveTab("add_purchase_invoice");
   };
 
@@ -493,6 +496,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       return value > max ? value : max;
     }, 0);
     return `PO-${String(maxNo + 1).padStart(6, "0")}`;
+  };
+
+  const getNextPurchaseInvoiceId = () => {
+    const maxNo = purchaseInvoices.reduce((max, row) => {
+      const match = String(row.id || "").match(/^PI-(\d{6})$/);
+      const value = match ? Number(match[1]) : 0;
+      return value > max ? value : max;
+    }, 0);
+    return `PI-${String(maxNo + 1).padStart(6, "0")}`;
   };
 
   const handleLowInventoryBulkAddToPurchaseOrder = async ({
@@ -1807,20 +1819,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         {activeTab === "add_purchase_invoice" && (
           <PurchaseInvoiceFormPage
             invoice={editingPurchaseInvoice}
+            forceNewMode={purchaseInvoiceForceNewMode}
             invoices={purchaseInvoices}
             products={products}
             vendors={vendors}
             company={activeCompany || undefined}
             onBack={() => {
               setEditingPurchaseInvoice(undefined);
+              setPurchaseInvoiceForceNewMode(false);
               setActiveTab("purchase_invoice");
             }}
             onNavigate={(inv) => {
               setEditingPurchaseInvoice(inv);
+              setPurchaseInvoiceForceNewMode(false);
               setActiveTab("add_purchase_invoice");
             }}
             onNavigateNew={() => {
               setEditingPurchaseInvoice(undefined);
+              setPurchaseInvoiceForceNewMode(false);
               setActiveTab("add_purchase_invoice");
             }}
             onSave={async (invoiceData, stayOnPage, savePrices, salesPriceUpdates) => {
@@ -1875,7 +1891,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   );
                 }
 
-                const saved = editingPurchaseInvoice
+                const saved = editingPurchaseInvoice && !purchaseInvoiceForceNewMode
                   ? await purchaseInvoiceAPI.update(invoiceData.id, invoiceData)
                   : await purchaseInvoiceAPI.create(invoiceData);
 
@@ -1937,8 +1953,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
                 if (stayOnPage) {
                   setEditingPurchaseInvoice(saved);
+                  setPurchaseInvoiceForceNewMode(false);
                 } else {
                   setEditingPurchaseInvoice(undefined);
+                  setPurchaseInvoiceForceNewMode(false);
                   setActiveTab("purchase_invoice");
                 }
               } catch (err: any) {
@@ -1955,6 +1973,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             products={products}
             vendors={vendors}
             company={activeCompany || undefined}
+            onConvertToPurchaseInvoice={(purchaseOrder) => {
+              const converted: SalesInvoice = {
+                ...purchaseOrder,
+                id: getNextPurchaseInvoiceId(),
+                status: "Draft",
+                paymentStatus: "Unpaid",
+                amountReceived: 0,
+                reference: purchaseOrder.reference || purchaseOrder.id,
+              };
+              setEditingPurchaseInvoice(converted);
+              setPurchaseInvoiceForceNewMode(true);
+              setActiveTab("add_purchase_invoice");
+            }}
             onBack={() => {
               setEditingPurchaseOrder(undefined);
               setActiveTab("purchase_order");
