@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { hasPermission } from '../services/supabaseAuth';
 import {
   FiBarChart2,
-  FiCpu,
   FiSettings,
   FiShoppingBag,
   FiShoppingCart,
@@ -103,7 +102,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   companyLogo
 }) => {
   const [setupOpen, setSetupOpen] = useState(false);
-  const [posOpen, setPosOpen] = useState(false);
   const [salesOpen, setSalesOpen] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [inventoryOpen, setInventoryOpen] = useState(false);
@@ -147,7 +145,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     updateThumb();
     const id = window.setTimeout(updateThumb, 220);
     return () => window.clearTimeout(id);
-  }, [updateThumb, setupOpen, posOpen, salesOpen, purchaseOpen, inventoryOpen, effectiveCollapsed, isMobileOpen]);
+  }, [updateThumb, setupOpen, salesOpen, purchaseOpen, inventoryOpen, effectiveCollapsed, isMobileOpen]);
 
   useEffect(() => {
     const onResize = () => updateThumb();
@@ -206,23 +204,6 @@ const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => onTabChange('dashboard')} 
           />
         )}
-
-        <SidebarDropdown 
-          icon={<FiCpu />} 
-          label="POS" 
-          isCollapsed={effectiveCollapsed}
-          isOpen={posOpen}
-          toggle={() => setPosOpen(!posOpen)}
-          onCollapsedClick={() => {
-            if (effectiveCollapsed) onToggle();
-            setPosOpen(true);
-          }}
-          activeValue={activeTab}
-          onItemClick={(val) => onTabChange(val)}
-          items={[
-            { label: "POS Terminal", value: "pos" },
-          ]}
-        />
 
         {setupItems.length > 0 && (
           <SidebarDropdown 
