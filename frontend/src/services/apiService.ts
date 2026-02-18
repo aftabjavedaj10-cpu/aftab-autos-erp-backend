@@ -343,7 +343,9 @@ const mapVendorToDb = (vendor: any) =>
 
 const mapCategoryFromDb = (row: any) => ({ ...row });
 const mapCategoryToDb = (category: any) =>
-  stripClientOnly({ ...category }, ["itemCount"]);
+  // Category id in DB is integer; frontend may carry temporary string ids (e.g. cat_123).
+  // Never send id in write payloads so Postgres can auto-generate and avoid type errors.
+  stripClientOnly({ ...category }, ["itemCount", "id"]);
 
 const mapSalesInvoiceFromDb = (row: any) => ({
   id: row.id,
