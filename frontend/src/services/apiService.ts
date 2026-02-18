@@ -2025,7 +2025,11 @@ export const stockLedgerAPI = {
 // ============ COMPANIES & PROFILES ============
 export const companyAPI = {
   create: async (name: string) => {
-    await ensurePermission("settings.manage_company");
+    // Bootstrap path: allow creating first/active company without requiring
+    // company-scoped permission that does not exist yet.
+    if (getActiveCompanyId()) {
+      await ensurePermission("settings.manage_company");
+    }
     return apiCall("/companies", "POST", { name }, true)
       .then(firstRow)
       .then(mapCompanyFromDb);
