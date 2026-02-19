@@ -738,8 +738,19 @@ const SettingsPage: React.FC = () => {
                     </>
                   ) : (
                     <div className="text-center p-5 pointer-events-none">
-                      <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 text-orange-600">
-                        ðŸ“·
+                      <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 rounded-2xl flex items-center justify-center mx-auto mb-4 text-orange-600">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          className="w-7 h-7"
+                          aria-hidden="true"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h3l1.2-2h7.6L17 8h3v10H4V8Z" />
+                          <circle cx="12" cy="13" r="3.3" />
+                        </svg>
                       </div>
                       <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
                         Upload Logo
