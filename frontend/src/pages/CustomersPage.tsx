@@ -105,7 +105,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
   };
 
   return (
-    <div className="animate-in fade-in duration-500 relative">
+    <div className="erp-compact animate-in fade-in duration-500 relative">
       {!canRead && (
         <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300 rounded-2xl font-bold text-sm">
           You do not have permission to view customers.

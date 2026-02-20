@@ -59,7 +59,7 @@ const AddCategoryPage: React.FC<AddCategoryPageProps> = ({ category, onBack, onS
   };
 
   return (
-    <div className="animate-in slide-in-from-right-4 duration-300 pb-20">
+    <div className="erp-compact animate-in slide-in-from-right-4 duration-300 pb-20">
       <div className="flex items-center gap-4 mb-8">
         <button 
           onClick={onBack}

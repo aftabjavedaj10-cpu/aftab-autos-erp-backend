@@ -48,7 +48,7 @@ const AddCategoryFormPage: React.FC<AddCategoryFormPageProps> = ({
   };
 
   return (
-    <div className="animate-in fade-in duration-500 pb-10">
+    <div className="erp-compact animate-in fade-in duration-500 pb-10">
       <div className="mb-5 flex items-center gap-3">
         <button
           type="button"
@@ -143,4 +143,3 @@ const AddCategoryFormPage: React.FC<AddCategoryFormPageProps> = ({
 };
 
 export default AddCategoryFormPage;
-
