@@ -32,14 +32,14 @@ const Pagination: React.FC<PaginationProps> = ({
   };
 
   return (
-    <div className="px-8 py-5 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/30">
-      <div className="flex items-center gap-6">
+    <div className="erp-pagination px-5 py-3 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/30">
+      <div className="flex items-center gap-4">
         <div className="flex items-center gap-2">
           <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest">Rows per page:</span>
           <select
             value={rowsPerPage}
             onChange={(e) => onRowsPerPageChange(parseInt(e.target.value))}
-            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500"
           >
             <option value={5}>5</option>
             <option value={10}>10</option>
@@ -58,12 +58,12 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={handlePrevious}
           disabled={currentPage === 1}
-          className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           ← Previous
         </button>
 
-        <div className="flex items-center gap-1 px-2">
+        <div className="flex items-center gap-1 px-1">
           {Array.from({ length: Math.min(5, totalPages) }).map((_, i) => {
             let pageNum;
             if (totalPages <= 5) {
@@ -80,7 +80,7 @@ const Pagination: React.FC<PaginationProps> = ({
               <button
                 key={pageNum}
                 onClick={() => onPageChange(pageNum)}
-                className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${
+                className={`w-7 h-7 rounded-lg text-[11px] font-bold transition-all ${
                   pageNum === currentPage
                     ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/20'
                     : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -95,7 +95,7 @@ const Pagination: React.FC<PaginationProps> = ({
         <button
           onClick={handleNext}
           disabled={currentPage === totalPages || totalPages === 0}
-          className="px-4 py-2 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="px-3 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           Next →
         </button>

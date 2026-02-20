@@ -28,7 +28,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   // Dynamic Categories for Search Filter
   const customerCategories = useMemo(() => {
@@ -119,13 +119,13 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
         <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
           <button 
             onClick={() => setIsImportModalOpen(true)}
-            className="min-w-[170px] h-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-3 px-6 rounded-2xl transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+            className="min-w-[138px] h-[38px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-2 px-4 rounded-lg transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
             <span>📥</span> Import Excel
           </button>
           <button 
             onClick={onAddClick}
-            className="min-w-[170px] h-[48px] bg-orange-600 hover:bg-orange-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+            className="min-w-[138px] h-[38px] bg-orange-600 hover:bg-orange-700 text-white font-black py-2 px-4 rounded-lg shadow-md shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
             <span>➕</span> Add Customer
           </button>
@@ -338,6 +338,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
 };
 
 export default CustomersPage;
+
 
 
 

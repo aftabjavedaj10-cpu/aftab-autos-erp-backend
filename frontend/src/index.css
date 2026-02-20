@@ -41,6 +41,10 @@ input[type="number"] {
 }
 
 .erp-compact button {
+  min-height: 30px !important;
+  padding-top: 0.38rem !important;
+  padding-bottom: 0.38rem !important;
+  font-size: 11px !important;
   border-radius: 0.55rem !important;
 }
 
@@ -48,4 +52,9 @@ input[type="number"] {
 .erp-compact .rounded-3xl,
 .erp-compact .rounded-2xl {
   border-radius: 0.75rem !important;
+}
+
+.erp-compact .erp-pagination {
+  padding-top: 0.6rem !important;
+  padding-bottom: 0.6rem !important;
 }

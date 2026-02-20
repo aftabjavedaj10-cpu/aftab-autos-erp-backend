@@ -1,7 +1,8 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Category } from '../types';
 import { hasPermission } from '../services/supabaseAuth';
 import ImportModal from '../components/ImportModal';
+import Pagination from '../components/Pagination';
 
 interface CategoriesPageProps {
   categories: Category[];
@@ -25,7 +26,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   const handleImport = (data: any[]) => {
     onImportComplete(data);
@@ -93,15 +94,15 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
         <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
           <button 
             onClick={() => setIsImportModalOpen(true)}
-            className="min-w-[170px] h-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-3 px-6 rounded-2xl transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+            className="min-w-[138px] h-[38px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-2 px-4 rounded-lg transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>📥</span> Import Excel
+            <span>??</span> Import Excel
           </button>
           <button 
             onClick={onAddClick}
-            className="min-w-[170px] h-[48px] bg-orange-600 hover:bg-orange-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+            className="min-w-[138px] h-[38px] bg-orange-600 hover:bg-orange-700 text-white font-black py-2 px-4 rounded-lg shadow-md shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>➕</span> Add Category
+            <span>?</span> Add Category
           </button>
         </div>
       </div>
@@ -227,31 +228,13 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
           )}
         </div>
 
-        {/* Pagination */}
-        <div className="px-8 py-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-          <div className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
-            Showing {filteredCategories.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, filteredCategories.length)} of {filteredCategories.length} categories
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-            >
-              Previous
-            </button>
-            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 px-2">
-              Page {filteredCategories.length === 0 ? 0 : currentPage} of {Math.ceil(filteredCategories.length / rowsPerPage) || 1}
-            </span>
-            <button 
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage * rowsPerPage >= filteredCategories.length}
-              className="px-3 py-1.5 text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <Pagination
+          totalItems={filteredCategories.length}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setCurrentPage}
+          onRowsPerPageChange={setRowsPerPage}
+        />
       </div>
 
       {/* Simplified Floating Bulk Action Bar */}
@@ -327,6 +310,8 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
 };
 
 export default CategoriesPage;
+
+
 
 
 
