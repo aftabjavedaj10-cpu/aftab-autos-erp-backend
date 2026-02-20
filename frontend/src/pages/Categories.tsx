@@ -96,13 +96,13 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
             onClick={() => setIsImportModalOpen(true)}
             className="min-w-[138px] h-[38px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-2 px-4 rounded-lg transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>??</span> Import Excel
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg> Import Excel
           </button>
           <button 
             onClick={onAddClick}
             className="min-w-[138px] h-[38px] bg-orange-600 hover:bg-orange-700 text-white font-black py-2 px-4 rounded-lg shadow-md shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>?</span> Add Category
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Category
           </button>
         </div>
       </div>
@@ -158,7 +158,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                     <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
                       <button 
                         onClick={toggleSelectAll}
-                        className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
+                        className={`w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
                       >
                         {selectedIds.size === paginatedIds.length && paginatedIds.length > 0 && (
                           <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
@@ -186,7 +186,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                       <div className={`absolute left-0 top-0 bottom-0 w-1 bg-orange-600 transition-opacity duration-300 ${selectedIds.has(category.id || '') ? 'opacity-100' : 'opacity-0'}`}></div>
                       <button 
                         onClick={() => toggleSelectRow(category.id)}
-                        className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${category.id && selectedIds.has(category.id) ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
+                        className={`w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${category.id && selectedIds.has(category.id) ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
                       >
                         {category.id && selectedIds.has(category.id) && (
                           <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
@@ -310,6 +310,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
 };
 
 export default CategoriesPage;
+
 
 
 

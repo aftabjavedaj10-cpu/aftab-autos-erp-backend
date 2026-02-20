@@ -152,20 +152,20 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
             onClick={() => setIsImportModalOpen(true)}
             className="min-w-[138px] h-[38px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-2 px-4 rounded-lg transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>📥</span> Import Excel
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg> Import Excel
           </button>
           <button 
             onClick={onAddClick}
             className="min-w-[138px] h-[38px] bg-orange-600 hover:bg-orange-700 text-white font-black py-2 px-4 rounded-lg shadow-md shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>➕</span> Add Product
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Product
           </button>
         </div>
       </div>
 
       {successMsg && (
         <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm animate-in slide-in-from-top-4 duration-300 flex items-center gap-3">
-          <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs">✓</div>
+          <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center "><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg></div>
           {successMsg}
         </div>
       )}
@@ -173,7 +173,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden mb-6 relative">
         <div className="p-8 border-b border-slate-50 dark:border-slate-800 grid grid-cols-1 md:grid-cols-5 gap-4">
             <div className="relative col-span-1 md:col-span-1">
-              <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">🔍</span>
+              <span className="absolute inset-y-0 left-4 flex items-center text-slate-400"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></span>
               <input 
                 type="text" 
                 placeholder="Search products..." 
@@ -221,10 +221,10 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                   <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
                     <button 
                       onClick={toggleSelectAll}
-                      className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedProducts.length && paginatedProducts.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
+                      className={`w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedProducts.length && paginatedProducts.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
                     >
                       {selectedIds.size === paginatedProducts.length && paginatedProducts.length > 0 && (
-                        <span className="text-white text-[10px]">✓</span>
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                       )}
                     </button>
                     {canDelete && selectedIds.size > 0 && (
@@ -252,10 +252,10 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                       <div className={`absolute left-0 top-0 bottom-0 w-1 bg-orange-600 transition-opacity duration-300 ${selectedIds.has(product.id) ? 'opacity-100' : 'opacity-0'}`}></div>
                       <button 
                         onClick={() => toggleSelectRow(product.id)}
-                        className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${selectedIds.has(product.id) ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
+                        className={`w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${selectedIds.has(product.id) ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
                       >
                         {selectedIds.has(product.id) && (
-                          <span className="text-white text-[10px]">✓</span>
+                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                         )}
                       </button>
                     </div>
@@ -266,7 +266,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                         {product.image ? (
                           <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="opacity-50 text-sm">⚙️</span>
+                          <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 3h2l.6 2a7 7 0 0 1 1.7.7l1.8-1.1 1.4 1.4-1.1 1.8c.3.5.5 1.1.7 1.7l2 .6v2l-2 .6a7 7 0 0 1-.7 1.7l1.1 1.8-1.4 1.4-1.8-1.1a7 7 0 0 1-1.7.7l-.6 2h-2l-.6-2a7 7 0 0 1-1.7-.7l-1.8 1.1-1.4-1.4 1.1-1.8a7 7 0 0 1-.7-1.7l-2-.6v-2l2-.6c.2-.6.4-1.2.7-1.7L4.6 6l1.4-1.4 1.8 1.1c.5-.3 1.1-.5 1.7-.7z"/><circle cx="12" cy="12" r="2.5"/></svg>
                         )}
                       </div>
                       <div>
@@ -315,7 +315,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                   </td>
                   <td className="px-8 py-5 text-right">
                     <div className="flex items-center justify-end space-x-1 opacity-0 group-hover:opacity-100 transition-opacity" style={{ display: (canWrite || canDelete) ? 'flex' : 'none' }}>
-                      <button onClick={() => onEditClick(product)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-orange-600 transition-all shadow-sm text-xs" title="Edit">✏️</button>
+                      <button onClick={() => onEditClick(product)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-orange-600 transition-all shadow-sm text-xs" title="Edit"><svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 1 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
                       <button onClick={() => { setSelectedIds(new Set([product.id])); setIsConfirmModalOpen(true); }} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-rose-600 transition-all shadow-sm text-xs" title="Delete">
                         <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                       </button>
@@ -413,6 +413,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
 };
 
 export default ProductsPage;
+
 
 
 

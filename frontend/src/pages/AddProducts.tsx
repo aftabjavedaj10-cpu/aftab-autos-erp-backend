@@ -150,7 +150,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
           className="p-2.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl text-slate-400 hover:text-orange-600 transition-all hover:scale-105 active:scale-95"
           title="Go Back"
         >
-          <span className="text-xl">←</span>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6 9 12l6 6"/></svg>
         </button>
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
@@ -556,7 +556,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-3 py-3 rounded-r-xl shadow-lg transition-all flex items-center justify-center"
           >
-            <span className={`text-[10px] transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+            <span className={`text-[10px] transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
           </button>
 
           {isDropdownOpen && (
@@ -566,7 +566,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                 onClick={() => handleAction(true)}
                 className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-slate-700/50 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
               >
-                💾 {isEdit ? 'Update and Stay' : 'Save and Add Another'}
+                <svg className="w-3.5 h-3.5 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h13l3 3v13H4z"/><path d="M8 4v6h8V4"/><path d="M8 20v-6h8v6"/></svg> {isEdit ? 'Update and Stay' : 'Save and Add Another'}
               </button>
             </div>
           )}
@@ -577,3 +577,4 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
 };
 
 export default AddProducts;
+
