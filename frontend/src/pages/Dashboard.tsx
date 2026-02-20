@@ -401,7 +401,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       setStockLedger(normalizedLedger);
       setProducts(mergeStockToProducts(normalizedProducts, normalizedLedger));
     }).catch(err => {
-      setError("Failed to import products");
+      setError(err instanceof Error ? err.message : "Failed to import products");
       console.error(err);
     });
   };
