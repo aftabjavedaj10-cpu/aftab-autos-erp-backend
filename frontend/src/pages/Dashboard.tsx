@@ -365,7 +365,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       const categoriesData = await categoryAPI.getAll().catch(() => []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
     }).catch(err => {
-      setError("Failed to import categories");
+      setError(err instanceof Error ? err.message : "Failed to import categories");
       console.error(err);
     });
   };

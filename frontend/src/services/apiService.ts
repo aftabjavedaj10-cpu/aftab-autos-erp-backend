@@ -1295,11 +1295,30 @@ export const categoryAPI = {
   },
   import: async (categories: any[]) => {
     await ensurePermission("categories.write");
+    const sanitized = (Array.isArray(categories) ? categories : [])
+      .map((category) => ({
+        ...category,
+        name: String(category?.name ?? "").trim(),
+        description:
+          category?.description == null ? null : String(category.description).trim(),
+        type: String(category?.type ?? "product")
+          .trim()
+          .toLowerCase(),
+      }))
+      .filter((category) => category.name.length > 0);
+
+    if (sanitized.length === 0) {
+      throw new Error("No valid category rows found. Ensure Category Name is filled.");
+    }
+
     const rows = normalizeBulkRows(
-      categories.map(attachOwnership).map((category) =>
+      sanitized.map(attachOwnership).map((category) =>
         mapCategoryToDb({
           ...category,
-          type: category?.type || "product",
+          type:
+            category.type === "customer" || category.type === "vendor"
+              ? category.type
+              : "product",
         })
       )
     );
