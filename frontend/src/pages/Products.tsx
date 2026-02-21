@@ -217,8 +217,8 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
           <table className="w-full text-left border-collapse table-fixed">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
-                <th className="px-6 py-5 w-20">
-                  <div className="flex items-center" style={{ display: canWrite ? 'flex' : 'none' }}>
+                <th className="px-6 py-5 w-20 text-center">
+                  <div className="flex items-center justify-center w-full" style={{ display: canWrite ? 'flex' : 'none' }}>
                     <button 
                       onClick={toggleSelectAll}
                       className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedProducts.length && paginatedProducts.length > 0 ? 'bg-orange-600 border-orange-600 shadow-sm shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}

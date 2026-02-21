@@ -55,7 +55,6 @@ input[type="number"] {
   -webkit-appearance: none !important;
   appearance: none !important;
   background-image: none !important;
-  background-color: transparent !important;
   min-height: 16px !important;
   min-width: 16px !important;
   padding: 0 !important;
