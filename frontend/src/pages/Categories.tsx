@@ -1,7 +1,8 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Category } from '../types';
 import { hasPermission } from '../services/supabaseAuth';
 import ImportModal from '../components/ImportModal';
+import Pagination from '../components/Pagination';
 
 interface CategoriesPageProps {
   categories: Category[];
@@ -25,7 +26,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   const handleImport = (data: any[]) => {
     onImportComplete(data);
@@ -79,7 +80,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
   };
 
   return (
-    <div className="animate-in fade-in duration-500 relative">
+    <div className="erp-compact animate-in fade-in duration-500 relative">
       {!canRead && (
         <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300 rounded-2xl font-bold text-sm">
           You do not have permission to view categories.
@@ -93,15 +94,15 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
         <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
           <button 
             onClick={() => setIsImportModalOpen(true)}
-            className="min-w-[170px] h-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-3 px-6 rounded-2xl transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+            className="min-w-[138px] h-[38px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-2 px-4 rounded-lg transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>📥</span> Import Excel
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg> Import Excel
           </button>
           <button 
             onClick={onAddClick}
-            className="min-w-[170px] h-[48px] bg-orange-600 hover:bg-orange-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+            className="min-w-[138px] h-[38px] bg-orange-600 hover:bg-orange-700 text-white font-black py-2 px-4 rounded-lg shadow-md shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>➕</span> Add Category
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Category
           </button>
         </div>
       </div>
@@ -153,21 +154,18 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
             <table className="w-full text-left border-collapse table-fixed">
               <thead>
                 <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
-                  <th className="px-6 py-5 w-20">
-                    <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
-                      <button 
-                        onClick={toggleSelectAll}
-                        className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
-                      >
-                        {selectedIds.size === paginatedIds.length && paginatedIds.length > 0 && (
-                          <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
-                        )}
-                      </button>
-                      {selectedIds.size > 0 && (
-                        <button onClick={() => setSelectedIds(new Set())} className="text-[8px] text-orange-600 hover:underline">DESELECT</button>
+                  <th className="px-6 py-5 w-20 text-center">
+                    <div className="flex items-center justify-center w-full" style={{ display: canWrite ? 'flex' : 'none' }}>
+                    <button 
+                      onClick={toggleSelectAll}
+                      className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-sm shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
+                    >
+                      {selectedIds.size === paginatedIds.length && paginatedIds.length > 0 && (
+                        <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                       )}
-                    </div>
-                  </th>
+                    </button>
+                  </div>
+                </th>
                   <th className="px-4 py-5">Category Name</th>
                   <th className="px-8 py-5">Type</th>
                   <th className="px-8 py-5">Item Count</th>
@@ -185,7 +183,7 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
                       <div className={`absolute left-0 top-0 bottom-0 w-1 bg-orange-600 transition-opacity duration-300 ${selectedIds.has(category.id || '') ? 'opacity-100' : 'opacity-0'}`}></div>
                       <button 
                         onClick={() => toggleSelectRow(category.id)}
-                        className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${category.id && selectedIds.has(category.id) ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
+                        className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${category.id && selectedIds.has(category.id) ? 'bg-orange-600 border-orange-600 shadow-sm shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
                       >
                         {category.id && selectedIds.has(category.id) && (
                           <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
@@ -227,31 +225,13 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
           )}
         </div>
 
-        {/* Pagination */}
-        <div className="px-8 py-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/30">
-          <div className="text-[11px] font-bold text-slate-600 dark:text-slate-400">
-            Showing {filteredCategories.length === 0 ? 0 : (currentPage - 1) * rowsPerPage + 1} to {Math.min(currentPage * rowsPerPage, filteredCategories.length)} of {filteredCategories.length} categories
-          </div>
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              disabled={currentPage === 1}
-              className="px-3 py-1.5 text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-            >
-              Previous
-            </button>
-            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 px-2">
-              Page {filteredCategories.length === 0 ? 0 : currentPage} of {Math.ceil(filteredCategories.length / rowsPerPage) || 1}
-            </span>
-            <button 
-              onClick={() => setCurrentPage(currentPage + 1)}
-              disabled={currentPage * rowsPerPage >= filteredCategories.length}
-              className="px-3 py-1.5 text-[10px] font-bold bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 disabled:opacity-50 hover:bg-slate-50 dark:hover:bg-slate-700 transition-all"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <Pagination
+          totalItems={filteredCategories.length}
+          currentPage={currentPage}
+          rowsPerPage={rowsPerPage}
+          onPageChange={setCurrentPage}
+          onRowsPerPageChange={setRowsPerPage}
+        />
       </div>
 
       {/* Simplified Floating Bulk Action Bar */}
@@ -327,6 +307,11 @@ const CategoriesPage: React.FC<CategoriesPageProps> = ({ categories, onAddClick,
 };
 
 export default CategoriesPage;
+
+
+
+
+
 
 
 

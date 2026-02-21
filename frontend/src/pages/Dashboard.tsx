@@ -47,6 +47,19 @@ interface DashboardProps {
   onThemeToggle?: () => void;
 }
 
+const getNextSequentialCode = (codes: Array<string | null | undefined>, prefix: string, minDigits = 4) => {
+  const codePattern = new RegExp(`^${prefix}-(\\d+)$`, "i");
+  const maxNumber = codes.reduce((max, rawCode) => {
+    const code = String(rawCode || "").trim();
+    const matched = code.match(codePattern);
+    if (!matched) return max;
+    const value = Number(matched[1]);
+    if (!Number.isFinite(value)) return max;
+    return value > max ? value : max;
+  }, 0);
+  return `${prefix}-${String(maxNumber + 1).padStart(minDigits, "0")}`;
+};
+
 const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeToggle }) => {
   const activeTabStorageKey = `dashboard_active_tab_${getUserId() || "anon"}_${getActiveCompanyId() || "default"}`;
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -141,6 +154,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       }, 0);
     return `ADJ-${String(maxNo + 1).padStart(6, "0")}`;
   }, [stockLedger]);
+
+  const nextProductCode = useMemo(
+    () => getNextSequentialCode(products.map((p) => String((p as any).productCode ?? "")), "P", 6),
+    [products]
+  );
+
+  const nextCustomerCode = useMemo(
+    () => getNextSequentialCode(customers.map((c) => String((c as any).customerCode ?? "")), "C", 6),
+    [customers]
+  );
+
+  const nextVendorCode = useMemo(
+    () => getNextSequentialCode(vendors.map((v) => String((v as any).vendorCode ?? "")), "V", 6),
+    [vendors]
+  );
 
   const computeStockMap = (ledgerRows: StockLedgerEntry[]) => {
     const map = new Map<string, { onHand: number; reserved: number; entries: number }>();
@@ -365,7 +393,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       const categoriesData = await categoryAPI.getAll().catch(() => []);
       setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
     }).catch(err => {
-      setError("Failed to import categories");
+      setError(err instanceof Error ? err.message : "Failed to import categories");
       console.error(err);
     });
   };
@@ -401,7 +429,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       setStockLedger(normalizedLedger);
       setProducts(mergeStockToProducts(normalizedProducts, normalizedLedger));
     }).catch(err => {
-      setError("Failed to import products");
+      setError(err instanceof Error ? err.message : "Failed to import products");
       console.error(err);
     });
   };
@@ -963,6 +991,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             product={editingProduct}
             categories={categories}
             vendors={vendors}
+            nextProductCode={nextProductCode}
             onBack={() => { setEditingProduct(undefined); setActiveTab('products'); }}
             onSave={(product, stayOnPage) => {
               const saveProduct = () => {
@@ -996,6 +1025,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           <AddCustomerPage
             customer={editingCustomer}
             categories={categories}
+            nextCustomerCode={nextCustomerCode}
             onBack={() => { setEditingCustomer(undefined); setActiveTab('customers'); }}
             onSave={(customer, stayOnPage) => {
               const saveCustomer = () => {
@@ -1040,6 +1070,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           <AddVendorPage
             vendor={editingVendor}
             categories={categories}
+            nextVendorCode={nextVendorCode}
             onBack={() => { setEditingVendor(undefined); setActiveTab('vendors'); }}
             onSave={(vendor, stayOnPage) => {
               const saveVendor = () => {

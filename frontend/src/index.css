@@ -18,3 +18,48 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
 }
+
+/* Compact density mode for core ERP listing/form pages */
+.erp-compact h1 {
+  letter-spacing: 0.01em;
+}
+
+.erp-compact input,
+.erp-compact select,
+.erp-compact textarea {
+  min-height: 34px !important;
+  padding-top: 0.45rem !important;
+  padding-bottom: 0.45rem !important;
+  font-size: 12px !important;
+  border-radius: 0.55rem !important;
+}
+
+.erp-compact table th,
+.erp-compact table td {
+  padding-top: 0.6rem !important;
+  padding-bottom: 0.6rem !important;
+}
+
+.erp-compact .rounded-\[2\.5rem\],
+.erp-compact .rounded-3xl,
+.erp-compact .rounded-2xl {
+  border-radius: 0.75rem !important;
+}
+
+.erp-compact .erp-pagination {
+  padding-top: 0.6rem !important;
+  padding-bottom: 0.6rem !important;
+}
+
+.erp-table-checkbox {
+  -webkit-appearance: none !important;
+  appearance: none !important;
+  background-image: none !important;
+  min-height: 16px !important;
+  min-width: 16px !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+  transform: translateZ(0);
+  outline: none !important;
+}

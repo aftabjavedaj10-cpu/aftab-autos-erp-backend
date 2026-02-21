@@ -6,6 +6,7 @@ interface ProductFormPageProps {
   product?: Product;
   categories: Category[];
   vendors: Vendor[];
+  nextProductCode: string;
   onBack: () => void;
   onSave: (product: any, stayOnPage: boolean) => void;
   onAddCategory: (category: Category) => void;
@@ -13,12 +14,12 @@ interface ProductFormPageProps {
 
 const DEFAULT_UNITS = ['Piece', 'Pair', 'Set', 'Bottle', 'Litre', 'Box'];
 
-const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vendors, onBack, onSave, onAddCategory }) => {
+const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vendors, nextProductCode, onBack, onSave, onAddCategory }) => {
   const isEdit = !!product;
   const [formData, setFormData] = useState({
     name: product?.name || '',
     urduName: (product as any)?.urduName || '',
-    productCode: product?.productCode || '',
+    productCode: product?.productCode || nextProductCode,
     brandName: product?.brandName || '',
     productType: product?.productType || 'Product' as 'Product' | 'Service',
     warehouse: product?.warehouse || WAREHOUSES[0],
@@ -40,6 +41,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
   const [isQuickAddingCategory, setIsQuickAddingCategory] = useState(false);
   const [isQuickAddingUnit, setIsQuickAddingUnit] = useState(false);
   const [quickInput, setQuickInput] = useState('');
+  const [isProductCodeTouched, setIsProductCodeTouched] = useState(false);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -53,6 +55,11 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
        // Only auto-select first if not editing and nothing selected
     }
   }, [productCategories]);
+
+  useEffect(() => {
+    if (isEdit || isProductCodeTouched) return;
+    setFormData((prev) => ({ ...prev, productCode: nextProductCode }));
+  }, [isEdit, isProductCodeTouched, nextProductCode]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -80,11 +87,12 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     onSave({ ...product, ...formData }, stayOnPage);
     if (stayOnPage && !isEdit) {
       setFormData({ 
-        name: '', urduName: '', productCode: '', brandName: '', productType: 'Product', warehouse: WAREHOUSES[0],
+        name: '', urduName: '', productCode: nextProductCode, brandName: '', productType: 'Product', warehouse: WAREHOUSES[0],
         category: '', price: '', costPrice: '', barcode: '', 
         vendorId: vendors[0]?.id || '', stock: 0, unit: 'Piece', 
         reorderPoint: 10, reorderQty: 1, description: '', image: '', isActive: true
       });
+      setIsProductCodeTouched(false);
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
       setIsDropdownOpen(false);
@@ -143,14 +151,14 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
   };
 
   return (
-    <div className="animate-in slide-in-from-right-4 duration-300 pb-20">
+    <div className="erp-compact animate-in slide-in-from-right-4 duration-300 pb-20">
       <div className="flex items-center gap-4 mb-8">
         <button 
           onClick={onBack}
           className="p-2.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl text-slate-400 hover:text-orange-600 transition-all hover:scale-105 active:scale-95"
           title="Go Back"
         >
-          <span className="text-xl">←</span>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6 9 12l6 6"/></svg>
         </button>
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
@@ -260,15 +268,30 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                    Part Number / Code <span className="text-rose-500">*</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">
+                      Part Number / Code <span className="text-rose-500">*</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, productCode: nextProductCode }));
+                        setIsProductCodeTouched(false);
+                      }}
+                      className="text-orange-600 hover:text-orange-700 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all hover:scale-105"
+                    >
+                      ⚡ Auto-Next
+                    </button>
+                  </div>
                   <input 
                     type="text" 
-                    placeholder="e.g. BRK-001"
+                    placeholder="e.g. P-000001"
                     className={`w-full bg-white dark:bg-slate-800 border rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white ${errors.productCode ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'}`}
                     value={formData.productCode}
-                    onChange={(e) => setFormData({...formData, productCode: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, productCode: e.target.value});
+                      setIsProductCodeTouched(true);
+                    }}
                   />
                   {errors.productCode && <p className="text-xs text-rose-500 mt-1 font-medium">{errors.productCode}</p>}
                 </div>
@@ -543,20 +566,20 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
           Cancel
         </button>
 
-        <div className="relative inline-flex" ref={dropdownRef}>
+        <div className="relative inline-flex items-stretch" ref={dropdownRef}>
           <button 
             type="button"
             onClick={() => handleAction(false)}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-8 py-3 rounded-l-xl shadow-lg transition-all border-r border-orange-500"
+            className="h-10 bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 rounded-l-lg transition-all border-r border-orange-500"
           >
             {isEdit ? 'Update Product' : 'Save Product'}
           </button>
           <button 
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-3 py-3 rounded-r-xl shadow-lg transition-all flex items-center justify-center"
+            className="h-10 w-10 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-r-lg transition-all flex items-center justify-center"
           >
-            <span className={`text-[10px] transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+            <svg className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </button>
 
           {isDropdownOpen && (
@@ -566,7 +589,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                 onClick={() => handleAction(true)}
                 className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-slate-700/50 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
               >
-                💾 {isEdit ? 'Update and Stay' : 'Save and Add Another'}
+                <svg className="w-3.5 h-3.5 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h13l3 3v13H4z"/><path d="M8 4v6h8V4"/><path d="M8 20v-6h8v6"/></svg> {isEdit ? 'Update and Stay' : 'Save and Add Another'}
               </button>
             </div>
           )}
@@ -577,3 +600,4 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
 };
 
 export default AddProducts;
+

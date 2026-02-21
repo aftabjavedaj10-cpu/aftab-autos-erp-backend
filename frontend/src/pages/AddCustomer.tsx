@@ -4,16 +4,17 @@ import type { Customer, Category } from '../types';
 interface AddCustomerPageProps {
   customer?: Customer;
   categories: Category[];
+  nextCustomerCode: string;
   onBack: () => void;
   onSave: (customer: Customer, stayOnPage: boolean) => void;
   onAddCategory: (category: Category) => void;
 }
 
-const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories, onBack, onSave, onAddCategory }) => {
+const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories, nextCustomerCode, onBack, onSave, onAddCategory }) => {
   const isEdit = !!customer;
   const [formData, setFormData] = useState({
     name: customer?.name || '',
-    customerCode: customer?.customerCode || '',
+    customerCode: customer?.customerCode || nextCustomerCode,
     email: customer?.email || '',
     phone: customer?.phone || '',
     address: customer?.address || '',
@@ -28,6 +29,7 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
 
   const [isQuickAddingCategory, setIsQuickAddingCategory] = useState(false);
   const [quickInput, setQuickInput] = useState('');
+  const [isCustomerCodeTouched, setIsCustomerCodeTouched] = useState(false);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -46,10 +48,10 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const generateCustomerCode = () => {
-    const randomCode = `CUS-${Math.floor(1000 + Math.random() * 9000)}`;
-    setFormData({ ...formData, customerCode: randomCode });
-  };
+  useEffect(() => {
+    if (isEdit || isCustomerCodeTouched) return;
+    setFormData((prev) => ({ ...prev, customerCode: nextCustomerCode }));
+  }, [isEdit, isCustomerCodeTouched, nextCustomerCode]);
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
@@ -69,10 +71,11 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
     onSave(payload, stayOnPage);
     if (stayOnPage && !isEdit) {
       setFormData({ 
-        name: '', customerCode: '', email: '', phone: '', address: '', 
+        name: '', customerCode: nextCustomerCode, email: '', phone: '', address: '', 
         city: '', state: '', country: 'Pakistan', category: '', 
         openingBalance: 'Rs. 0.00', notes: '', image: '' 
       });
+      setIsCustomerCodeTouched(false);
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
       setIsDropdownOpen(false);
@@ -112,14 +115,14 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
   };
 
   return (
-    <div className="animate-in slide-in-from-right-4 duration-300 pb-20">
+    <div className="erp-compact animate-in slide-in-from-right-4 duration-300 pb-20">
       <div className="flex items-center gap-4 mb-8">
         <button 
           onClick={onBack}
           className="p-2.5 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl text-slate-400 hover:text-orange-600 transition-all hover:scale-105 active:scale-95 shadow-sm"
           title="Go Back"
         >
-          <span className="text-xl">←</span>
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M15 6 9 12l6 6"/></svg>
         </button>
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white">
@@ -137,7 +140,7 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
             <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden">
               <div className="p-6 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
                 <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 uppercase text-xs tracking-widest">
-                  <span className="text-orange-500">👤</span> Contact & Identity
+                  <svg className="w-4 h-4 text-orange-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/></svg> Contact & Identity
                 </h3>
               </div>
               <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -158,14 +161,26 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Customer Code <span className="text-rose-500">*</span></label>
-                    <button type="button" onClick={generateCustomerCode} className="text-orange-600 hover:text-orange-700 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all hover:scale-105">⚡ Auto-Gen</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, customerCode: nextCustomerCode }));
+                        setIsCustomerCodeTouched(false);
+                      }}
+                      className="text-orange-600 hover:text-orange-700 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all hover:scale-105"
+                    >
+                      ⚡ Auto-Next
+                    </button>
                   </div>
                   <input 
                     type="text" 
-                    placeholder="CUS-1234"
+                    placeholder="C-000001"
                     className={`w-full bg-white dark:bg-slate-800 border rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white ${errors.customerCode ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'}`}
                     value={formData.customerCode}
-                    onChange={(e) => setFormData({...formData, customerCode: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, customerCode: e.target.value});
+                      setIsCustomerCodeTouched(true);
+                    }}
                   />
                 </div>
 
@@ -342,7 +357,7 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
                 ) : (
                   <div className="text-center p-6 pointer-events-none">
                     <div className="w-16 h-16 bg-orange-100 dark:bg-orange-950/40 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 text-orange-600">
-                      👤
+                      <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/></svg>
                     </div>
                     <p className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">Upload Photo</p>
                     <p className="text-[10px] text-slate-400 mt-2 font-medium">JPEG, PNG up to 1MB</p>
@@ -377,20 +392,20 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
           Cancel
         </button>
 
-        <div className="relative inline-flex" ref={dropdownRef}>
+        <div className="relative inline-flex items-stretch" ref={dropdownRef}>
           <button 
             type="button"
             onClick={() => handleAction(false)}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-8 py-3 rounded-l-xl shadow-lg transition-all border-r border-orange-500"
+            className="h-10 bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 rounded-l-lg transition-all border-r border-orange-500"
           >
             {isEdit ? 'Update Info' : 'Save Customer'}
           </button>
           <button 
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-3 py-3 rounded-r-xl shadow-lg transition-all flex items-center justify-center"
+            className="h-10 w-10 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-r-lg transition-all flex items-center justify-center"
           >
-            <span className={`text-[10px] transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}>▼</span>
+            <svg className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </button>
 
           {isDropdownOpen && (
@@ -400,7 +415,7 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
                 onClick={() => handleAction(true)}
                 className="w-full text-left px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-300 hover:bg-orange-50 dark:hover:bg-slate-700/50 hover:text-orange-600 dark:hover:text-orange-400 transition-colors"
               >
-                💾 {isEdit ? 'Save and Stay' : 'Save and Add Another'}
+                <svg className="w-3.5 h-3.5 inline-block mr-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4h13l3 3v13H4z"/><path d="M8 4v6h8V4"/><path d="M8 20v-6h8v6"/></svg> {isEdit ? 'Save and Stay' : 'Save and Add Another'}
               </button>
             </div>
           )}
@@ -411,3 +426,5 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
 };
 
 export default AddCustomerPage;
+
+

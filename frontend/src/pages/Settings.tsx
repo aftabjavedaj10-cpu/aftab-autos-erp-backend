@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type {
   Company,
   CompanyInvite,
@@ -544,7 +544,7 @@ const SettingsPage: React.FC = () => {
       )}
 
       {companies.length === 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-5">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-5">
           <h2 className="text-base font-black text-slate-900 dark:text-white uppercase mb-3">
             Create Company
           </h2>
@@ -556,12 +556,12 @@ const SettingsPage: React.FC = () => {
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               placeholder="Company name"
-              className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
+              className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
             />
             <button
               onClick={handleCreateCompany}
               disabled={saving}
-              className="bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
+              className="bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-lg text-[10px] uppercase tracking-widest disabled:opacity-60"
             >
               Create
             </button>
@@ -570,7 +570,7 @@ const SettingsPage: React.FC = () => {
       )}
 
       {companies.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 p-5 space-y-4">
+        <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 p-5 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h2 className="text-base font-black text-slate-900 dark:text-white uppercase">
@@ -613,7 +613,7 @@ const SettingsPage: React.FC = () => {
                       }))
                     );
                   }}
-                  className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
+                  className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold"
                 >
                   {companies.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -635,7 +635,7 @@ const SettingsPage: React.FC = () => {
             <div className="flex flex-wrap gap-2 mb-4">
               <button
                 onClick={() => setActiveSection("company")}
-                className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest ${
                   activeSection === "company"
                     ? "bg-slate-900 text-white dark:bg-orange-600"
                     : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -645,7 +645,7 @@ const SettingsPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveSection("members")}
-                className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest ${
                   activeSection === "members"
                     ? "bg-slate-900 text-white dark:bg-orange-600"
                     : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -655,7 +655,7 @@ const SettingsPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveSection("roles")}
-                className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest ${
                   activeSection === "roles"
                     ? "bg-slate-900 text-white dark:bg-orange-600"
                     : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -665,7 +665,7 @@ const SettingsPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveSection("print")}
-                className={`px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                className={`px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest ${
                   activeSection === "print"
                     ? "bg-slate-900 text-white dark:bg-orange-600"
                     : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -687,7 +687,7 @@ const SettingsPage: React.FC = () => {
                   setCompanyDraft((prev) => ({ ...prev, name: e.target.value }))
                 }
                 placeholder="Company name"
-                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
               />
               <input
                 value={companyDraft.phone}
@@ -695,7 +695,7 @@ const SettingsPage: React.FC = () => {
                   setCompanyDraft((prev) => ({ ...prev, phone: e.target.value }))
                 }
                 placeholder="Phone"
-                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
               />
               <input
                 value={companyDraft.ntn}
@@ -703,13 +703,13 @@ const SettingsPage: React.FC = () => {
                   setCompanyDraft((prev) => ({ ...prev, ntn: e.target.value }))
                 }
                 placeholder="NTN / Tax ID"
-                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
+                className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
               />
               <div className="md:col-span-2">
                 <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
                   Company Logo (PNG/JPEG)
                 </label>
-                <div className="relative group aspect-square max-w-[220px] rounded-[1.5rem] bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col items-center justify-center transition-all hover:border-orange-500/50">
+                <div className="relative group aspect-square max-w-[220px] rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 overflow-hidden flex flex-col items-center justify-center transition-all hover:border-orange-500/50">
                   {companyDraft.logoUrl ? (
                     <>
                       <img
@@ -738,8 +738,19 @@ const SettingsPage: React.FC = () => {
                     </>
                   ) : (
                     <div className="text-center p-5 pointer-events-none">
-                      <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-4 text-orange-600">
-                        ðŸ“·
+                      <div className="w-12 h-12 bg-orange-100 dark:bg-orange-950/40 rounded-lg flex items-center justify-center mx-auto mb-4 text-orange-600">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          className="w-7 h-7"
+                          aria-hidden="true"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h3l1.2-2h7.6L17 8h3v10H4V8Z" />
+                          <circle cx="12" cy="13" r="3.3" />
+                        </svg>
                       </div>
                       <p className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-widest">
                         Upload Logo
@@ -800,7 +811,7 @@ const SettingsPage: React.FC = () => {
                   setCompanyDraft((prev) => ({ ...prev, address: e.target.value }))
                 }
                 placeholder="Address"
-                className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
+                className="md:col-span-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
               />
               <div className="md:col-span-2 space-y-2">
                 <div className="flex flex-col md:flex-row gap-3">
@@ -808,7 +819,7 @@ const SettingsPage: React.FC = () => {
                     value={branchInput}
                     onChange={(e) => setBranchInput(e.target.value)}
                     placeholder="Add branch name"
-                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
+                    className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-900 dark:text-white"
                   />
                   <button
                     type="button"
@@ -823,7 +834,7 @@ const SettingsPage: React.FC = () => {
                       }));
                       setBranchInput("");
                     }}
-                    className="bg-slate-900 dark:bg-orange-600 text-white font-black px-5 py-2 rounded-2xl text-sm uppercase tracking-widest"
+                    className="bg-slate-900 dark:bg-orange-600 text-white font-black px-5 py-2 rounded-lg text-sm uppercase tracking-widest"
                   >
                     Add Branch
                   </button>
@@ -850,7 +861,7 @@ const SettingsPage: React.FC = () => {
                           }
                           className="text-slate-400 hover:text-rose-600"
                         >
-                          Ã—
+                          ×
                         </button>
                       </span>
                     ))}
@@ -862,7 +873,7 @@ const SettingsPage: React.FC = () => {
               <button
                 onClick={handleUpdateCompany}
                 disabled={saving || !canManageCompany}
-                className="bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
+                className="bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black px-3 py-2 rounded-lg text-[10px] uppercase tracking-widest disabled:opacity-60"
               >
                 Save Details
               </button>
@@ -870,7 +881,7 @@ const SettingsPage: React.FC = () => {
                 <button
                   onClick={handleDeleteCompany}
                   disabled={saving}
-                  className="bg-rose-600 hover:bg-rose-700 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
+                  className="bg-rose-600 hover:bg-rose-700 text-white font-black px-3 py-2 rounded-lg text-[10px] uppercase tracking-widest disabled:opacity-60"
                 >
                   Delete Company
                 </button>
@@ -898,14 +909,14 @@ const SettingsPage: React.FC = () => {
                   <div className="space-y-3">
                     <div className="space-y-2">
                       {roles.length === 0 ? (
-                        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3">
+                        <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-3">
                           <p className="text-[10px] text-slate-500 dark:text-slate-400">
                             No roles yet. Create a role or seed defaults.
                           </p>
                           <button
                             onClick={seedDefaultRoles}
                             disabled={saving || !canManageMembers}
-                            className="mt-3 w-full bg-slate-900 dark:bg-orange-600 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
+                            className="mt-3 w-full bg-slate-900 dark:bg-orange-600 text-white font-black px-3 py-2 rounded-lg text-[10px] uppercase tracking-widest disabled:opacity-60"
                           >
                             Seed Default Roles
                           </button>
@@ -915,7 +926,7 @@ const SettingsPage: React.FC = () => {
                           <button
                             key={role.id}
                             onClick={() => setSelectedRoleId(role.id)}
-                            className={`w-full text-left px-3 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest ${
+                            className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest ${
                               selectedRoleId === role.id
                                 ? "bg-slate-900 text-white dark:bg-orange-600"
                                 : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -927,24 +938,24 @@ const SettingsPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-3 space-y-2">
+                    <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-3 space-y-2">
                       <input
                         value={newRoleName}
                         onChange={(e) => setNewRoleName(e.target.value)}
                         placeholder="New role name"
-                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
+                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold"
                       />
                       <button
                         onClick={handleCreateRole}
                         disabled={saving || !canManageMembers}
-                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-lg text-[10px] uppercase tracking-widest disabled:opacity-60"
                       >
                         Create Role
                       </button>
                     </div>
                   </div>
 
-                  <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl p-4">
+                  <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg p-4">
                     {roles.length === 0 ? (
                       <p className="text-[10px] text-slate-500 dark:text-slate-400">
                         Select a role to manage permissions.
@@ -983,7 +994,7 @@ const SettingsPage: React.FC = () => {
                               {PERMISSION_CATALOG.map((perm) => (
                                 <label
                                   key={perm.key}
-                                  className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200"
+                                  className="flex items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200"
                                 >
                                   <span>{perm.label}</span>
                                   <input
@@ -1019,12 +1030,12 @@ const SettingsPage: React.FC = () => {
                 value={newMemberEmail}
                 onChange={(e) => setNewMemberEmail(e.target.value)}
                 placeholder="User email"
-                className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
+                className="flex-1 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold"
               />
               <select
                 value={newMemberRole}
                 onChange={(e) => setNewMemberRole(e.target.value as UserRole)}
-                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold"
               >
                 {roleOptions.map((role) => (
                   <option key={role} value={role}>
@@ -1080,7 +1091,7 @@ const SettingsPage: React.FC = () => {
                   }
                 }}
                 disabled={saving || !canManageMembers}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-2xl text-sm uppercase tracking-widest disabled:opacity-60"
+                className="bg-orange-600 hover:bg-orange-700 text-white font-black px-3 py-2 rounded-lg text-sm uppercase tracking-widest disabled:opacity-60"
               >
                 Add
               </button>
@@ -1105,7 +1116,7 @@ const SettingsPage: React.FC = () => {
                 {companyUsers.map((user) => (
                   <div
                     key={user.id}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-3 py-2"
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2"
                   >
                     <div>
                       <p className="text-[10px] font-black text-slate-900 dark:text-white">
@@ -1287,14 +1298,14 @@ const SettingsPage: React.FC = () => {
                 {invites.map((invite) => (
                   <div
                     key={invite.id}
-                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-2xl px-3 py-2"
+                    className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2"
                   >
                     <div>
                       <p className="text-[10px] font-black text-slate-900 dark:text-white">
                         {invite.email}
                       </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Role: {invite.role} â€¢ Status: {invite.status}
+                        Role: {invite.role} • Status: {invite.status}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -1373,7 +1384,7 @@ const SettingsPage: React.FC = () => {
                         defaultTemplate: e.target.value,
                       }))
                     }
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold"
                   >
                     <option value="invoice">Invoice</option>
                     <option value="receipt">Receipt</option>
@@ -1395,11 +1406,11 @@ const SettingsPage: React.FC = () => {
                       }))
                     }
                     placeholder="Thank you for your business"
-                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold"
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold"
                   />
                 </div>
 
-                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
                   <span>Show Company Logo</span>
                   <input
                     type="checkbox"
@@ -1413,7 +1424,7 @@ const SettingsPage: React.FC = () => {
                   />
                 </label>
 
-                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
                   <span>Show Company Address</span>
                   <input
                     type="checkbox"
@@ -1427,7 +1438,7 @@ const SettingsPage: React.FC = () => {
                   />
                 </label>
 
-                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
                   <span>Show Tax ID (NTN)</span>
                   <input
                     type="checkbox"
@@ -1441,7 +1452,7 @@ const SettingsPage: React.FC = () => {
                   />
                 </label>
 
-                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
                   <span>Show Invoice Notes</span>
                   <input
                     type="checkbox"
@@ -1455,7 +1466,7 @@ const SettingsPage: React.FC = () => {
                   />
                 </label>
 
-                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
+                <label className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-[10px] font-bold text-slate-700 dark:text-slate-200">
                   <span>Show Urdu Name In Print</span>
                   <input
                     type="checkbox"
@@ -1481,7 +1492,7 @@ const SettingsPage: React.FC = () => {
                     setError(null);
                   }}
                   disabled={saving || !canManageCompany}
-                  className="bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black px-3 py-2 rounded-2xl text-[10px] uppercase tracking-widest disabled:opacity-60"
+                  className="bg-slate-900 dark:bg-orange-600 hover:bg-orange-600 dark:hover:bg-orange-500 text-white font-black px-3 py-2 rounded-lg text-[10px] uppercase tracking-widest disabled:opacity-60"
                 >
                   Save Print Settings
                 </button>
@@ -1500,5 +1511,6 @@ const SettingsPage: React.FC = () => {
 };
 
 export default SettingsPage;
+
 
 

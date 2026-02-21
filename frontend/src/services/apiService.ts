@@ -1164,7 +1164,25 @@ export const productAPI = {
   },
   import: async (products: any[]) => {
     await ensurePermission("products.write");
-    const rows = normalizeBulkRows(products.map(attachOwnership).map(mapProductToDb));
+    const sanitized = (Array.isArray(products) ? products : [])
+      .map((product) => ({
+        ...product,
+        name: String(product?.name ?? "").trim(),
+        productCode: String(product?.productCode ?? product?.product_code ?? "").trim(),
+        category: product?.category == null ? null : String(product.category).trim(),
+        warehouse: String(product?.warehouse ?? "Main").trim(),
+        productType: String(product?.productType ?? product?.product_type ?? "Product").trim(),
+        unit: String(product?.unit ?? "pcs").trim(),
+      }))
+      .filter((product) => product.name.length > 0 && product.productCode.length > 0);
+
+    if (sanitized.length === 0) {
+      throw new Error(
+        "No valid product rows found. Ensure Product Name and Part Number / Code are filled."
+      );
+    }
+
+    const rows = normalizeBulkRows(sanitized.map(attachOwnership).map(mapProductToDb));
     const chunks = chunkRows(rows, 100);
     for (const chunk of chunks) {
       await apiCall(
@@ -1295,11 +1313,30 @@ export const categoryAPI = {
   },
   import: async (categories: any[]) => {
     await ensurePermission("categories.write");
+    const sanitized = (Array.isArray(categories) ? categories : [])
+      .map((category) => ({
+        ...category,
+        name: String(category?.name ?? "").trim(),
+        description:
+          category?.description == null ? null : String(category.description).trim(),
+        type: String(category?.type ?? "product")
+          .trim()
+          .toLowerCase(),
+      }))
+      .filter((category) => category.name.length > 0);
+
+    if (sanitized.length === 0) {
+      throw new Error("No valid category rows found. Ensure Category Name is filled.");
+    }
+
     const rows = normalizeBulkRows(
-      categories.map(attachOwnership).map((category) =>
+      sanitized.map(attachOwnership).map((category) =>
         mapCategoryToDb({
           ...category,
-          type: category?.type || "product",
+          type:
+            category.type === "customer" || category.type === "vendor"
+              ? category.type
+              : "product",
         })
       )
     );

@@ -28,7 +28,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(50);
 
   // Dynamic Categories for Search Filter
   const customerCategories = useMemo(() => {
@@ -105,7 +105,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
   };
 
   return (
-    <div className="animate-in fade-in duration-500 relative">
+    <div className="erp-compact animate-in fade-in duration-500 relative">
       {!canRead && (
         <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800 text-amber-700 dark:text-amber-300 rounded-2xl font-bold text-sm">
           You do not have permission to view customers.
@@ -119,22 +119,24 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
         <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
           <button 
             onClick={() => setIsImportModalOpen(true)}
-            className="min-w-[170px] h-[48px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-3 px-6 rounded-2xl transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+            className="min-w-[138px] h-[38px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-black py-2 px-4 rounded-lg transition-all hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>📥</span> Import Excel
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 19h16"/></svg> Import Excel
           </button>
           <button 
             onClick={onAddClick}
-            className="min-w-[170px] h-[48px] bg-orange-600 hover:bg-orange-700 text-white font-black py-3 px-6 rounded-2xl shadow-xl shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-[11px] uppercase tracking-widest"
+            className="min-w-[138px] h-[38px] bg-orange-600 hover:bg-orange-700 text-white font-black py-2 px-4 rounded-lg shadow-md shadow-orange-600/20 transition-all active:scale-95 flex items-center justify-center gap-1.5 text-[10px] uppercase tracking-wide"
           >
-            <span>➕</span> Add Customer
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M12 5v14M5 12h14"/></svg> Add Customer
           </button>
         </div>
       </div>
 
       {successMsg && (
         <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm animate-in slide-in-from-top-4 duration-300 flex items-center gap-3">
-          <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs">✓</div>
+          <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center">
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
+          </div>
           {successMsg}
         </div>
       )}
@@ -142,7 +144,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden relative">
         <div className="p-8 border-b border-slate-50 dark:border-slate-800 flex flex-col md:flex-row gap-4">
           <div className="relative flex-1 max-w-md">
-            <span className="absolute inset-y-0 left-4 flex items-center text-slate-400">🔍</span>
+            <span className="absolute inset-y-0 left-4 flex items-center text-slate-400"><svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg></span>
             <input 
               type="text" 
               placeholder="Search by name, email or code..." 
@@ -166,19 +168,16 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
           <table className="w-full text-left border-collapse table-fixed">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
-                <th className="px-6 py-5 w-20">
-                  <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
+                <th className="px-6 py-5 w-20 text-center">
+                  <div className="flex items-center justify-center w-full" style={{ display: canWrite ? 'flex' : 'none' }}>
                     <button 
                       onClick={toggleSelectAll}
-                      className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
+                      className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-sm shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
                     >
                       {selectedIds.size === paginatedIds.length && paginatedIds.length > 0 && (
-                        <span className="text-white text-[10px]">✓</span>
+                        <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                       )}
                     </button>
-                    {canDelete && selectedIds.size > 0 && (
-                      <button onClick={() => setSelectedIds(new Set())} className="text-[8px] text-orange-600 hover:underline">DESELECT</button>
-                    )}
                   </div>
                 </th>
                 <th className="px-4 py-5">Client Profile</th>
@@ -201,10 +200,10 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
                       <div className={`absolute left-0 top-0 bottom-0 w-1 bg-orange-600 transition-opacity duration-300 ${selectedIds.has(customer.id || '') ? 'opacity-100' : 'opacity-0'}`}></div>
                       <button 
                         onClick={() => toggleSelectRow(customer.id)}
-                        className={`w-5 h-5 rounded-lg border-2 transition-all flex items-center justify-center ${customer.id && selectedIds.has(customer.id) ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
+                        className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${customer.id && selectedIds.has(customer.id) ? 'bg-orange-600 border-orange-600 shadow-sm shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
                       >
                         {customer.id && selectedIds.has(customer.id) && (
-                          <span className="text-white text-[10px]">✓</span>
+                          <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                         )}
                       </button>
                     </div>
@@ -215,7 +214,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
                         {customer.image ? (
                           <img src={customer.image} alt={customer.name} className="w-full h-full object-cover" />
                         ) : (
-                          <span className="opacity-50 text-sm">👤</span>
+                          <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="3"/><path d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5"/></svg>
                         )}
                       </div>
                       <div>
@@ -338,6 +337,10 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ customers, categories, on
 };
 
 export default CustomersPage;
+
+
+
+
 
 
 
