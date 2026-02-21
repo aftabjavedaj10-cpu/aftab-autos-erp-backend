@@ -756,8 +756,27 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     }
   };
 
+  const preventNumberWheelStep = (e: React.WheelEvent) => {
+    const target = e.target as HTMLInputElement | null;
+    if (!target || target.tagName !== "INPUT" || target.type !== "number") return;
+    target.blur();
+    e.preventDefault();
+  };
+
+  const preventNumberArrowStep = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLInputElement | null;
+    if (!target || target.tagName !== "INPUT" || target.type !== "number") return;
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+    }
+  };
+
   return (
-    <div className="invoice-editor-root max-w-7xl mx-auto animate-in fade-in duration-300 pb-12 relative">
+    <div
+      className="invoice-editor-root max-w-7xl mx-auto animate-in fade-in duration-300 pb-12 relative"
+      onWheelCapture={preventNumberWheelStep}
+      onKeyDownCapture={preventNumberArrowStep}
+    >
       {formError && (
         <div className="fixed top-20 right-6 z-[12000] max-w-md w-full">
           <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 shadow-2xl rounded-2xl overflow-hidden">

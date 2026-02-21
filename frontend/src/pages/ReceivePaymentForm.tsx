@@ -317,8 +317,27 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
     w.document.close();
   };
 
+  const preventNumberWheelStep = (e: React.WheelEvent) => {
+    const target = e.target as HTMLInputElement | null;
+    if (!target || target.tagName !== "INPUT" || target.type !== "number") return;
+    target.blur();
+    e.preventDefault();
+  };
+
+  const preventNumberArrowStep = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLInputElement | null;
+    if (!target || target.tagName !== "INPUT" || target.type !== "number") return;
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+    }
+  };
+
   return (
-    <div className="animate-in fade-in duration-500 pb-10">
+    <div
+      className="animate-in fade-in duration-500 pb-10"
+      onWheelCapture={preventNumberWheelStep}
+      onKeyDownCapture={preventNumberArrowStep}
+    >
       <div className="mb-5 flex items-start gap-3">
         <button
           type="button"
