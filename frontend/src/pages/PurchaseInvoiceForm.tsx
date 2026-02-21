@@ -26,6 +26,25 @@ interface PurchaseInvoiceFormPageProps {
 
 type PrintMode = "invoice" | "receipt" | "a5" | "token";
 
+const formatDateDdMmYyyy = (value: string) => {
+  const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(value || "");
+};
+
+const parseDdMmYyyyToIso = (value: string) => {
+  const m = String(value || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const dd = Number(m[1]);
+  const mm = Number(m[2]);
+  const yyyy = Number(m[3]);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  const iso = `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+  const dt = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) return null;
+  if (dt.getUTCFullYear() !== yyyy || dt.getUTCMonth() + 1 !== mm || dt.getUTCDate() !== dd) return null;
+  return iso;
+};
+
 const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   invoice,
   forceNewMode = false,
@@ -102,6 +121,13 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
     amountReceived: invoice?.amountReceived || 0,
     items: (invoice?.items || []) as SalesInvoiceItem[],
   });
+  const [dateText, setDateText] = useState(formatDateDdMmYyyy(invoice?.date || new Date().toISOString().split("T")[0]));
+  const [dueDateText, setDueDateText] = useState(
+    formatDateDdMmYyyy(
+      invoice?.dueDate ||
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    )
+  );
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -127,6 +153,8 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dueDateInputRef = useRef<HTMLInputElement>(null);
+  const datePickerProxyRef = useRef<HTMLInputElement>(null);
+  const dueDatePickerProxyRef = useRef<HTMLInputElement>(null);
   const vehicleInputRef = useRef<HTMLInputElement>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -143,6 +171,14 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   useEffect(() => {
     setPrintSettings(getPrintTemplateSettings());
   }, []);
+
+  useEffect(() => {
+    setDateText(formatDateDdMmYyyy(formData.date));
+  }, [formData.date]);
+
+  useEffect(() => {
+    setDueDateText(formatDateDdMmYyyy(formData.dueDate));
+  }, [formData.dueDate]);
 
   const getPrintableProductLabel = (item: SalesInvoiceItem) => {
     const english = String(item.productName || "").trim();
@@ -663,8 +699,25 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
     }
   };
 
+  const preventNumberWheelStep = (e: React.WheelEvent) => {
+    const target = e.target as HTMLInputElement | null;
+    if (!target || target.tagName !== "INPUT" || target.type !== "number") return;
+    target.blur();
+    e.preventDefault();
+  };
+
+  const preventNumberArrowStep = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLInputElement | null;
+    if (!target || target.tagName !== "INPUT" || target.type !== "number") return;
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") e.preventDefault();
+  };
+
   return (
-    <div className="invoice-editor-root max-w-7xl mx-auto animate-in fade-in duration-300 pb-12 relative">
+    <div
+      className="invoice-editor-root max-w-7xl mx-auto animate-in fade-in duration-300 pb-12 relative"
+      onWheelCapture={preventNumberWheelStep}
+      onKeyDownCapture={preventNumberArrowStep}
+    >
       {formError && (
         <div className="fixed top-20 right-6 z-[12000] max-w-md w-full">
           <div className="bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-800 shadow-2xl rounded-2xl overflow-hidden">
@@ -930,33 +983,95 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                 <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                   Posting Date
                 </label>
-                <input
-                  ref={dateInputRef}
-                  type="date"
-                  disabled={isLocked}
-                  className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
-                    isLocked ? "opacity-60 cursor-not-allowed" : ""
-                  }`}
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                  onKeyDown={(e) => onEnterMoveTo(e, dueDateInputRef)}
-                />
+                <div className="relative">
+                  <input
+                    ref={dateInputRef}
+                    type="text"
+                    disabled={isLocked}
+                    className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 pr-9 text-[11px] font-bold dark:text-white outline-none ${
+                      isLocked ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
+                    placeholder="dd/mm/yyyy"
+                    value={dateText}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setDateText(raw);
+                      const iso = parseDdMmYyyyToIso(raw);
+                      if (iso) setFormData({ ...formData, date: iso });
+                    }}
+                    onBlur={() => setDateText(formatDateDdMmYyyy(formData.date))}
+                    onKeyDown={(e) => onEnterMoveTo(e, dueDateInputRef)}
+                  />
+                  <input
+                    ref={datePickerProxyRef}
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="absolute -z-10 h-0 w-0 opacity-0"
+                    tabIndex={-1}
+                  />
+                  <button
+                    type="button"
+                    disabled={isLocked}
+                    onClick={() => {
+                      const picker = datePickerProxyRef.current as any;
+                      if (!picker) return;
+                      if (typeof picker.showPicker === "function") picker.showPicker();
+                      else picker.click();
+                    }}
+                    className="absolute inset-y-0 right-2 flex items-center text-slate-500 hover:text-orange-600 disabled:opacity-40"
+                    title="Open calendar"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                   Due Date
                 </label>
-                <input
-                  ref={dueDateInputRef}
-                  type="date"
-                  disabled={isLocked}
-                  className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
-                    isLocked ? "opacity-60 cursor-not-allowed" : ""
-                  }`}
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  onKeyDown={(e) => onEnterMoveTo(e, vehicleInputRef)}
-                />
+                <div className="relative">
+                  <input
+                    ref={dueDateInputRef}
+                    type="text"
+                    disabled={isLocked}
+                    className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 pr-9 text-[11px] font-bold dark:text-white outline-none ${
+                      isLocked ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
+                    placeholder="dd/mm/yyyy"
+                    value={dueDateText}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setDueDateText(raw);
+                      const iso = parseDdMmYyyyToIso(raw);
+                      if (iso) setFormData({ ...formData, dueDate: iso });
+                    }}
+                    onBlur={() => setDueDateText(formatDateDdMmYyyy(formData.dueDate))}
+                    onKeyDown={(e) => onEnterMoveTo(e, vehicleInputRef)}
+                  />
+                  <input
+                    ref={dueDatePickerProxyRef}
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="absolute -z-10 h-0 w-0 opacity-0"
+                    tabIndex={-1}
+                  />
+                  <button
+                    type="button"
+                    disabled={isLocked}
+                    onClick={() => {
+                      const picker = dueDatePickerProxyRef.current as any;
+                      if (!picker) return;
+                      if (typeof picker.showPicker === "function") picker.showPicker();
+                      else picker.click();
+                    }}
+                    className="absolute inset-y-0 right-2 flex items-center text-slate-500 hover:text-orange-600 disabled:opacity-40"
+                    title="Open calendar"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -1697,7 +1812,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
               </div>
               <div>
                 <p className="text-[12px] font-semibold">Date</p>
-                <p className="text-[11px] mt-1">{formData.date}</p>
+                <p className="text-[11px] mt-1">{formatDateDdMmYyyy(formData.date)}</p>
               </div>
               <div>
                 <p className="text-[12px] font-semibold">Issued from:</p>
@@ -1778,7 +1893,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 
             <div className="space-y-1 mb-2 text-[11px]">
               <p><span className="font-semibold">Receipt No :</span> <span className="font-black">{formData.id}</span></p>
-              <p><span className="font-semibold">Date :</span> <span className="font-black">{formData.date}</span></p>
+              <p><span className="font-semibold">Date :</span> <span className="font-black">{formatDateDdMmYyyy(formData.date)}</span></p>
               <p><span className="font-semibold">Time :</span> <span className="font-black">{new Date().toLocaleTimeString()}</span></p>
               <p><span className="font-semibold">Operator Name :</span> <span className="font-black">Administrator</span></p>
               <p><span className="font-semibold">Customer Name :</span> <span className="font-black">{currentCustomer?.name || "-"}</span></p>
@@ -1861,7 +1976,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
               <span>{formData.id}</span>
             </div>
             <p>Customer: {currentCustomer?.name || "-"}</p>
-            <p>Date: {formData.date}</p>
+            <p>Date: {formatDateDdMmYyyy(formData.date)}</p>
             <table className="w-full mt-3 text-[11px]">
               <thead>
                 <tr className="border-b border-black">
