@@ -155,6 +155,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dueDateInputRef = useRef<HTMLInputElement>(null);
+  const datePickerProxyRef = useRef<HTMLInputElement>(null);
+  const dueDatePickerProxyRef = useRef<HTMLInputElement>(null);
   const vehicleInputRef = useRef<HTMLInputElement>(null);
   const refInputRef = useRef<HTMLInputElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -1023,47 +1025,95 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                   Posting Date
                 </label>
-                <input
-                  ref={dateInputRef}
-                  type="text"
-                  disabled={isLocked}
-                  className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
-                    isLocked ? "opacity-60 cursor-not-allowed" : ""
-                  }`}
-                  placeholder="dd/mm/yyyy"
-                  value={dateText}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    setDateText(raw);
-                    const iso = parseDdMmYyyyToIso(raw);
-                    if (iso) setFormData({ ...formData, date: iso });
-                  }}
-                  onBlur={() => setDateText(formatDateDdMmYyyy(formData.date))}
-                  onKeyDown={(e) => onEnterMoveTo(e, dueDateInputRef)}
-                />
+                <div className="relative">
+                  <input
+                    ref={dateInputRef}
+                    type="text"
+                    disabled={isLocked}
+                    className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 pr-9 text-[11px] font-bold dark:text-white outline-none ${
+                      isLocked ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
+                    placeholder="dd/mm/yyyy"
+                    value={dateText}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setDateText(raw);
+                      const iso = parseDdMmYyyyToIso(raw);
+                      if (iso) setFormData({ ...formData, date: iso });
+                    }}
+                    onBlur={() => setDateText(formatDateDdMmYyyy(formData.date))}
+                    onKeyDown={(e) => onEnterMoveTo(e, dueDateInputRef)}
+                  />
+                  <input
+                    ref={datePickerProxyRef}
+                    type="date"
+                    value={formData.date}
+                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                    className="absolute -z-10 h-0 w-0 opacity-0"
+                    tabIndex={-1}
+                  />
+                  <button
+                    type="button"
+                    disabled={isLocked}
+                    onClick={() => {
+                      const picker = datePickerProxyRef.current as any;
+                      if (!picker) return;
+                      if (typeof picker.showPicker === "function") picker.showPicker();
+                      else picker.click();
+                    }}
+                    className="absolute inset-y-0 right-2 flex items-center text-slate-500 hover:text-orange-600 disabled:opacity-40"
+                    title="Open calendar"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                   Due Date
                 </label>
-                <input
-                  ref={dueDateInputRef}
-                  type="text"
-                  disabled={isLocked}
-                  className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
-                    isLocked ? "opacity-60 cursor-not-allowed" : ""
-                  }`}
-                  placeholder="dd/mm/yyyy"
-                  value={dueDateText}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    setDueDateText(raw);
-                    const iso = parseDdMmYyyyToIso(raw);
-                    if (iso) setFormData({ ...formData, dueDate: iso });
-                  }}
-                  onBlur={() => setDueDateText(formatDateDdMmYyyy(formData.dueDate))}
-                  onKeyDown={(e) => onEnterMoveTo(e, vehicleInputRef)}
-                />
+                <div className="relative">
+                  <input
+                    ref={dueDateInputRef}
+                    type="text"
+                    disabled={isLocked}
+                    className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 pr-9 text-[11px] font-bold dark:text-white outline-none ${
+                      isLocked ? "opacity-60 cursor-not-allowed" : ""
+                    }`}
+                    placeholder="dd/mm/yyyy"
+                    value={dueDateText}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setDueDateText(raw);
+                      const iso = parseDdMmYyyyToIso(raw);
+                      if (iso) setFormData({ ...formData, dueDate: iso });
+                    }}
+                    onBlur={() => setDueDateText(formatDateDdMmYyyy(formData.dueDate))}
+                    onKeyDown={(e) => onEnterMoveTo(e, vehicleInputRef)}
+                  />
+                  <input
+                    ref={dueDatePickerProxyRef}
+                    type="date"
+                    value={formData.dueDate}
+                    onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                    className="absolute -z-10 h-0 w-0 opacity-0"
+                    tabIndex={-1}
+                  />
+                  <button
+                    type="button"
+                    disabled={isLocked}
+                    onClick={() => {
+                      const picker = dueDatePickerProxyRef.current as any;
+                      if (!picker) return;
+                      if (typeof picker.showPicker === "function") picker.showPicker();
+                      else picker.click();
+                    }}
+                    className="absolute inset-y-0 right-2 flex items-center text-slate-500 hover:text-orange-600 disabled:opacity-40"
+                    title="Open calendar"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
