@@ -4,16 +4,17 @@ import type { Vendor, Category } from '../types';
 interface AddVendorPageProps {
   vendor?: Vendor;
   categories: Category[];
+  nextVendorCode: string;
   onBack: () => void;
   onSave: (vendor: Vendor, stayOnPage: boolean) => void;
   onAddCategory: (category: Category) => void;
 }
 
-const AddVendorPage: React.FC<AddVendorPageProps> = ({ vendor, categories, onBack, onSave, onAddCategory }) => {
+const AddVendorPage: React.FC<AddVendorPageProps> = ({ vendor, categories, nextVendorCode, onBack, onSave, onAddCategory }) => {
   const isEdit = !!vendor;
   const [formData, setFormData] = useState({
     name: vendor?.name || '',
-    vendorCode: vendor?.vendorCode || '',
+    vendorCode: vendor?.vendorCode || nextVendorCode,
     email: vendor?.email || '',
     phone: vendor?.phone || '',
     address: vendor?.address || '',
@@ -28,6 +29,7 @@ const AddVendorPage: React.FC<AddVendorPageProps> = ({ vendor, categories, onBac
 
   const [isQuickAddingCategory, setIsQuickAddingCategory] = useState(false);
   const [quickInput, setQuickInput] = useState('');
+  const [isVendorCodeTouched, setIsVendorCodeTouched] = useState(false);
 
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -46,10 +48,10 @@ const AddVendorPage: React.FC<AddVendorPageProps> = ({ vendor, categories, onBac
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const generateVendorCode = () => {
-    const randomCode = `VEN-${Math.floor(1000 + Math.random() * 9000)}`;
-    setFormData({ ...formData, vendorCode: randomCode });
-  };
+  useEffect(() => {
+    if (isEdit || isVendorCodeTouched) return;
+    setFormData((prev) => ({ ...prev, vendorCode: nextVendorCode }));
+  }, [isEdit, isVendorCodeTouched, nextVendorCode]);
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
@@ -69,10 +71,11 @@ const AddVendorPage: React.FC<AddVendorPageProps> = ({ vendor, categories, onBac
     onSave(payload, stayOnPage);
     if (stayOnPage && !isEdit) {
       setFormData({ 
-        name: '', vendorCode: '', email: '', phone: '', address: '', 
+        name: '', vendorCode: nextVendorCode, email: '', phone: '', address: '', 
         city: '', state: '', country: 'Pakistan', category: '', 
         payableBalance: 'Rs. 0.00', notes: '', image: '' 
       });
+      setIsVendorCodeTouched(false);
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
       setIsDropdownOpen(false);
@@ -158,14 +161,26 @@ const AddVendorPage: React.FC<AddVendorPageProps> = ({ vendor, categories, onBac
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300">Vendor Code <span className="text-rose-500">*</span></label>
-                    <button type="button" onClick={generateVendorCode} className="text-orange-600 hover:text-orange-700 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all hover:scale-105">⚡ Auto-Gen</button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({ ...prev, vendorCode: nextVendorCode }));
+                        setIsVendorCodeTouched(false);
+                      }}
+                      className="text-orange-600 hover:text-orange-700 text-[10px] font-black uppercase tracking-widest flex items-center gap-1 transition-all hover:scale-105"
+                    >
+                      ⚡ Auto-Next
+                    </button>
                   </div>
                   <input 
                     type="text" 
-                    placeholder="VEN-1234"
+                    placeholder="V-000001"
                     className={`w-full bg-white dark:bg-slate-800 border rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white ${errors.vendorCode ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'}`}
                     value={formData.vendorCode}
-                    onChange={(e) => setFormData({...formData, vendorCode: e.target.value})}
+                    onChange={(e) => {
+                      setFormData({...formData, vendorCode: e.target.value});
+                      setIsVendorCodeTouched(true);
+                    }}
                   />
                 </div>
 
@@ -377,20 +392,20 @@ const AddVendorPage: React.FC<AddVendorPageProps> = ({ vendor, categories, onBac
           Cancel
         </button>
 
-        <div className="relative inline-flex" ref={dropdownRef}>
+        <div className="relative inline-flex items-stretch" ref={dropdownRef}>
           <button 
             type="button"
             onClick={() => handleAction(false)}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-8 py-3 rounded-l-xl shadow-lg transition-all border-r border-orange-500"
+            className="h-10 bg-orange-600 hover:bg-orange-700 text-white font-bold px-6 rounded-l-lg transition-all border-r border-orange-500"
           >
             {isEdit ? 'Update Info' : 'Save Supplier'}
           </button>
           <button 
             type="button"
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="bg-orange-600 hover:bg-orange-700 text-white font-bold px-3 py-3 rounded-r-xl shadow-lg transition-all flex items-center justify-center"
+            className="h-10 w-10 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-r-lg transition-all flex items-center justify-center"
           >
-            <span className={`text-[10px] transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}><svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+            <svg className={`w-3 h-3 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
           </button>
 
           {isDropdownOpen && (
