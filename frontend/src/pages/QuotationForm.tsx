@@ -21,6 +21,11 @@ interface QuotationFormPageProps {
 
 type PrintMode = "invoice" | "receipt" | "a5" | "token";
 
+const formatDateDdMmYyyy = (value: string) => {
+  const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(value || "");
+};
+
 const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
   invoice,
   invoices,
@@ -738,6 +743,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                 <input
                   ref={dateInputRef}
                   type="date"
+                  lang="en-GB"
                   disabled={isLocked}
                   className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
                     isLocked ? "opacity-60 cursor-not-allowed" : ""
@@ -754,6 +760,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                 <input
                   ref={dueDateInputRef}
                   type="date"
+                  lang="en-GB"
                   disabled={isLocked}
                   className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
                     isLocked ? "opacity-60 cursor-not-allowed" : ""
@@ -1434,7 +1441,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
               </div>
               <div>
                 <p className="text-[12px] font-semibold">Date</p>
-                <p className="text-[11px] mt-1">{formData.date}</p>
+                <p className="text-[11px] mt-1">{formatDateDdMmYyyy(formData.date)}</p>
               </div>
               <div>
                 <p className="text-[12px] font-semibold">Issued from:</p>
@@ -1515,7 +1522,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
 
             <div className="space-y-1 mb-2 text-[11px]">
               <p><span className="font-semibold">Receipt No :</span> <span className="font-black">{formData.id}</span></p>
-              <p><span className="font-semibold">Date :</span> <span className="font-black">{formData.date}</span></p>
+              <p><span className="font-semibold">Date :</span> <span className="font-black">{formatDateDdMmYyyy(formData.date)}</span></p>
               <p><span className="font-semibold">Time :</span> <span className="font-black">{new Date().toLocaleTimeString()}</span></p>
               <p><span className="font-semibold">Operator Name :</span> <span className="font-black">Administrator</span></p>
               <p><span className="font-semibold">Customer Name :</span> <span className="font-black">{currentCustomer?.name || "-"}</span></p>
@@ -1598,7 +1605,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
               <span>{formData.id}</span>
             </div>
             <p>Customer: {currentCustomer?.name || "-"}</p>
-            <p>Date: {formData.date}</p>
+            <p>Date: {formatDateDdMmYyyy(formData.date)}</p>
             <table className="w-full mt-3 text-[11px]">
               <thead>
                 <tr className="border-b border-black">

@@ -17,6 +17,11 @@ interface ReceivePaymentFormPageProps {
 type SaveStatus = "Draft" | "Pending" | "Approved" | "Void";
 type PrintMode = "invoice" | "receipt" | "a5" | "token";
 
+const formatDateDdMmYyyy = (value: string) => {
+  const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : String(value || "");
+};
+
 const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   docs,
   customers,
@@ -274,7 +279,7 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
 <div class="head">${modeTitle}</div>
 <div class="line"><span>No</span><span>${paymentNo}</span></div>
 <div class="line"><span>Reference</span><span>${reference || "-"}</span></div>
-<div class="line"><span>Date</span><span>${paymentDate}</span></div>
+<div class="line"><span>Date</span><span>${formatDateDdMmYyyy(paymentDate)}</span></div>
 <div class="line"><span>Customer</span><span>${selectedCustomerName || "-"}</span></div>
 <div class="line"><span>Ledger Balance</span><span>Rs. ${ledgerBalance.amount.toLocaleString()} ${ledgerBalance.side}</span></div>
 <div class="line"><span>Amount</span><span>Rs. ${amountValue.toLocaleString()}</span></div>
@@ -368,6 +373,7 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                 </span>
                 <input
                   type="date"
+                  lang="en-GB"
                   value={paymentDate}
                   onChange={(e) => setPaymentDate(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
