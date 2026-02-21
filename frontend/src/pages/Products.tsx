@@ -76,7 +76,8 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
         matchesCategory = p.category === selectedCategory;
       }
       
-      const matchesVendor = selectedVendor === 'All Vendors' || p.vendorId === selectedVendor;
+      const matchesVendor =
+        selectedVendor === 'All Vendors' || String(p.vendorId ?? '') === selectedVendor;
 
       let matchesStock = true;
       const availableStock = p.stockAvailable ?? p.stock;
@@ -194,7 +195,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
               onChange={(e) => setSelectedVendor(e.target.value)}
               className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-2.5 px-6 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-sm font-bold dark:text-white appearance-none"
             >
-              <option value="All Vendors">All Suppliers</option>
+              <option value="All Vendors">All Vendors</option>
               {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
             </select>
             <select 
