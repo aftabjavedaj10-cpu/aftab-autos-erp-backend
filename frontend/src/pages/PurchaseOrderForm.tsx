@@ -1205,13 +1205,14 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                         <input
                           id={`qty-${item.productId}`}
                           type="number"
+                          step="0.001"
                           disabled={isLocked}
                           className={`w-12 bg-slate-50 dark:bg-slate-800/50 rounded-md text-center font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all ${
                             isLocked ? "opacity-60 cursor-not-allowed" : ""
                           }`}
                           value={item.quantity}
                           onChange={(e) =>
-                            updateItemField(item.productId, "quantity", Math.max(0, parseInt(e.target.value) || 0))
+                            updateItemField(item.productId, "quantity", Math.max(0, parseFloat(e.target.value) || 0))
                           }
                         />
                           <span className="text-[9px] font-black text-slate-400 uppercase">

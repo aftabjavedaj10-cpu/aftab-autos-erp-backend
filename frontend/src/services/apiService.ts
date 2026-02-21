@@ -347,6 +347,17 @@ const mapCategoryToDb = (category: any) =>
   // Never send id in write payloads so Postgres can auto-generate and avoid type errors.
   stripClientOnly({ ...category }, ["itemCount", "id"]);
 
+const normalizeLineQuantity = (row: any) => Number(row?.qty_pack ?? row?.quantity ?? 0);
+const normalizePackFactor = (row: any) => {
+  const value = Number(row?.packFactor ?? row?.pack_factor ?? 1);
+  return Number.isFinite(value) && value > 0 ? value : 1;
+};
+const normalizeQtyBase = (row: any, qtyPack: number, packFactor: number) => {
+  const value = Number(row?.qtyBase ?? row?.qty_base ?? qtyPack * packFactor);
+  return Number.isFinite(value) && value > 0 ? value : qtyPack * packFactor;
+};
+const normalizePackagingId = (row: any) => row?.packagingId ?? row?.packaging_id ?? null;
+
 const mapSalesInvoiceFromDb = (row: any) => ({
   id: row.id,
   customerId: row.customer_id ?? row.customerId,
@@ -366,20 +377,29 @@ const mapSalesInvoiceFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapSalesInvoiceItemFromDb) : [],
 });
 
-const mapSalesInvoiceItemFromDb = (row: any) => ({
+const mapSalesInvoiceItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.invoice_id ?? row.invoiceId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapQuotationFromDb = (row: any) => ({
   id: row.id,
@@ -398,20 +418,29 @@ const mapQuotationFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapQuotationItemFromDb) : [],
 });
 
-const mapQuotationItemFromDb = (row: any) => ({
+const mapQuotationItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.quotation_id ?? row.quotationId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapSalesInvoiceToDb = (invoice: any) =>
   stripClientOnly(
@@ -429,19 +458,28 @@ const mapSalesInvoiceToDb = (invoice: any) =>
     ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "paymentStatus", "overallDiscount", "amountReceived", "totalAmount"]
   );
 
-const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) => ({
-  invoice_id: invoiceId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    invoice_id: invoiceId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapQuotationToDb = (quotation: any) =>
   stripClientOnly(
@@ -469,19 +507,28 @@ const mapQuotationToDb = (quotation: any) =>
     ]
   );
 
-const mapQuotationItemToDb = (item: any, quotationId: string) => ({
-  quotation_id: quotationId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapQuotationItemToDb = (item: any, quotationId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    quotation_id: quotationId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapSalesReturnFromDb = (row: any) => ({
   id: row.id,
@@ -502,20 +549,29 @@ const mapSalesReturnFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapSalesReturnItemFromDb) : [],
 });
 
-const mapSalesReturnItemFromDb = (row: any) => ({
+const mapSalesReturnItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.sales_return_id ?? row.salesReturnId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapSalesReturnToDb = (invoice: any) =>
   stripClientOnly(
@@ -533,19 +589,28 @@ const mapSalesReturnToDb = (invoice: any) =>
     ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "paymentStatus", "overallDiscount", "amountReceived", "totalAmount"]
   );
 
-const mapSalesReturnItemToDb = (item: any, salesReturnId: string) => ({
-  sales_return_id: salesReturnId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapSalesReturnItemToDb = (item: any, salesReturnId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    sales_return_id: salesReturnId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapReceivePaymentFromDb = (row: any) => ({
   id: row.id,
@@ -620,20 +685,29 @@ const mapPurchaseInvoiceFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapPurchaseInvoiceItemFromDb) : [],
 });
 
-const mapPurchaseInvoiceItemFromDb = (row: any) => ({
+const mapPurchaseInvoiceItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.purchase_invoice_id ?? row.purchaseInvoiceId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_cost ?? row.unitCost ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapPurchaseInvoiceToDb = (invoice: any) =>
   stripClientOnly(
@@ -661,19 +735,28 @@ const mapPurchaseInvoiceToDb = (invoice: any) =>
     ]
   );
 
-const mapPurchaseInvoiceItemToDb = (item: any, invoiceId: string) => ({
-  purchase_invoice_id: invoiceId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapPurchaseInvoiceItemToDb = (item: any, invoiceId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    purchase_invoice_id: invoiceId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapPurchaseOrderFromDb = (row: any) => ({
   id: row.id,
@@ -694,20 +777,29 @@ const mapPurchaseOrderFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapPurchaseOrderItemFromDb) : [],
 });
 
-const mapPurchaseOrderItemFromDb = (row: any) => ({
+const mapPurchaseOrderItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.purchase_order_id ?? row.purchaseOrderId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_cost ?? row.unitCost ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapPurchaseOrderToDb = (order: any) =>
   stripClientOnly(
@@ -735,19 +827,28 @@ const mapPurchaseOrderToDb = (order: any) =>
     ]
   );
 
-const mapPurchaseOrderItemToDb = (item: any, orderId: string) => ({
-  purchase_order_id: orderId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapPurchaseOrderItemToDb = (item: any, orderId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    purchase_order_id: orderId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapPurchaseReturnFromDb = (row: any) => ({
   id: row.id,
@@ -768,20 +869,29 @@ const mapPurchaseReturnFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapPurchaseReturnItemFromDb) : [],
 });
 
-const mapPurchaseReturnItemFromDb = (row: any) => ({
+const mapPurchaseReturnItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.purchase_return_id ?? row.purchaseReturnId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_cost ?? row.unitCost ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapPurchaseReturnToDb = (invoice: any) =>
   stripClientOnly(
@@ -809,19 +919,28 @@ const mapPurchaseReturnToDb = (invoice: any) =>
     ]
   );
 
-const mapPurchaseReturnItemToDb = (item: any, invoiceId: string) => ({
-  purchase_return_id: invoiceId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapPurchaseReturnItemToDb = (item: any, invoiceId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    purchase_return_id: invoiceId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapCompanyFromDb = (row: any) => {
   if (!row) return row;
