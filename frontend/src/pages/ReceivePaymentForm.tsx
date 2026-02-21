@@ -22,6 +22,20 @@ const formatDateDdMmYyyy = (value: string) => {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(value || "");
 };
 
+const parseDdMmYyyyToIso = (value: string) => {
+  const m = String(value || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const dd = Number(m[1]);
+  const mm = Number(m[2]);
+  const yyyy = Number(m[3]);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  const iso = `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+  const dt = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) return null;
+  if (dt.getUTCFullYear() !== yyyy || dt.getUTCMonth() + 1 !== mm || dt.getUTCDate() !== dd) return null;
+  return iso;
+};
+
 const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   docs,
   customers,
@@ -46,6 +60,9 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   const [paymentNo, setPaymentNo] = useState(doc?.id || "");
   const [paymentDate, setPaymentDate] = useState(
     doc?.date || new Date().toISOString().slice(0, 10)
+  );
+  const [paymentDateText, setPaymentDateText] = useState(
+    formatDateDdMmYyyy(doc?.date || new Date().toISOString().slice(0, 10))
   );
   const [invoiceId, setInvoiceId] = useState(doc?.invoiceId || "");
   const [reference, setReference] = useState(doc?.reference || "");
@@ -72,6 +89,10 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   };
 
   const amountValue = useMemo(() => parseNumber(amountInput), [amountInput]);
+
+  useEffect(() => {
+    setPaymentDateText(formatDateDdMmYyyy(paymentDate));
+  }, [paymentDate]);
 
   const nextPaymentNo = useMemo(() => {
     const maxNo = docs.reduce((max, row) => {
@@ -372,10 +393,16 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                   Payment Date
                 </span>
                 <input
-                  type="date"
-                  lang="en-GB"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
+                  type="text"
+                  value={paymentDateText}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setPaymentDateText(raw);
+                    const iso = parseDdMmYyyyToIso(raw);
+                    if (iso) setPaymentDate(iso);
+                  }}
+                  onBlur={() => setPaymentDateText(formatDateDdMmYyyy(paymentDate))}
+                  placeholder="dd/mm/yyyy"
                   className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                 />
               </label>

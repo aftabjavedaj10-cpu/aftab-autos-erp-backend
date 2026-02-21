@@ -42,6 +42,20 @@ const formatDateDdMmYyyy = (value: string) => {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(value || "");
 };
 
+const parseDdMmYyyyToIso = (value: string) => {
+  const m = String(value || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const dd = Number(m[1]);
+  const mm = Number(m[2]);
+  const yyyy = Number(m[3]);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  const iso = `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+  const dt = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) return null;
+  if (dt.getUTCFullYear() !== yyyy || dt.getUTCMonth() + 1 !== mm || dt.getUTCDate() !== dd) return null;
+  return iso;
+};
+
 const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   invoice,
   forceNewMode = false,
@@ -110,6 +124,13 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     amountReceived: invoice?.amountReceived || 0,
     items: (invoice?.items || []) as SalesInvoiceItem[],
   });
+  const [dateText, setDateText] = useState(formatDateDdMmYyyy(invoice?.date || new Date().toISOString().split("T")[0]));
+  const [dueDateText, setDueDateText] = useState(
+    formatDateDdMmYyyy(
+      invoice?.dueDate ||
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
+    )
+  );
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -150,6 +171,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   useEffect(() => {
     setPrintSettings(getPrintTemplateSettings());
   }, []);
+
+  useEffect(() => {
+    setDateText(formatDateDdMmYyyy(formData.date));
+  }, [formData.date]);
+
+  useEffect(() => {
+    setDueDateText(formatDateDdMmYyyy(formData.dueDate));
+  }, [formData.dueDate]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -996,14 +1025,20 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 </label>
                 <input
                   ref={dateInputRef}
-                  type="date"
-                  lang="en-GB"
+                  type="text"
                   disabled={isLocked}
                   className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
                     isLocked ? "opacity-60 cursor-not-allowed" : ""
                   }`}
-                  value={formData.date}
-                  onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                  placeholder="dd/mm/yyyy"
+                  value={dateText}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setDateText(raw);
+                    const iso = parseDdMmYyyyToIso(raw);
+                    if (iso) setFormData({ ...formData, date: iso });
+                  }}
+                  onBlur={() => setDateText(formatDateDdMmYyyy(formData.date))}
                   onKeyDown={(e) => onEnterMoveTo(e, dueDateInputRef)}
                 />
               </div>
@@ -1013,14 +1048,20 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 </label>
                 <input
                   ref={dueDateInputRef}
-                  type="date"
-                  lang="en-GB"
+                  type="text"
                   disabled={isLocked}
                   className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none ${
                     isLocked ? "opacity-60 cursor-not-allowed" : ""
                   }`}
-                  value={formData.dueDate}
-                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  placeholder="dd/mm/yyyy"
+                  value={dueDateText}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setDueDateText(raw);
+                    const iso = parseDdMmYyyyToIso(raw);
+                    if (iso) setFormData({ ...formData, dueDate: iso });
+                  }}
+                  onBlur={() => setDueDateText(formatDateDdMmYyyy(formData.dueDate))}
                   onKeyDown={(e) => onEnterMoveTo(e, vehicleInputRef)}
                 />
               </div>
