@@ -40,10 +40,6 @@ input[type="number"] {
   padding-bottom: 0.6rem !important;
 }
 
-.erp-compact button {
-  border-radius: 0.55rem !important;
-}
-
 .erp-compact .rounded-\[2\.5rem\],
 .erp-compact .rounded-3xl,
 .erp-compact .rounded-2xl {
@@ -58,8 +54,13 @@ input[type="number"] {
 .erp-table-checkbox {
   -webkit-appearance: none !important;
   appearance: none !important;
+  background-image: none !important;
+  background-color: transparent !important;
   min-height: 16px !important;
+  min-width: 16px !important;
   padding: 0 !important;
   line-height: 1 !important;
   box-shadow: none !important;
+  transform: translateZ(0);
+  outline: none !important;
 }

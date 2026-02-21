@@ -172,7 +172,7 @@ const VendorsPage: React.FC<VendorsPageProps> = ({ vendors, categories, onAddCli
                   <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
                     <button 
                       onClick={toggleSelectAll}
-                      className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
+                      className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedIds.length && paginatedIds.length > 0 ? 'bg-orange-600 border-orange-600 shadow-sm shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
                     >
                       {selectedIds.size === paginatedIds.length && paginatedIds.length > 0 && (
                         <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
@@ -202,7 +202,7 @@ const VendorsPage: React.FC<VendorsPageProps> = ({ vendors, categories, onAddCli
                       <div className={`absolute left-0 top-0 bottom-0 w-1 bg-orange-600 transition-opacity duration-300 ${selectedIds.has(vendor.id || '') ? 'opacity-100' : 'opacity-0'}`}></div>
                       <button 
                         onClick={() => toggleSelectRow(vendor.id)}
-                        className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${vendor.id && selectedIds.has(vendor.id) ? 'bg-orange-600 border-orange-600 shadow-lg shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
+                        className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${vendor.id && selectedIds.has(vendor.id) ? 'bg-orange-600 border-orange-600 shadow-sm shadow-orange-600/20' : 'border-slate-200 dark:border-slate-700'}`}
                       >
                         {vendor.id && selectedIds.has(vendor.id) && (
                           <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
@@ -338,6 +338,7 @@ const VendorsPage: React.FC<VendorsPageProps> = ({ vendors, categories, onAddCli
 };
 
 export default VendorsPage;
+
 
 
 
