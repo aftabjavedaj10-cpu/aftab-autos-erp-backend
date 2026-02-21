@@ -178,9 +178,6 @@ const VendorsPage: React.FC<VendorsPageProps> = ({ vendors, categories, onAddCli
                         <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                       )}
                     </button>
-                    {canDelete && selectedIds.size > 0 && (
-                      <button onClick={() => setSelectedIds(new Set())} className="text-[8px] text-orange-600 hover:underline">DESELECT</button>
-                    )}
                   </div>
                 </th>
                 <th className="px-4 py-5">Supplier Profile</th>

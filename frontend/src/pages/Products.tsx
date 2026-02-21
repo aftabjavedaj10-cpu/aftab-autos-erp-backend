@@ -214,11 +214,11 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse table-fixed">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-800/50 text-[10px] font-black uppercase text-slate-500 dark:text-slate-400 tracking-widest border-b border-slate-100 dark:border-slate-800">
-                <th className="px-6 py-5 w-10">
-                  <div className="flex items-center gap-3" style={{ display: canWrite ? 'flex' : 'none' }}>
+                <th className="px-6 py-5 w-20">
+                  <div className="flex items-center" style={{ display: canWrite ? 'flex' : 'none' }}>
                     <button 
                       onClick={toggleSelectAll}
                       className={`erp-table-checkbox w-4 h-4 rounded border-2 transition-all flex items-center justify-center ${selectedIds.size === paginatedProducts.length && paginatedProducts.length > 0 ? 'bg-orange-600 border-orange-600 shadow-sm shadow-orange-600/30' : 'border-slate-300 dark:border-slate-700'}`}
@@ -227,9 +227,6 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                         <svg className="w-2.5 h-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>
                       )}
                     </button>
-                    {canDelete && selectedIds.size > 0 && (
-                      <button onClick={() => setSelectedIds(new Set())} className="text-[8px] text-orange-600 hover:underline">DESELECT</button>
-                    )}
                   </div>
                 </th>
                 <th className="px-4 py-5">Product</th>
