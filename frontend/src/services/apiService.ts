@@ -296,6 +296,8 @@ const mapProductToDb = (product: any) =>
         "reorderQty",
         "brandName",
         "productType",
+        "packagingEnabled",
+        "packagings",
         "stockAvailable",
         "stockOnHand",
         "stockReserved",
@@ -306,6 +308,9 @@ const mapProductToDb = (product: any) =>
 const sanitizeProductPayload = (payload: any) => {
   const clean = { ...(payload || {}) };
   if ("isActive" in clean) delete clean.isActive;
+  if ("packagingEnabled" in clean) delete clean.packagingEnabled;
+  if ("packagings" in clean) delete clean.packagings;
+  if ("packaging_enabled" in clean) delete clean.packaging_enabled;
   return clean;
 };
 
