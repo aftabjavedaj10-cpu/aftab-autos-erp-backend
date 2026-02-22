@@ -1007,22 +1007,39 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               const saveProduct = () => {
                 if (product.id) {
                   return productAPI.update(product.id, product).then(async (updated: any) => {
-                    await productPackagingAPI.replaceForProduct(
+                    const savedPackagings = await productPackagingAPI.replaceForProduct(
                       updated.id,
                       product.packagingEnabled ? product.packagings : [],
                       { unit: product.unit, price: product.price, costPrice: product.costPrice }
                     );
-                    setProducts(products.map(p => p.id === updated.id ? { ...p, ...updated } : p));
+                    setProducts((prev) =>
+                      prev.map((p) =>
+                        p.id === updated.id
+                          ? {
+                              ...p,
+                              ...updated,
+                              packagings: savedPackagings,
+                              packagingEnabled: savedPackagings.length > 0,
+                            }
+                          : p
+                      )
+                    );
                   });
                 } else {
                   return productAPI.create(product).then(async (res: any) => {
-                    await productPackagingAPI.replaceForProduct(
+                    const savedPackagings = await productPackagingAPI.replaceForProduct(
                       res.id,
                       product.packagingEnabled ? product.packagings : [],
                       { unit: product.unit, price: product.price, costPrice: product.costPrice }
                     );
-                    const newProduct = { ...product, ...res, id: res.id || `prod_${Date.now()}` };
-                    setProducts([...products, newProduct]);
+                    const newProduct = {
+                      ...product,
+                      ...res,
+                      id: res.id || `prod_${Date.now()}`,
+                      packagings: savedPackagings,
+                      packagingEnabled: savedPackagings.length > 0,
+                    };
+                    setProducts((prev) => [...prev, newProduct]);
                   });
                 }
               };

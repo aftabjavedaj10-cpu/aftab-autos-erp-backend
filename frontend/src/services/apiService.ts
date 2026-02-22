@@ -1246,10 +1246,46 @@ export const productAPI = {
       offset += pageSize;
       if (offset > 1000000) break;
     }
-    return allRows.map(mapProductFromDb);
+    const mappedProducts = allRows.map(mapProductFromDb);
+    if (mappedProducts.length === 0) return mappedProducts;
+
+    // Hydrate packaging rows so all transaction forms can show full pack dropdowns.
+    const packRows = await apiCall(
+      "/product_packagings?select=*&order=product_id.asc,is_default.desc,created_at.asc"
+    ).catch(() => []);
+    const byProductId = new Map<string, any[]>();
+    if (Array.isArray(packRows)) {
+      packRows.forEach((row) => {
+        const key = String(row?.product_id ?? "");
+        if (!key) return;
+        const existing = byProductId.get(key) || [];
+        existing.push(mapProductPackagingFromDb(row));
+        byProductId.set(key, existing);
+      });
+    }
+
+    return mappedProducts.map((product) => {
+      const packagings = byProductId.get(String(product.id)) || [];
+      return {
+        ...product,
+        packagings,
+        packagingEnabled: packagings.length > 0,
+      };
+    });
   },
-  getById: (id: string) =>
-    getFirst(`/products?select=*&id=eq.${id}`).then(mapProductFromDb),
+  getById: async (id: string) => {
+    const product = await getFirst(`/products?select=*&id=eq.${id}`).then(mapProductFromDb);
+    if (!product) return product;
+    const packRows = await apiCall(
+      `/product_packagings?select=*&product_id=eq.${id}&order=is_default.desc,created_at.asc`
+    ).catch(() => []);
+    const packagings = Array.isArray(packRows) ? packRows.map(mapProductPackagingFromDb) : [];
+    return {
+      ...product,
+      packagings,
+      packagingEnabled: packagings.length > 0,
+    };
+  },
   create: async (product: any) => {
     await ensurePermission("products.write");
     const productPayload = sanitizeProductPayload(
