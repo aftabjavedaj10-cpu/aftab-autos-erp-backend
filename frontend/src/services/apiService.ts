@@ -1517,8 +1517,6 @@ export const salesInvoiceAPI = {
   },
   update: async (id: string, invoice: any) => {
     await ensurePermission("sales_invoices.write");
-    await apiCall(`/sales_invoices?id=eq.${id}`, "PATCH", mapSalesInvoiceToDb(invoice), true);
-
     await apiCall(`/sales_invoice_items?invoice_id=eq.${id}`, "DELETE");
     const items = Array.isArray(invoice.items) ? invoice.items : [];
     if (items.length > 0) {
@@ -1531,6 +1529,14 @@ export const salesInvoiceAPI = {
         true
       );
     }
+
+    // Patch header last (with forced updated_at) so stock trigger rebuilds from latest items.
+    await apiCall(
+      `/sales_invoices?id=eq.${id}`,
+      "PATCH",
+      { ...mapSalesInvoiceToDb(invoice), updated_at: new Date().toISOString() },
+      true
+    );
 
     return salesInvoiceAPI.getById(id);
   },
@@ -1684,7 +1690,12 @@ export const salesReturnAPI = {
     }
 
     // Patch header last so stock trigger rebuilds from the latest item rows.
-    await apiCall(`/sales_returns?id=eq.${id}`, "PATCH", mapSalesReturnToDb(salesReturn), true);
+    await apiCall(
+      `/sales_returns?id=eq.${id}`,
+      "PATCH",
+      { ...mapSalesReturnToDb(salesReturn), updated_at: new Date().toISOString() },
+      true
+    );
 
     return salesReturnAPI.getById(id);
   },
@@ -1871,7 +1882,12 @@ export const purchaseInvoiceAPI = {
       );
     }
     // Patch header last so stock trigger rebuilds from the latest item rows.
-    await apiCall(`/purchase_invoices?id=eq.${id}`, "PATCH", mapPurchaseInvoiceToDb(invoice), true);
+    await apiCall(
+      `/purchase_invoices?id=eq.${id}`,
+      "PATCH",
+      { ...mapPurchaseInvoiceToDb(invoice), updated_at: new Date().toISOString() },
+      true
+    );
 
     return purchaseInvoiceAPI.getById(id);
   },
