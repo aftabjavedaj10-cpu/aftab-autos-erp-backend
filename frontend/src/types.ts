@@ -30,6 +30,8 @@ export interface ProductPackaging {
   productId?: number | string;
   name: string;
   code?: string;
+  displayName?: string;
+  displayCode?: string;
   factor: number;
   salePrice?: number | string;
   costPrice?: number | string;
@@ -80,6 +82,7 @@ export interface Customer {
 }
 
 export interface SalesInvoiceItem {
+  id?: string | number;
   productId: string;
   productName: string;
   productCode?: string;

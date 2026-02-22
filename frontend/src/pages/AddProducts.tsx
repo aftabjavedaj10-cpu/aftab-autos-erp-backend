@@ -21,6 +21,8 @@ const createDefaultPackaging = (base: {
 }): ProductPackaging => ({
   name: String(base.unit || "Piece"),
   code: "",
+  displayName: "",
+  displayCode: "",
   factor: 1,
   salePrice: Number(base.price || 0),
   costPrice: Number(base.costPrice || 0),
@@ -58,6 +60,8 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
           id: p.id,
           name: p.name || "",
           code: p.code || "",
+          displayName: p.displayName ?? p.display_name ?? "",
+          displayCode: p.displayCode ?? p.display_code ?? "",
           factor: Number(p.factor || 1),
           salePrice: Number((p.salePrice ?? p.sale_price ?? formData.price) || 0),
           costPrice: Number((p.costPrice ?? p.cost_price ?? formData.costPrice) || 0),
@@ -125,6 +129,8 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
           ...p,
           name: String(p.name || "").trim(),
           factor: Number(p.factor || 1),
+          displayName: String(p.displayName || "").trim(),
+          displayCode: String(p.displayCode || "").trim(),
           salePrice: Number(p.salePrice || 0),
           costPrice: Number(p.costPrice || 0),
           isDefault: packagings.some((x) => x.isDefault) ? Boolean(p.isDefault) : idx === 0,
@@ -616,21 +622,23 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-12 gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                        <div className="col-span-3">Name</div>
-                        <div className="col-span-2">Code</div>
-                        <div className="col-span-2">Factor</div>
-                        <div className="col-span-2">Sale</div>
+                      <div className="grid grid-cols-14 gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <div className="col-span-2">Pack Name</div>
+                        <div className="col-span-2">Pack Code</div>
+                        <div className="col-span-3">Display Name</div>
+                        <div className="col-span-2">Display Code</div>
+                        <div className="col-span-1">Factor</div>
+                        <div className="col-span-1">Sale</div>
                         <div className="col-span-1">Cost</div>
                         <div className="col-span-2">Default / Action</div>
                       </div>
 
                       {packagings.map((row, idx) => (
-                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-12 gap-2 items-center">
+                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-14 gap-2 items-center">
                           <input
                             type="text"
                             placeholder="Name"
-                            className="col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
                             value={row.name || ""}
                             onChange={(e) => updatePackaging(idx, "name", e.target.value)}
                           />
@@ -642,11 +650,25 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                             onChange={(e) => updatePackaging(idx, "code", e.target.value)}
                           />
                           <input
+                            type="text"
+                            placeholder="Search label"
+                            className="col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.displayName || ""}
+                            onChange={(e) => updatePackaging(idx, "displayName", e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Search code"
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.displayCode || ""}
+                            onChange={(e) => updatePackaging(idx, "displayCode", e.target.value)}
+                          />
+                          <input
                             type="number"
                             step="0.001"
                             min="0.001"
                             placeholder="Factor"
-                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            className="col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
                             value={row.factor ?? 1}
                             onChange={(e) => updatePackaging(idx, "factor", Number(e.target.value || 1))}
                           />
@@ -655,7 +677,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                             step="0.01"
                             min="0"
                             placeholder="Sale"
-                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            className="col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
                             value={row.salePrice ?? 0}
                             onChange={(e) => updatePackaging(idx, "salePrice", Number(e.target.value || 0))}
                           />

@@ -28,10 +28,20 @@ type PrintMode = "invoice" | "receipt" | "a5" | "token";
 type ProductPackagingOption = {
   id: string;
   name: string;
+  code?: string;
+  displayName?: string;
+  displayCode?: string;
   factor: number;
   salePrice?: number;
   costPrice?: number;
   isDefault?: boolean;
+};
+type ProductSearchOption = {
+  product: Product;
+  packaging: ProductPackagingOption;
+  searchLabel: string;
+  searchCode: string;
+  searchStr: string;
 };
 
 const formatDateDdMmYyyy = (value: string) => {
@@ -156,6 +166,8 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
   const [salesPriceByProductId, setSalesPriceByProductId] = useState<Record<string, number>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const COPY_SEED_KEY = "purchase-return-copy-seed";
+  const createLineId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const rowKeyOf = (item: SalesInvoiceItem) => String((item as any).id ?? item.productId);
 
   const customerInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -233,43 +245,14 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const searchableProducts = useMemo(() => {
-    return products.map((p) => ({
-      product: p,
-      searchStr: `${p.name} ${p.productCode || ""} ${p.brandName || ""} ${p.category || ""} ${p.barcode || ""} ${p.id}`.toLowerCase(),
-    }));
-  }, [products]);
-
-  const availableProducts = useMemo(() => {
-    const query = searchTerm.toLowerCase().trim();
-    if (!query) return [];
-
-    const keywords = query.split(/\s+/);
-
-    const results = searchableProducts
-      .filter((item) => keywords.every((kw) => item.searchStr.includes(kw)))
-      .map((item) => item.product);
-
-    return results
-      .sort((a, b) => {
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        const aStarts = aName.startsWith(query);
-        const bStarts = bName.startsWith(query);
-
-        if (aStarts && !bStarts) return -1;
-        if (bStarts && !aStarts) return 1;
-        return aName.localeCompare(bName);
-      })
-      .slice(0, 20);
-  }, [searchTerm, searchableProducts]);
-
   const getProductPackagingOptions = (product: Product): ProductPackagingOption[] => {
     const rows = Array.isArray((product as any)?.packagings) ? (product as any).packagings : [];
     const mapped = rows
       .map((row: any) => ({
         id: String(row.id ?? ""),
         name: String(row.name ?? "").trim(),
+        displayName: String(row.displayName ?? row.display_name ?? "").trim(),
+        displayCode: String(row.displayCode ?? row.display_code ?? "").trim(),
         factor: Number(row.factor ?? 1),
         salePrice: Number(row.salePrice ?? row.sale_price ?? product.price ?? 0),
         costPrice: Number(row.costPrice ?? row.cost_price ?? product.costPrice ?? 0),
@@ -295,6 +278,40 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
     const options = getProductPackagingOptions(product);
     return options.find((x) => x.isDefault) || options[0];
   };
+
+  const searchableProducts = useMemo(() => {
+    const rows: ProductSearchOption[] = [];
+    products.forEach((product) => {
+      getProductPackagingOptions(product).forEach((packaging) => {
+        const searchLabel = packaging.displayName || `${product.name} ${packaging.name}`.trim();
+        const searchCode = packaging.displayCode || packaging.code || product.productCode || "";
+        rows.push({
+          product,
+          packaging,
+          searchLabel,
+          searchCode,
+          searchStr: `${searchLabel} ${searchCode} ${packaging.name || ""} ${product.name} ${product.productCode || ""} ${product.brandName || ""} ${product.category || ""} ${product.barcode || ""} ${product.id}`.toLowerCase(),
+        });
+      });
+    });
+    return rows;
+  }, [products]);
+
+  const availableProducts = useMemo(() => {
+    const query = searchTerm.toLowerCase().trim();
+    if (!query) return [];
+    const keywords = query.split(/\s+/);
+    return searchableProducts
+      .filter((item) => keywords.every((kw) => item.searchStr.includes(kw)))
+      .sort((a, b) => {
+        const aStarts = a.searchLabel.toLowerCase().startsWith(query);
+        const bStarts = b.searchLabel.toLowerCase().startsWith(query);
+        if (aStarts && !bStarts) return -1;
+        if (bStarts && !aStarts) return 1;
+        return a.searchLabel.localeCompare(b.searchLabel);
+      })
+      .slice(0, 30);
+  }, [searchTerm, searchableProducts]);
 
   const availableCustomers = useMemo(() => {
     const query = customerSearchTerm.toLowerCase().trim();
@@ -346,47 +363,36 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
     return { itemsSubtotal, netTotal, balanceDue, totalQty, unitBreakdown };
   }, [formData.items, formData.overallDiscount, formData.amountReceived]);
 
-  const handleAddItem = (product: Product) => {
-    const defaultPackaging = getDefaultPackaging(product);
+  const handleAddItem = (choice: ProductSearchOption) => {
+    const product = choice.product;
+    const selectedPackaging = choice.packaging || getDefaultPackaging(product);
     const sourceUnitPrice = isPurchaseMode
-      ? defaultPackaging.costPrice ?? product.costPrice
-      : defaultPackaging.salePrice ?? product.price;
+      ? selectedPackaging.costPrice ?? product.costPrice
+      : selectedPackaging.salePrice ?? product.price;
     const rawUnitPrice =
       typeof sourceUnitPrice === "string" ? sourceUnitPrice : `${sourceUnitPrice ?? 0}`;
     const cleanUnitPrice = rawUnitPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
     const unitPrice = parseFloat(cleanUnitPrice) || 0;
 
-    const existingIndex = formData.items.findIndex((i) => i.productId === product.id);
-
-    if (existingIndex > -1) {
-      const newItems = [...formData.items];
-      newItems[existingIndex].quantity += 1;
-      newItems[existingIndex].qtyPack = newItems[existingIndex].quantity;
-      newItems[existingIndex].packFactor = Number(newItems[existingIndex].packFactor || 1);
-      newItems[existingIndex].qtyBase =
-        Number(newItems[existingIndex].qtyPack || 0) *
-        Number(newItems[existingIndex].packFactor || 1);
-      setFormData({ ...formData, items: newItems });
-    } else {
-      const newItem: SalesInvoiceItem = {
-        productId: product.id,
-        productCode: product.productCode,
-        productName: product.name,
-        unit: product.unit,
-        quantity: 1,
-        packagingId: defaultPackaging.id || undefined,
-        packagingName: defaultPackaging.name,
-        packFactor: Number(defaultPackaging.factor || 1),
-        qtyPack: 1,
-        qtyBase: Number(defaultPackaging.factor || 1),
-        unitPrice: unitPrice,
-        tax: 0,
-        discountValue: 0,
-        discountType: "fixed",
-        total: unitPrice,
-      };
-      setFormData({ ...formData, items: [...formData.items, newItem] });
-    }
+    const newItem: SalesInvoiceItem = {
+      id: createLineId(),
+      productId: product.id,
+      productCode: product.productCode,
+      productName: product.name,
+      unit: selectedPackaging.name || product.unit,
+      quantity: 1,
+      packagingId: selectedPackaging.id || undefined,
+      packagingName: selectedPackaging.name,
+      packFactor: Number(selectedPackaging.factor || 1),
+      qtyPack: 1,
+      qtyBase: Number(selectedPackaging.factor || 1),
+      unitPrice: unitPrice,
+      tax: 0,
+      discountValue: 0,
+      discountType: "fixed",
+      total: unitPrice,
+    };
+    setFormData({ ...formData, items: [...formData.items, newItem] });
 
     if (isPurchaseMode) {
       const rawSalesPrice = typeof product.price === "string" ? product.price : `${product.price ?? 0}`;
@@ -400,7 +406,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
     setSelectedIndex(0);
 
     requestAnimationFrame(() => {
-      const qtyInput = document.getElementById(`qty-${product.id}`) as HTMLInputElement;
+      const qtyInput = document.getElementById(`qty-${(newItem as any).id}`) as HTMLInputElement;
       if (qtyInput) {
         qtyInput.focus();
         qtyInput.select();
@@ -461,7 +467,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
     setFormData({
       ...formData,
       items: formData.items.map((i) => {
-        if (i.productId !== id) return i;
+        if (rowKeyOf(i) !== id) return i;
         if (field === "quantity") {
           const qtyPack = Number(value || 0);
           const factor = Number(i.packFactor || 1);
@@ -497,8 +503,8 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
 
   const reorderItem = (dragId: string, dropId: string) => {
     if (!dragId || dragId === dropId) return;
-    const fromIndex = formData.items.findIndex((i) => i.productId === dragId);
-    const toIndex = formData.items.findIndex((i) => i.productId === dropId);
+    const fromIndex = formData.items.findIndex((i) => rowKeyOf(i) === dragId);
+    const toIndex = formData.items.findIndex((i) => rowKeyOf(i) === dropId);
     if (fromIndex === -1 || toIndex === -1) return;
     const nextItems = [...formData.items];
     const [moved] = nextItems.splice(fromIndex, 1);
@@ -520,14 +526,14 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
     if (selectedItemIds.size === formData.items.length && formData.items.length > 0) {
       setSelectedItemIds(new Set());
     } else {
-      setSelectedItemIds(new Set(formData.items.map((i) => i.productId)));
+      setSelectedItemIds(new Set(formData.items.map((i) => rowKeyOf(i))));
     }
   };
 
   const handleRemoveItem = (id: string) => {
     setFormData({
       ...formData,
-      items: formData.items.filter((i) => i.productId !== id),
+      items: formData.items.filter((i) => rowKeyOf(i) !== id),
     });
     if (selectedItemIds.has(id)) {
       const next = new Set(selectedItemIds);
@@ -547,7 +553,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
     if (selectedItemIds.size === 0) return;
     setFormData({
       ...formData,
-      items: formData.items.filter((i) => !selectedItemIds.has(i.productId)),
+      items: formData.items.filter((i) => !selectedItemIds.has(rowKeyOf(i))),
     });
     if (isPurchaseMode) {
       setSalesPriceByProductId((prev) => {
@@ -563,7 +569,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
 
   const handlePrintSelected = () => {
     if (selectedItemIds.size === 0) return;
-    const selected = formData.items.filter((i) => selectedItemIds.has(i.productId));
+    const selected = formData.items.filter((i) => selectedItemIds.has(rowKeyOf(i)));
     setPrintItems(selected);
     setPrintMode("token");
     setTimeout(() => window.print(), 50);
@@ -1199,7 +1205,6 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                   <th className="px-3 py-3 w-20">Code</th>
                   <th className="px-3 py-3">Product</th>
                   <th className="px-3 py-3 w-16 text-center">Unit</th>
-                  <th className="px-3 py-3 w-28 text-center">Pack</th>
                   <th className="px-3 py-3 w-16 text-center">Qty</th>
                   <th className="px-3 py-3 w-24 text-right">{isPurchaseMode ? "Unit Cost" : "Unit Price"}</th>
                   {isPurchaseMode && <th className="px-3 py-3 w-24 text-right">Sales Price</th>}
@@ -1221,19 +1226,19 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                   const netAmount = grossAmount - discountAmt;
                   return (
                     <tr
-                      key={item.productId}
-                      data-row-id={item.productId}
+                      key={rowKeyOf(item)}
+                      data-row-id={rowKeyOf(item)}
                       className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 ${
-                        draggingId === item.productId
+                        draggingId === rowKeyOf(item)
                           ? "bg-orange-50/60 dark:bg-orange-950/20"
-                          : dropTargetId === item.productId
+                          : dropTargetId === rowKeyOf(item)
                           ? "bg-orange-50/40 dark:bg-orange-950/10"
                           : ""
                       }`}
                       onDragEnter={(e) => {
                         e.preventDefault();
-                        if (draggingId && draggingId !== item.productId) {
-                          setDropTargetId(item.productId);
+                        if (draggingId && draggingId !== rowKeyOf(item)) {
+                          setDropTargetId(rowKeyOf(item));
                         }
                       }}
                       onDragOver={(e) => {
@@ -1249,14 +1254,14 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                     >
                       <td className="px-4 py-2 text-center">
                         <button
-                          onClick={() => toggleSelectItem(item.productId)}
+                          onClick={() => toggleSelectItem(rowKeyOf(item))}
                           className={`w-4 h-4 rounded border flex items-center justify-center mx-auto ${
-                            selectedItemIds.has(item.productId)
+                            selectedItemIds.has(rowKeyOf(item))
                               ? "bg-orange-600 border-orange-600"
                               : "border-slate-300 dark:border-slate-600"
                           }`}
                         >
-                          {selectedItemIds.has(item.productId) && (
+                          {selectedItemIds.has(rowKeyOf(item)) && (
                             <span className="text-white text-[8px]">✓</span>
                           )}
                         </button>
@@ -1277,32 +1282,9 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                         </span>
                       </td>
                       <td className="px-3 py-2 text-center">
-                        {(() => {
-                          const product = products.find((p) => String(p.id) === String(item.productId));
-                          if (!product) return <span className="text-[10px] text-slate-400">-</span>;
-                          const options = getProductPackagingOptions(product);
-                          return (
-                            <select
-                              disabled={isLocked}
-                              className={`w-24 bg-slate-50 dark:bg-slate-800/50 rounded-md text-[10px] font-black text-slate-700 dark:text-slate-200 border border-transparent focus:border-orange-500 py-1 px-1.5 ${
-                                isLocked ? "opacity-60 cursor-not-allowed" : ""
-                              }`}
-                              value={item.packagingId || options[0]?.id || ""}
-                              onChange={(e) => updateItemField(item.productId, "packagingId", e.target.value)}
-                            >
-                              {options.map((opt) => (
-                                <option key={opt.id || opt.name} value={opt.id}>
-                                  {opt.name}
-                                </option>
-                              ))}
-                            </select>
-                          );
-                        })()}
-                      </td>
-                      <td className="px-3 py-2 text-center">
                         <div className="flex items-center justify-center gap-1">
                         <input
-                          id={`qty-${item.productId}`}
+                          id={`qty-${rowKeyOf(item)}`}
                           type="number"
                           step="0.001"
                           disabled={isLocked}
@@ -1311,7 +1293,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                           }`}
                           value={item.quantity}
                           onChange={(e) =>
-                            updateItemField(item.productId, "quantity", Math.max(0, parseFloat(e.target.value) || 0))
+                            updateItemField(rowKeyOf(item), "quantity", Math.max(0, parseFloat(e.target.value) || 0))
                           }
                         />
                           <span className="text-[9px] font-black text-slate-400 uppercase">
@@ -1321,7 +1303,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                       </td>
                       <td className="px-3 py-2 text-right">
                         <input
-                          id={`price-${item.productId}`}
+                          id={`price-${rowKeyOf(item)}`}
                           type="number"
                           disabled={isLocked}
                           className={`w-16 bg-slate-50 dark:bg-slate-800/50 rounded-md text-right font-black text-[10px] focus:outline-none dark:text-white border border-transparent focus:border-orange-500 py-1 transition-all ${
@@ -1329,7 +1311,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                           }`}
                           value={item.unitPrice}
                           onChange={(e) =>
-                            updateItemField(item.productId, "unitPrice", Math.max(0, parseFloat(e.target.value) || 0))
+                            updateItemField(rowKeyOf(item), "unitPrice", Math.max(0, parseFloat(e.target.value) || 0))
                           }
                         />
                       </td>
@@ -1362,14 +1344,14 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                             }`}
                             value={item.discountValue || 0}
                             onChange={(e) =>
-                              updateItemField(item.productId, "discountValue", Math.max(0, parseFloat(e.target.value) || 0))
+                              updateItemField(rowKeyOf(item), "discountValue", Math.max(0, parseFloat(e.target.value) || 0))
                             }
                           />
                           <select
                             disabled={isLocked}
                             className={`bg-transparent text-[9px] font-black text-slate-400 ${isLocked ? "opacity-60" : ""}`}
                             value={item.discountType}
-                            onChange={(e) => updateItemField(item.productId, "discountType", e.target.value as any)}
+                            onChange={(e) => updateItemField(rowKeyOf(item), "discountType", e.target.value as any)}
                           >
                             <option value="fixed">Rs</option>
                             <option value="percent">%</option>
@@ -1385,9 +1367,9 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                           title="Drag to reorder"
                           draggable
                           onDragStart={(e) => {
-                            setDraggingId(item.productId);
+                            setDraggingId(rowKeyOf(item));
                             e.dataTransfer.effectAllowed = "move";
-                            e.dataTransfer.setData("text/plain", item.productId);
+                            e.dataTransfer.setData("text/plain", rowKeyOf(item));
                           }}
                         >
                           <FiMove size={13} />
@@ -1395,7 +1377,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                       </td>
                       <td className="px-3 py-2 text-center">
                         <button
-                          onClick={() => handleRemoveItem(item.productId)}
+                          onClick={() => handleRemoveItem(rowKeyOf(item))}
                           disabled={isLocked}
                           className={`p-1 text-slate-300 transition-colors ${
                             isLocked ? "opacity-50 cursor-not-allowed" : "hover:text-rose-500"
@@ -1409,7 +1391,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                 })}
                 <tr className="bg-orange-50/10 dark:bg-orange-950/10 border-t border-slate-200 dark:border-slate-700">
                   <td className="px-4 py-3 text-center">+</td>
-                  <td colSpan={isPurchaseMode ? 12 : 11} className="px-3 py-3">
+                  <td colSpan={isPurchaseMode ? 11 : 10} className="px-3 py-3">
                     <div className="relative z-[120]" ref={searchContainerRef}>
                       <input
                         ref={searchInputRef}
@@ -1443,13 +1425,16 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                           </div>
                           <div ref={productListContainerRef} className="max-h-[360px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
                             {availableProducts.length > 0 ? (
-                              availableProducts.map((p, idx) => (
+                              availableProducts.map((option, idx) => {
+                                const p = option.product;
+                                const pack = option.packaging;
+                                return (
                                 <button
-                                  key={p.id}
+                                  key={`${p.id}-${pack.id || pack.name}-${idx}`}
                                   ref={(el) => {
                                     productItemRefs.current[idx] = el;
                                   }}
-                                  onClick={() => handleAddItem(p)}
+                                  onClick={() => handleAddItem(option)}
                                   onMouseEnter={() => setSelectedIndex(idx)}
                                   className={`w-full text-left px-4 py-3 flex items-center justify-between transition-all ${
                                     selectedIndex === idx ? "bg-orange-600 text-white" : "hover:bg-slate-50 dark:hover:bg-slate-800"
@@ -1462,12 +1447,12 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                                       {p.image ? (
                                         <img
                                           src={p.image}
-                                          alt={p.name}
+                                          alt={option.searchLabel}
                                           className="w-full h-full object-cover rounded-lg cursor-zoom-in"
                                           onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            setPreviewImage({ src: p.image || "", name: p.name });
+                                            setPreviewImage({ src: p.image || "", name: option.searchLabel });
                                           }}
                                         />
                                       ) : (
@@ -1477,11 +1462,11 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                                     <div>
                                       <div className={`text-[11px] font-black uppercase tracking-tight ${
                                         selectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"
-                                      }`}>{p.name}</div>
+                                      }`}>{option.searchLabel}</div>
                                       <div className={`text-[9px] ${
                                         selectedIndex === idx ? "text-orange-100" : "text-slate-400"
                                       }`}>
-                                        SKU: {p.productCode || p.id} • {p.category || "General"}
+                                        SKU: {option.searchCode || p.id} • Unit: {pack.name || p.unit}
                                       </div>
                                     </div>
                                   </div>
@@ -1489,7 +1474,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                                     <div className={`text-[10px] font-black ${
                                       selectedIndex === idx ? "text-white" : "text-orange-600"
                                     }`}>
-                                      {isPurchaseMode ? p.costPrice : p.price}
+                                      {isPurchaseMode ? (pack.costPrice ?? p.costPrice) : (pack.salePrice ?? p.price)}
                                     </div>
                                     <div className={`text-[9px] ${
                                       selectedIndex === idx ? "text-orange-100" : "text-slate-400"
@@ -1498,7 +1483,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                                     </div>
                                   </div>
                                 </button>
-                              ))
+                              )})
                             ) : (
                               <div className="px-6 py-8 text-center">
                                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
