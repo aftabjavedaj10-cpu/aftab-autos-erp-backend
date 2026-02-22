@@ -609,8 +609,17 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                         </button>
                       </div>
 
+                      <div className="grid grid-cols-12 gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <div className="col-span-3">Name</div>
+                        <div className="col-span-2">Code</div>
+                        <div className="col-span-2">Factor</div>
+                        <div className="col-span-2">Sale</div>
+                        <div className="col-span-1">Cost</div>
+                        <div className="col-span-2">Default / Action</div>
+                      </div>
+
                       {packagings.map((row, idx) => (
-                        <div key={`${idx}-${row.id || row.name}`} className="grid grid-cols-12 gap-2 items-center">
+                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-12 gap-2 items-center">
                           <input
                             type="text"
                             placeholder="Name"
@@ -643,6 +652,15 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                             value={row.salePrice ?? 0}
                             onChange={(e) => updatePackaging(idx, "salePrice", Number(e.target.value || 0))}
                           />
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Cost"
+                            className="col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.costPrice ?? 0}
+                            onChange={(e) => updatePackaging(idx, "costPrice", Number(e.target.value || 0))}
+                          />
                           <div className="col-span-2 flex items-center gap-2">
                             <label className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                               <input
@@ -661,15 +679,6 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                               Del
                             </button>
                           </div>
-                          <input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="Cost"
-                            className="col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
-                            value={row.costPrice ?? 0}
-                            onChange={(e) => updatePackaging(idx, "costPrice", Number(e.target.value || 0))}
-                          />
                         </div>
                       ))}
                       {(errors.packagings || errors.packagingDefault) && (

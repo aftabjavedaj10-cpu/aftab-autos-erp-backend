@@ -85,6 +85,11 @@ export interface SalesInvoiceItem {
   productCode?: string;
   unit?: string;
   quantity: number;
+  packagingId?: string;
+  packagingName?: string;
+  packFactor?: number;
+  qtyPack?: number;
+  qtyBase?: number;
   unitPrice: number;
   tax?: number;
   discountValue?: number;

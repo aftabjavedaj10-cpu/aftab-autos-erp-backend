@@ -26,6 +26,14 @@ interface PurchaseOrderFormPageProps {
 }
 
 type PrintMode = "invoice" | "receipt" | "a5" | "token";
+type ProductPackagingOption = {
+  id: string;
+  name: string;
+  factor: number;
+  salePrice?: number;
+  costPrice?: number;
+  isDefault?: boolean;
+};
 
 const formatDateDdMmYyyy = (value: string) => {
   const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -257,6 +265,38 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
       .slice(0, 20);
   }, [searchTerm, searchableProducts]);
 
+  const getProductPackagingOptions = (product: Product): ProductPackagingOption[] => {
+    const rows = Array.isArray((product as any)?.packagings) ? (product as any).packagings : [];
+    const mapped = rows
+      .map((row: any) => ({
+        id: String(row.id ?? ""),
+        name: String(row.name ?? "").trim(),
+        factor: Number(row.factor ?? 1),
+        salePrice: Number(row.salePrice ?? row.sale_price ?? product.price ?? 0),
+        costPrice: Number(row.costPrice ?? row.cost_price ?? product.costPrice ?? 0),
+        isDefault: Boolean(row.isDefault ?? row.is_default),
+      }))
+      .filter((row: ProductPackagingOption) => row.id && row.name && Number.isFinite(row.factor) && row.factor > 0);
+    if (mapped.length > 0) {
+      return mapped;
+    }
+    return [
+      {
+        id: "",
+        name: String(product.unit || "Piece"),
+        factor: 1,
+        salePrice: Number(product.price ?? 0),
+        costPrice: Number(product.costPrice ?? 0),
+        isDefault: true,
+      },
+    ];
+  };
+
+  const getDefaultPackaging = (product: Product): ProductPackagingOption => {
+    const options = getProductPackagingOptions(product);
+    return options.find((x) => x.isDefault) || options[0];
+  };
+
   const availableCustomers = useMemo(() => {
     const query = customerSearchTerm.toLowerCase().trim();
     if (!query) return customers;
@@ -307,7 +347,10 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   }, [formData.items, formData.overallDiscount]);
 
   const handleAddItem = (product: Product) => {
-    const sourceUnitPrice = isPurchaseMode ? product.costPrice : product.price;
+    const defaultPackaging = getDefaultPackaging(product);
+    const sourceUnitPrice = isPurchaseMode
+      ? defaultPackaging.costPrice ?? product.costPrice
+      : defaultPackaging.salePrice ?? product.price;
     const rawUnitPrice =
       typeof sourceUnitPrice === "string" ? sourceUnitPrice : `${sourceUnitPrice ?? 0}`;
     const cleanUnitPrice = rawUnitPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
@@ -318,6 +361,11 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
     if (existingIndex > -1) {
       const newItems = [...formData.items];
       newItems[existingIndex].quantity += 1;
+      newItems[existingIndex].qtyPack = newItems[existingIndex].quantity;
+      newItems[existingIndex].packFactor = Number(newItems[existingIndex].packFactor || 1);
+      newItems[existingIndex].qtyBase =
+        Number(newItems[existingIndex].qtyPack || 0) *
+        Number(newItems[existingIndex].packFactor || 1);
       setFormData({ ...formData, items: newItems });
     } else {
       const newItem: SalesInvoiceItem = {
@@ -326,6 +374,11 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
         productName: product.name,
         unit: product.unit,
         quantity: 1,
+        packagingId: defaultPackaging.id || undefined,
+        packagingName: defaultPackaging.name,
+        packFactor: Number(defaultPackaging.factor || 1),
+        qtyPack: 1,
+        qtyBase: Number(defaultPackaging.factor || 1),
         unitPrice: unitPrice,
         tax: 0,
         discountValue: 0,
@@ -407,7 +460,38 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   const updateItemField = (id: string, field: keyof SalesInvoiceItem, value: any) => {
     setFormData({
       ...formData,
-      items: formData.items.map((i) => (i.productId === id ? { ...i, [field]: value } : i)),
+      items: formData.items.map((i) => {
+        if (i.productId !== id) return i;
+        if (field === "quantity") {
+          const qtyPack = Number(value || 0);
+          const factor = Number(i.packFactor || 1);
+          return { ...i, quantity: qtyPack, qtyPack, qtyBase: qtyPack * factor };
+        }
+        if (field === "packagingId") {
+          const product = products.find((p) => String(p.id) === String(i.productId));
+          if (!product) return { ...i, packagingId: value as string };
+          const options = getProductPackagingOptions(product);
+          const selected = options.find((p) => p.id === String(value)) || options[0];
+          const qtyPack = Number(i.qtyPack ?? i.quantity ?? 0);
+          const factor = Number(selected?.factor || 1);
+          return {
+            ...i,
+            packagingId: selected?.id || undefined,
+            packagingName: selected?.name,
+            packFactor: factor,
+            qtyPack,
+            quantity: qtyPack,
+            qtyBase: qtyPack * factor,
+            unitPrice:
+              selected && isPurchaseMode && selected.costPrice != null && Number.isFinite(Number(selected.costPrice))
+                ? Number(selected.costPrice)
+                : selected?.salePrice != null && Number.isFinite(Number(selected.salePrice))
+                ? Number(selected.salePrice)
+                : i.unitPrice,
+          };
+        }
+        return { ...i, [field]: value };
+      }),
     });
   };
 
@@ -1124,6 +1208,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                   <th className="px-3 py-3 w-20">Code</th>
                   <th className="px-3 py-3">Product</th>
                   <th className="px-3 py-3 w-16 text-center">Unit</th>
+                  <th className="px-3 py-3 w-28 text-center">Pack</th>
                   <th className="px-3 py-3 w-16 text-center">Qty</th>
                   <th className="px-3 py-3 w-24 text-right">{isPurchaseMode ? "Unit Cost" : "Unit Price"}</th>
                   {isPurchaseMode && <th className="px-3 py-3 w-24 text-right">Sales Price</th>}
@@ -1199,6 +1284,29 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                         <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase">
                           {item.unit || "PC"}
                         </span>
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {(() => {
+                          const product = products.find((p) => String(p.id) === String(item.productId));
+                          if (!product) return <span className="text-[10px] text-slate-400">-</span>;
+                          const options = getProductPackagingOptions(product);
+                          return (
+                            <select
+                              disabled={isLocked}
+                              className={`w-24 bg-slate-50 dark:bg-slate-800/50 rounded-md text-[10px] font-black text-slate-700 dark:text-slate-200 border border-transparent focus:border-orange-500 py-1 px-1.5 ${
+                                isLocked ? "opacity-60 cursor-not-allowed" : ""
+                              }`}
+                              value={item.packagingId || options[0]?.id || ""}
+                              onChange={(e) => updateItemField(item.productId, "packagingId", e.target.value)}
+                            >
+                              {options.map((opt) => (
+                                <option key={opt.id || opt.name} value={opt.id}>
+                                  {opt.name}
+                                </option>
+                              ))}
+                            </select>
+                          );
+                        })()}
                       </td>
                       <td className="px-3 py-2 text-center">
                         <div className="flex items-center justify-center gap-1">
@@ -1310,7 +1418,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 })}
                 <tr className="bg-orange-50/10 dark:bg-orange-950/10 border-t border-slate-200 dark:border-slate-700">
                   <td className="px-4 py-3 text-center">+</td>
-                  <td colSpan={isPurchaseMode ? 11 : 10} className="px-3 py-3">
+                  <td colSpan={isPurchaseMode ? 12 : 11} className="px-3 py-3">
                     <div className="relative z-[120]" ref={searchContainerRef}>
                       <input
                         ref={searchInputRef}
