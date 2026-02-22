@@ -1322,6 +1322,11 @@ export const productAPI = {
   update: async (id: string, product: any) => {
     await ensurePermission("products.write");
     const productPayload = sanitizeProductPayload(mapProductToDb(product));
+    // Opening stock is create-only. Ignore stock fields on product updates.
+    if ("stock" in productPayload) delete productPayload.stock;
+    if ("stock_on_hand" in productPayload) delete productPayload.stock_on_hand;
+    if ("stock_available" in productPayload) delete productPayload.stock_available;
+    if ("stock_reserved" in productPayload) delete productPayload.stock_reserved;
     return apiCall(`/products?id=eq.${id}`, "PATCH", productPayload, true)
       .then(firstRow)
       .then(mapProductFromDb);

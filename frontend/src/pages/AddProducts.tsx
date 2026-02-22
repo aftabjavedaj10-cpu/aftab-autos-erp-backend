@@ -539,14 +539,21 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Initial Stock</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                      Initial Stock {isEdit ? "(Create Only)" : ""}
+                    </label>
                     <input 
                       type="number" 
-                      disabled={formData.productType === 'Service'}
-                      className={`w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white ${formData.productType === 'Service' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={formData.productType === 'Service' || isEdit}
+                      className={`w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white ${(formData.productType === 'Service' || isEdit) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       value={formData.productType === 'Service' ? 0 : formData.stock}
                       onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value) || 0})}
                     />
+                    {isEdit && (
+                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        Initial stock is applied only when creating a new product.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Alert Level</label>
