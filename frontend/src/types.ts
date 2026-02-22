@@ -21,6 +21,19 @@ export interface Product {
   warehouse?: string;
   productType?: 'Product' | 'Service';
   description?: string;
+  packagingEnabled?: boolean;
+  packagings?: ProductPackaging[];
+}
+
+export interface ProductPackaging {
+  id?: string;
+  productId?: number | string;
+  name: string;
+  code?: string;
+  factor: number;
+  salePrice?: number | string;
+  costPrice?: number | string;
+  isDefault?: boolean;
 }
 
 export interface Category {

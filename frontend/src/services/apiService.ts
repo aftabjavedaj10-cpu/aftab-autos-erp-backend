@@ -347,6 +347,27 @@ const mapCategoryToDb = (category: any) =>
   // Never send id in write payloads so Postgres can auto-generate and avoid type errors.
   stripClientOnly({ ...category }, ["itemCount", "id"]);
 
+const mapProductPackagingFromDb = (row: any) => ({
+  id: row.id,
+  productId: row.product_id ?? row.productId,
+  name: row.name,
+  code: row.code ?? "",
+  factor: Number(row.factor ?? 1),
+  salePrice: Number(row.sale_price ?? row.salePrice ?? 0),
+  costPrice: Number(row.cost_price ?? row.costPrice ?? 0),
+  isDefault: Boolean(row.is_default ?? row.isDefault),
+});
+
+const mapProductPackagingToDb = (row: any, productId: number | string) => ({
+  product_id: Number(productId),
+  name: String(row?.name ?? "").trim(),
+  code: row?.code ? String(row.code).trim() : null,
+  factor: Number(row?.factor ?? 1),
+  sale_price: Number(row?.salePrice ?? row?.sale_price ?? 0),
+  cost_price: Number(row?.costPrice ?? row?.cost_price ?? 0),
+  is_default: Boolean(row?.isDefault ?? row?.is_default),
+});
+
 const normalizeLineQuantity = (row: any) => Number(row?.qty_pack ?? row?.quantity ?? 0);
 const normalizePackFactor = (row: any) => {
   const value = Number(row?.packFactor ?? row?.pack_factor ?? 1);
@@ -1313,6 +1334,49 @@ export const productAPI = {
       );
     }
     return null;
+  },
+};
+
+export const productPackagingAPI = {
+  getByProductId: async (productId: number | string) => {
+    await ensurePermission("products.read");
+    const rows = await apiCall(
+      `/product_packagings?select=*&product_id=eq.${productId}&order=is_default.desc,created_at.asc`
+    );
+    return Array.isArray(rows) ? rows.map(mapProductPackagingFromDb) : [];
+  },
+  replaceForProduct: async (
+    productId: number | string,
+    rows: any[],
+    fallback?: { unit?: string; price?: number | string; costPrice?: number | string }
+  ) => {
+    await ensurePermission("products.write");
+    await apiCall(`/product_packagings?product_id=eq.${productId}`, "DELETE");
+
+    const normalized = (Array.isArray(rows) ? rows : [])
+      .map((row) => mapProductPackagingToDb(row, productId))
+      .filter((row) => row.name.length > 0 && Number.isFinite(row.factor) && row.factor > 0);
+
+    const payload =
+      normalized.length > 0
+        ? normalized.map((row, idx) => ({
+            ...row,
+            is_default: normalized.some((x) => x.is_default) ? row.is_default : idx === 0,
+          }))
+        : [
+            {
+              product_id: Number(productId),
+              name: String(fallback?.unit || "Piece"),
+              code: null,
+              factor: 1,
+              sale_price: Number(fallback?.price ?? 0),
+              cost_price: Number(fallback?.costPrice ?? 0),
+              is_default: true,
+            },
+          ];
+
+    const created = await apiCall("/product_packagings", "POST", payload, true);
+    return Array.isArray(created) ? created.map(mapProductPackagingFromDb) : [];
   },
 };
 
@@ -2385,6 +2449,7 @@ export const roleAPI = {
 
 export default {
   productAPI,
+  productPackagingAPI,
   customerAPI,
   vendorAPI,
   categoryAPI,

@@ -38,7 +38,7 @@ import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
 import MakePaymentFormPage from "./MakePaymentForm";
 import { ALL_REPORTS } from "../constants";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -336,8 +336,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab('add_customer');
   };
 
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
+  const handleEditProduct = async (product: Product) => {
+    try {
+      const packagings = await productPackagingAPI.getByProductId(product.id);
+      setEditingProduct({
+        ...product,
+        packagings,
+        packagingEnabled: packagings.length > 0,
+      });
+    } catch (err) {
+      console.error("Failed to load product packagings", err);
+      setEditingProduct(product);
+    }
     setActiveTab('add_product');
   };
 
@@ -996,12 +1006,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onSave={(product, stayOnPage) => {
               const saveProduct = () => {
                 if (product.id) {
-                  return productAPI.update(product.id, product).then(() => {
-                    setProducts(products.map(p => p.id === product.id ? product : p));
+                  return productAPI.update(product.id, product).then(async (updated: any) => {
+                    await productPackagingAPI.replaceForProduct(
+                      updated.id,
+                      product.packagingEnabled ? product.packagings : [],
+                      { unit: product.unit, price: product.price, costPrice: product.costPrice }
+                    );
+                    setProducts(products.map(p => p.id === updated.id ? { ...p, ...updated } : p));
                   });
                 } else {
-                  return productAPI.create(product).then((res: any) => {
-                    const newProduct = { ...product, id: res.id || `prod_${Date.now()}` };
+                  return productAPI.create(product).then(async (res: any) => {
+                    await productPackagingAPI.replaceForProduct(
+                      res.id,
+                      product.packagingEnabled ? product.packagings : [],
+                      { unit: product.unit, price: product.price, costPrice: product.costPrice }
+                    );
+                    const newProduct = { ...product, ...res, id: res.id || `prod_${Date.now()}` };
                     setProducts([...products, newProduct]);
                   });
                 }

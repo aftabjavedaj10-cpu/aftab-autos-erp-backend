@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Product, Category, Vendor } from '../types';
+import type { Product, Category, Vendor, ProductPackaging } from '../types';
 import { WAREHOUSES } from '../constants';
 
 interface ProductFormPageProps {
@@ -13,6 +13,19 @@ interface ProductFormPageProps {
 }
 
 const DEFAULT_UNITS = ['Piece', 'Pair', 'Set', 'Bottle', 'Litre', 'Box'];
+
+const createDefaultPackaging = (base: {
+  unit?: string;
+  price?: number | string;
+  costPrice?: number | string;
+}): ProductPackaging => ({
+  name: String(base.unit || "Piece"),
+  code: "",
+  factor: 1,
+  salePrice: Number(base.price || 0),
+  costPrice: Number(base.costPrice || 0),
+  isDefault: true,
+});
 
 const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vendors, nextProductCode, onBack, onSave, onAddCategory }) => {
   const isEdit = !!product;
@@ -36,6 +49,22 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     image: product?.image || '',
     isActive: product?.isActive ?? true
   });
+  const [packagingEnabled, setPackagingEnabled] = useState<boolean>(
+    Boolean((product as any)?.packagingEnabled || ((product as any)?.packagings?.length ?? 0) > 0)
+  );
+  const [packagings, setPackagings] = useState<ProductPackaging[]>(
+    Array.isArray((product as any)?.packagings) && (product as any).packagings.length > 0
+      ? (product as any).packagings.map((p: any) => ({
+          id: p.id,
+          name: p.name || "",
+          code: p.code || "",
+          factor: Number(p.factor || 1),
+          salePrice: Number((p.salePrice ?? p.sale_price ?? formData.price) || 0),
+          costPrice: Number((p.costPrice ?? p.cost_price ?? formData.costPrice) || 0),
+          isDefault: Boolean(p.isDefault ?? p.is_default),
+        }))
+      : [createDefaultPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]
+  );
 
   const [units, setUnits] = useState(DEFAULT_UNITS);
   const [isQuickAddingCategory, setIsQuickAddingCategory] = useState(false);
@@ -78,13 +107,30 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     if (!formData.price.toString().trim()) newErrors.price = 'Enter a sale price';
     if (!formData.costPrice.toString().trim()) newErrors.costPrice = 'Enter a purchase price';
     if (!formData.vendorId) newErrors.vendorId = 'Select a supplier';
+    if (packagingEnabled) {
+      const hasDefault = packagings.some((p) => p.isDefault);
+      if (!hasDefault) newErrors.packagingDefault = 'Select one default packaging';
+      if (packagings.length === 0) newErrors.packagings = 'Add at least one packaging row';
+      const invalidRow = packagings.find((p) => !String(p.name || "").trim() || Number(p.factor) <= 0);
+      if (invalidRow) newErrors.packagings = 'Packaging name and factor (> 0) are required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleAction = (stayOnPage: boolean) => {
     if (!validate()) return;
-    onSave({ ...product, ...formData }, stayOnPage);
+    const sanitizedPackagings = packagingEnabled
+      ? packagings.map((p, idx) => ({
+          ...p,
+          name: String(p.name || "").trim(),
+          factor: Number(p.factor || 1),
+          salePrice: Number(p.salePrice || 0),
+          costPrice: Number(p.costPrice || 0),
+          isDefault: packagings.some((x) => x.isDefault) ? Boolean(p.isDefault) : idx === 0,
+        }))
+      : [];
+    onSave({ ...product, ...formData, packagingEnabled, packagings: sanitizedPackagings }, stayOnPage);
     if (stayOnPage && !isEdit) {
       setFormData({ 
         name: '', urduName: '', productCode: nextProductCode, brandName: '', productType: 'Product', warehouse: WAREHOUSES[0],
@@ -92,11 +138,41 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
         vendorId: vendors[0]?.id || '', stock: 0, unit: 'Piece', 
         reorderPoint: 10, reorderQty: 1, description: '', image: '', isActive: true
       });
+      setPackagingEnabled(false);
+      setPackagings([createDefaultPackaging({ unit: "Piece", price: 0, costPrice: 0 })]);
       setIsProductCodeTouched(false);
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
       setIsDropdownOpen(false);
     }
+  };
+
+  const setDefaultPackaging = (index: number) => {
+    setPackagings((prev) => prev.map((row, i) => ({ ...row, isDefault: i === index })));
+  };
+
+  const updatePackaging = (index: number, key: keyof ProductPackaging, value: any) => {
+    setPackagings((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
+  };
+
+  const addPackagingRow = () => {
+    setPackagings((prev) => [
+      ...prev,
+      createDefaultPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice }),
+    ]);
+  };
+
+  const removePackagingRow = (index: number) => {
+    setPackagings((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        return [createDefaultPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })];
+      }
+      if (!next.some((row) => row.isDefault)) {
+        next[0] = { ...next[0], isDefault: true };
+      }
+      return next;
+    });
   };
 
   const handleQuickAddCategory = () => {
@@ -493,6 +569,114 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                       onChange={(e) => setFormData({...formData, reorderQty: Math.max(1, parseInt(e.target.value) || 1)})}
                     />
                   </div>
+                </div>
+
+                <div className="md:col-span-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Enable Multiple Packaging</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">If off, system keeps one default packaging with factor 1.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={packagingEnabled}
+                        onChange={() => {
+                          const next = !packagingEnabled;
+                          setPackagingEnabled(next);
+                          if (next && packagings.length === 0) {
+                            setPackagings([createDefaultPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]);
+                          }
+                        }}
+                      />
+                      <div className={`w-12 h-6 rounded-full transition-all ${packagingEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform translate-y-0.5 ${packagingEnabled ? 'translate-x-6' : 'translate-x-1'}`}></div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {packagingEnabled && (
+                    <div className="mt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">Packaging Rows</p>
+                        <button
+                          type="button"
+                          onClick={addPackagingRow}
+                          className="px-3 py-1.5 text-[10px] font-black uppercase rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition-all"
+                        >
+                          Add Packaging
+                        </button>
+                      </div>
+
+                      {packagings.map((row, idx) => (
+                        <div key={`${idx}-${row.id || row.name}`} className="grid grid-cols-12 gap-2 items-center">
+                          <input
+                            type="text"
+                            placeholder="Name"
+                            className="col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.name || ""}
+                            onChange={(e) => updatePackaging(idx, "name", e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Code"
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.code || ""}
+                            onChange={(e) => updatePackaging(idx, "code", e.target.value)}
+                          />
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0.001"
+                            placeholder="Factor"
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.factor ?? 1}
+                            onChange={(e) => updatePackaging(idx, "factor", Number(e.target.value || 1))}
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Sale"
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.salePrice ?? 0}
+                            onChange={(e) => updatePackaging(idx, "salePrice", Number(e.target.value || 0))}
+                          />
+                          <div className="col-span-2 flex items-center gap-2">
+                            <label className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                              <input
+                                type="radio"
+                                name="defaultPackaging"
+                                checked={Boolean(row.isDefault)}
+                                onChange={() => setDefaultPackaging(idx)}
+                              />
+                              Default
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removePackagingRow(idx)}
+                              className="px-2 py-1 text-[10px] font-black uppercase rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200"
+                            >
+                              Del
+                            </button>
+                          </div>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Cost"
+                            className="col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.costPrice ?? 0}
+                            onChange={(e) => updatePackaging(idx, "costPrice", Number(e.target.value || 0))}
+                          />
+                        </div>
+                      ))}
+                      {(errors.packagings || errors.packagingDefault) && (
+                        <p className="text-xs text-rose-500 font-medium">{errors.packagings || errors.packagingDefault}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
