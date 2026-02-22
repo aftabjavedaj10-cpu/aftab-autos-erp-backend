@@ -632,7 +632,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-14 gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      <div className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         <div className="col-span-2">Pack Name</div>
                         <div className="col-span-2">Pack Code</div>
                         <div className="col-span-3">Display Name</div>
@@ -644,7 +644,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                       </div>
 
                       {packagings.map((row, idx) => (
-                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-14 gap-2 items-center">
+                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2 items-center">
                           <input
                             type="text"
                             placeholder="Name"
