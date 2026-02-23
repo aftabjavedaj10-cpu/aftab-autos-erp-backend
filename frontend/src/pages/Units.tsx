@@ -61,7 +61,7 @@ const UnitsPage: React.FC<UnitsPageProps> = ({ units, onAddClick, onEditClick, o
               </thead>
               <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
                 {filtered.map((unit) => (
-                  <tr key={unit.id} className="transition-all duration-300 group hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                  <tr key={String(unit.id || unit.name)} className="transition-all duration-300 group hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
                     <td className="px-8 py-5 font-black text-slate-900 dark:text-white text-xs uppercase">{unit.name}</td>
                     <td className="px-8 py-5 text-[11px] font-semibold text-slate-600 dark:text-slate-400">{unit.description || "-"}</td>
                     <td className="px-8 py-5">
@@ -72,7 +72,7 @@ const UnitsPage: React.FC<UnitsPageProps> = ({ units, onAddClick, onEditClick, o
                     <td className="px-8 py-5 text-right">
                       <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => onEditClick(unit)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-orange-600 transition-all shadow-sm" title="Edit">Edit</button>
-                        <button onClick={() => onDelete(unit.id)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-rose-600 transition-all shadow-sm" title="Delete">Del</button>
+                        <button onClick={() => unit.id && onDelete(unit.id)} className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-rose-600 transition-all shadow-sm" title="Delete">Del</button>
                       </div>
                     </td>
                   </tr>

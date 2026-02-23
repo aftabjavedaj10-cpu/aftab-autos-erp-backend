@@ -23,7 +23,7 @@ const AddUnitFormPage: React.FC<AddUnitFormPageProps> = ({ unit, onBack, onSave 
     onSave(
       {
         ...unit,
-        id: unit?.id || `unit_${Date.now()}`,
+        id: unit?.id,
         name: name.trim(),
         description: description.trim(),
         isActive,

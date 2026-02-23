@@ -352,6 +352,38 @@ const mapCategoryToDb = (category: any) =>
   // Never send id in write payloads so Postgres can auto-generate and avoid type errors.
   stripClientOnly({ ...category }, ["itemCount", "id"]);
 
+const mapUnitFromDb = (row: any) => ({
+  id: String(row.id),
+  name: String(row.name ?? ""),
+  description: row.description ?? "",
+  isActive: row.is_active ?? row.isActive ?? true,
+});
+
+const mapUnitToDb = (unit: any) =>
+  stripClientOnly(
+    {
+      ...unit,
+      is_active: unit.isActive ?? unit.is_active ?? true,
+    },
+    ["id", "isActive"]
+  );
+
+const mapWarehouseFromDb = (row: any) => ({
+  id: String(row.id),
+  name: String(row.name ?? ""),
+  description: row.description ?? "",
+  isActive: row.is_active ?? row.isActive ?? true,
+});
+
+const mapWarehouseToDb = (warehouse: any) =>
+  stripClientOnly(
+    {
+      ...warehouse,
+      is_active: warehouse.isActive ?? warehouse.is_active ?? true,
+    },
+    ["id", "isActive"]
+  );
+
 const mapProductPackagingFromDb = (row: any) => ({
   id: row.id,
   productId: row.product_id ?? row.productId,
@@ -1611,6 +1643,56 @@ export const categoryAPI = {
       )
     );
     return apiCall("/categories", "POST", rows, true);
+  },
+};
+
+// ============ UNITS ============
+export const unitAPI = {
+  getAll: async () => {
+    await ensurePermission("products.read");
+    const rows = await apiCall("/units?select=*&order=name.asc");
+    return Array.isArray(rows) ? rows.map(mapUnitFromDb) : [];
+  },
+  create: async (unit: any) => {
+    await ensurePermission("products.write");
+    return apiCall("/units", "POST", mapUnitToDb(attachOwnership(unit)), true)
+      .then(firstRow)
+      .then(mapUnitFromDb);
+  },
+  update: async (id: string, unit: any) => {
+    await ensurePermission("products.write");
+    return apiCall(`/units?id=eq.${id}`, "PATCH", mapUnitToDb(unit), true)
+      .then(firstRow)
+      .then(mapUnitFromDb);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("products.delete");
+    return apiCall(`/units?id=eq.${id}`, "DELETE");
+  },
+};
+
+// ============ WAREHOUSES ============
+export const warehouseAPI = {
+  getAll: async () => {
+    await ensurePermission("products.read");
+    const rows = await apiCall("/warehouses?select=*&order=name.asc");
+    return Array.isArray(rows) ? rows.map(mapWarehouseFromDb) : [];
+  },
+  create: async (warehouse: any) => {
+    await ensurePermission("products.write");
+    return apiCall("/warehouses", "POST", mapWarehouseToDb(attachOwnership(warehouse)), true)
+      .then(firstRow)
+      .then(mapWarehouseFromDb);
+  },
+  update: async (id: string, warehouse: any) => {
+    await ensurePermission("products.write");
+    return apiCall(`/warehouses?id=eq.${id}`, "PATCH", mapWarehouseToDb(warehouse), true)
+      .then(firstRow)
+      .then(mapWarehouseFromDb);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("products.delete");
+    return apiCall(`/warehouses?id=eq.${id}`, "DELETE");
   },
 };
 

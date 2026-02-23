@@ -42,7 +42,7 @@ import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
 import MakePaymentFormPage from "./MakePaymentForm";
 import { ALL_REPORTS } from "../constants";
 import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company, UnitMaster, WarehouseMaster } from "../types";
-import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, unitAPI, warehouseAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -81,35 +81,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [noCompany, setNoCompany] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [units, setUnits] = useState<UnitMaster[]>(() => {
-    try {
-      const raw = localStorage.getItem("setup_units");
-      if (raw) return JSON.parse(raw);
-    } catch {
-      // ignore parse issues
-    }
-    return [
-      { id: "unit_piece", name: "Piece", isActive: true },
-      { id: "unit_pair", name: "Pair", isActive: true },
-      { id: "unit_set", name: "Set", isActive: true },
-      { id: "unit_bottle", name: "Bottle", isActive: true },
-      { id: "unit_litre", name: "Litre", isActive: true },
-      { id: "unit_box", name: "Box", isActive: true },
-    ];
-  });
-  const [warehouses, setWarehouses] = useState<WarehouseMaster[]>(() => {
-    try {
-      const raw = localStorage.getItem("setup_warehouses");
-      if (raw) return JSON.parse(raw);
-    } catch {
-      // ignore parse issues
-    }
-    return [
-      { id: "wh_main", name: "Main", isActive: true },
-      { id: "wh_a", name: "Warehouse A", isActive: true },
-      { id: "wh_b", name: "Warehouse B", isActive: true },
-    ];
-  });
+  const [units, setUnits] = useState<UnitMaster[]>([]);
+  const [warehouses, setWarehouses] = useState<WarehouseMaster[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
@@ -164,21 +137,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     }
   }, [activeTab, activeTabStorageKey]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem("setup_units", JSON.stringify(units));
-    } catch {
-      // ignore storage write errors
-    }
-  }, [units]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("setup_warehouses", JSON.stringify(warehouses));
-    } catch {
-      // ignore storage write errors
-    }
-  }, [warehouses]);
 
   const updateMainThumb = useCallback(() => {
     const el = mainScrollRef.current;
@@ -299,6 +257,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           customersData,
           vendorsData,
           categoriesData,
+          unitsData,
+          warehousesData,
           salesInvoicesData,
           purchaseInvoicesData,
           purchaseOrdersData,
@@ -313,6 +273,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           customerAPI.getAll().catch(() => []),
           vendorAPI.getAll().catch(() => []),
           categoryAPI.getAll().catch(() => []),
+          unitAPI.getAll().catch(() => []),
+          warehouseAPI.getAll().catch(() => []),
           salesInvoiceAPI.getAll().catch(() => []),
           purchaseInvoiceAPI.getAll().catch(() => []),
           purchaseOrderAPI.getAll().catch(() => []),
@@ -331,6 +293,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         setCustomers(Array.isArray(customersData) ? customersData : customersData.data || []);
         setVendors(Array.isArray(vendorsData) ? vendorsData : vendorsData.data || []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
+        setUnits(Array.isArray(unitsData) ? unitsData : []);
+        setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
         setSalesInvoices(
           Array.isArray(salesInvoicesData) ? salesInvoicesData : salesInvoicesData.data || []
         );
@@ -478,7 +442,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   };
 
   const handleDeleteUnit = (id: string) => {
-    setUnits((prev) => prev.filter((u) => u.id !== id));
+    unitAPI
+      .delete(id)
+      .then(() => setUnits((prev) => prev.filter((u) => u.id !== id)))
+      .catch((err) => {
+        setError("Failed to delete unit");
+        console.error(err);
+      });
   };
 
   const handleAddWarehouse = () => {
@@ -492,7 +462,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   };
 
   const handleDeleteWarehouse = (id: string) => {
-    setWarehouses((prev) => prev.filter((w) => w.id !== id));
+    warehouseAPI
+      .delete(id)
+      .then(() => setWarehouses((prev) => prev.filter((w) => w.id !== id)))
+      .catch((err) => {
+        setError("Failed to delete warehouse");
+        console.error(err);
+      });
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -1284,15 +1260,23 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setActiveTab("units");
             }}
             onSave={(unit, stayOnPage) => {
-              setUnits((prev) => {
-                const exists = prev.some((x) => x.id === unit.id);
-                if (exists) return prev.map((x) => (x.id === unit.id ? unit : x));
-                return [...prev, unit];
-              });
-              if (!stayOnPage) {
-                setEditingUnit(undefined);
-                setActiveTab("units");
-              }
+              const saveUnit = unit.id ? unitAPI.update(unit.id, unit) : unitAPI.create(unit);
+              saveUnit
+                .then((saved) => {
+                  setUnits((prev) => {
+                    const exists = prev.some((x) => x.id === saved.id);
+                    if (exists) return prev.map((x) => (x.id === saved.id ? saved : x));
+                    return [...prev, saved];
+                  });
+                  if (!stayOnPage) {
+                    setEditingUnit(undefined);
+                    setActiveTab("units");
+                  }
+                })
+                .catch((err) => {
+                  setError("Failed to save unit");
+                  console.error(err);
+                });
             }}
           />
         )}
@@ -1314,15 +1298,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setActiveTab("warehouses");
             }}
             onSave={(warehouse, stayOnPage) => {
-              setWarehouses((prev) => {
-                const exists = prev.some((x) => x.id === warehouse.id);
-                if (exists) return prev.map((x) => (x.id === warehouse.id ? warehouse : x));
-                return [...prev, warehouse];
-              });
-              if (!stayOnPage) {
-                setEditingWarehouse(undefined);
-                setActiveTab("warehouses");
-              }
+              const saveWarehouse = warehouse.id
+                ? warehouseAPI.update(warehouse.id, warehouse)
+                : warehouseAPI.create(warehouse);
+              saveWarehouse
+                .then((saved) => {
+                  setWarehouses((prev) => {
+                    const exists = prev.some((x) => x.id === saved.id);
+                    if (exists) return prev.map((x) => (x.id === saved.id ? saved : x));
+                    return [...prev, saved];
+                  });
+                  if (!stayOnPage) {
+                    setEditingWarehouse(undefined);
+                    setActiveTab("warehouses");
+                  }
+                })
+                .catch((err) => {
+                  setError("Failed to save warehouse");
+                  console.error(err);
+                });
             }}
           />
         )}

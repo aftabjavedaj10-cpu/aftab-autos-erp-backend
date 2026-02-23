@@ -23,7 +23,7 @@ const AddWarehouseFormPage: React.FC<AddWarehouseFormPageProps> = ({ warehouse, 
     onSave(
       {
         ...warehouse,
-        id: warehouse?.id || `wh_${Date.now()}`,
+        id: warehouse?.id,
         name: name.trim(),
         description: description.trim(),
         isActive,

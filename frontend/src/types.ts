@@ -49,14 +49,14 @@ export interface Category {
 }
 
 export interface UnitMaster {
-  id: string;
+  id?: string;
   name: string;
   description?: string;
   isActive?: boolean;
 }
 
 export interface WarehouseMaster {
-  id: string;
+  id?: string;
   name: string;
   description?: string;
   isActive?: boolean;
