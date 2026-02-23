@@ -369,6 +369,8 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
   const handleAddItem = (choice: ProductSearchOption) => {
     const product = choice.product;
     const selectedPackaging = choice.packaging || getDefaultPackaging(product);
+    const selectedName = choice.searchLabel || product.name;
+    const selectedCode = choice.searchCode || product.productCode;
     const sourceUnitPrice = isPurchaseMode
       ? selectedPackaging.costPrice ?? product.costPrice
       : selectedPackaging.salePrice ?? product.price;
@@ -380,8 +382,8 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
     const newItem: SalesInvoiceItem = {
       id: createLineId(),
       productId: product.id,
-      productCode: product.productCode,
-      productName: product.name,
+      productCode: selectedCode,
+      productName: selectedName,
       unit: selectedPackaging.name || product.unit,
       quantity: 1,
       packagingId: selectedPackaging.id || undefined,

@@ -372,6 +372,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const handleAddItem = (choice: ProductSearchOption) => {
     const product = choice.product;
     const selectedPackaging = choice.packaging || getDefaultPackaging(product);
+    const selectedName = choice.searchLabel || product.name;
+    const selectedCode = choice.searchCode || product.productCode;
     const fallbackUnitPrice = Number(
       String(product.price ?? 0)
         .replace(/Rs\./i, "")
@@ -385,8 +387,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     const newItem: SalesInvoiceItem = {
       id: createLineId() as any,
       productId: product.id,
-      productCode: product.productCode,
-      productName: product.name,
+      productCode: selectedCode,
+      productName: selectedName,
       unit: selectedPackaging.name || product.unit,
       quantity: 1,
       packagingId: selectedPackaging.id || undefined,

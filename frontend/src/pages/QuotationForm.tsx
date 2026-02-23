@@ -341,6 +341,8 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
   const handleAddItem = (choice: ProductSearchOption) => {
     const product = choice.product;
     const selectedPackaging = choice.packaging || getDefaultPackaging(product);
+    const selectedName = choice.searchLabel || product.name;
+    const selectedCode = choice.searchCode || product.productCode;
     const sourcePrice = selectedPackaging.salePrice ?? product.price;
     const rawPrice = typeof sourcePrice === "string" ? sourcePrice : `${sourcePrice ?? 0}`;
     const cleanPrice = rawPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
@@ -349,8 +351,8 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
     const newItem: SalesInvoiceItem = {
       id: createLineId(),
       productId: product.id,
-      productCode: product.productCode,
-      productName: product.name,
+      productCode: selectedCode,
+      productName: selectedName,
       unit: selectedPackaging.name || product.unit,
       quantity: 1,
       packagingId: selectedPackaging.id || undefined,
