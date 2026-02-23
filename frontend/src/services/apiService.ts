@@ -365,6 +365,20 @@ const mapProductPackagingFromDb = (row: any) => ({
   isDefault: Boolean(row.is_default ?? row.isDefault),
 });
 
+const deriveVariantPackagings = (packagings: any[]) => {
+  const rows = Array.isArray(packagings) ? packagings : [];
+  if (rows.length === 0) return [] as any[];
+
+  // Be resilient to bad historical flags: pick one canonical default, treat the rest as variants.
+  const preferredDefault =
+    rows.find((p: any) => Boolean(p?.isDefault) && Number(p?.factor) === 1) ||
+    rows.find((p: any) => Number(p?.factor) === 1) ||
+    rows.find((p: any) => Boolean(p?.isDefault)) ||
+    rows[0];
+
+  return rows.filter((p: any) => String(p?.id ?? "") !== String(preferredDefault?.id ?? ""));
+};
+
 const mapProductPackagingToDb = (row: any, productId: number | string) => ({
   product_id: Number(productId),
   name: String(row?.name ?? "").trim(),
@@ -1274,7 +1288,7 @@ export const productAPI = {
 
     return mappedProducts.map((product) => {
       const packagings = byProductId.get(String(product.id)) || [];
-      const variantPackagings = packagings.filter((p: any) => !p.isDefault);
+      const variantPackagings = deriveVariantPackagings(packagings);
       return {
         ...product,
         packagings: variantPackagings,
@@ -1289,7 +1303,7 @@ export const productAPI = {
       `/product_packagings?select=*&product_id=eq.${id}&order=is_default.desc,created_at.asc`
     ).catch(() => []);
     const packagings = Array.isArray(packRows) ? packRows.map(mapProductPackagingFromDb) : [];
-    const variantPackagings = packagings.filter((p: any) => !p.isDefault);
+    const variantPackagings = deriveVariantPackagings(packagings);
     return {
       ...product,
       packagings: variantPackagings,

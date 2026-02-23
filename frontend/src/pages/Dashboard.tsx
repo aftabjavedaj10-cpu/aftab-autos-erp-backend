@@ -339,7 +339,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const handleEditProduct = async (product: Product) => {
     try {
       const packagings = await productPackagingAPI.getByProductId(product.id);
-      const variantPackagings = packagings.filter((p: any) => !p.isDefault);
+      const preferredDefault =
+        packagings.find((p: any) => Boolean(p?.isDefault) && Number(p?.factor) === 1) ||
+        packagings.find((p: any) => Number(p?.factor) === 1) ||
+        packagings.find((p: any) => Boolean(p?.isDefault)) ||
+        packagings[0];
+      const variantPackagings = packagings.filter(
+        (p: any) => String(p?.id ?? "") !== String(preferredDefault?.id ?? "")
+      );
       setEditingProduct({
         ...product,
         packagings: variantPackagings,
