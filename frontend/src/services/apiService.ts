@@ -1436,7 +1436,74 @@ export const productAPI = {
       );
     }
 
-    const rows = normalizeBulkRows(sanitized.map(attachOwnership).map(mapProductToDb));
+    // Strict mapping: import unit/warehouse must exist in setup masters.
+    // We normalize to canonical DB names (case-insensitive match).
+    const [activeUnits, activeWarehouses] = await Promise.all([
+      apiCall("/units?select=name&is_active=eq.true&order=name.asc").catch(() => null),
+      apiCall("/warehouses?select=name&is_active=eq.true&order=name.asc").catch(() => null),
+    ]);
+
+    if (!Array.isArray(activeUnits) || !Array.isArray(activeWarehouses)) {
+      throw new Error(
+        "Units/Warehouses setup masters are unavailable. Run setup migrations before product import."
+      );
+    }
+
+    const unitMap = new Map<string, string>();
+    activeUnits.forEach((u: any) => {
+      const name = String(u?.name ?? "").trim();
+      if (!name) return;
+      unitMap.set(name.toLowerCase(), name);
+    });
+
+    const warehouseMap = new Map<string, string>();
+    activeWarehouses.forEach((w: any) => {
+      const name = String(w?.name ?? "").trim();
+      if (!name) return;
+      warehouseMap.set(name.toLowerCase(), name);
+    });
+
+    if (unitMap.size === 0 || warehouseMap.size === 0) {
+      throw new Error(
+        "Units/Warehouses setup masters are empty. Create active units and warehouses before import."
+      );
+    }
+
+    const unknownUnits = new Set<string>();
+    const unknownWarehouses = new Set<string>();
+
+    const normalizedSanitized = sanitized.map((product) => {
+      const rawUnit = String(product.unit || "").trim();
+      const rawWarehouse = String(product.warehouse || "").trim();
+      const mappedUnit = unitMap.get(rawUnit.toLowerCase());
+      const mappedWarehouse = warehouseMap.get(rawWarehouse.toLowerCase());
+
+      if (!mappedUnit) unknownUnits.add(rawUnit || "(blank)");
+      if (!mappedWarehouse) unknownWarehouses.add(rawWarehouse || "(blank)");
+
+      return {
+        ...product,
+        unit: mappedUnit || rawUnit,
+        warehouse: mappedWarehouse || rawWarehouse,
+      };
+    });
+
+    if (unknownUnits.size > 0 || unknownWarehouses.size > 0) {
+      const unitText =
+        unknownUnits.size > 0
+          ? `Unknown units: ${[...unknownUnits].slice(0, 8).join(", ")}`
+          : "";
+      const warehouseText =
+        unknownWarehouses.size > 0
+          ? `Unknown warehouses: ${[...unknownWarehouses].slice(0, 8).join(", ")}`
+          : "";
+      throw new Error(
+        [unitText, warehouseText].filter(Boolean).join(" | ") +
+          ". Add them in Setup and retry import."
+      );
+    }
+
+    const rows = normalizeBulkRows(normalizedSanitized.map(attachOwnership).map(mapProductToDb));
     const chunks = chunkRows(rows, 100);
     for (const chunk of chunks) {
       await apiCall(
