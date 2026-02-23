@@ -17,6 +17,10 @@ import VendorsPage from "./Vendors";
 import AddVendorPage from "./AddVendor";
 import CategoriesPage from "./Categories";
 import AddCategoryFormPage from "./AddCategoryForm";
+import UnitsPage from "./Units";
+import AddUnitFormPage from "./AddUnitForm";
+import WarehousesPage from "./Warehouses";
+import AddWarehouseFormPage from "./AddWarehouseForm";
 import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
@@ -37,7 +41,7 @@ import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
 import MakePaymentFormPage from "./MakePaymentForm";
 import { ALL_REPORTS } from "../constants";
-import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
+import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company, UnitMaster, WarehouseMaster } from "../types";
 import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
@@ -77,6 +81,35 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [noCompany, setNoCompany] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [units, setUnits] = useState<UnitMaster[]>(() => {
+    try {
+      const raw = localStorage.getItem("setup_units");
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // ignore parse issues
+    }
+    return [
+      { id: "unit_piece", name: "Piece", isActive: true },
+      { id: "unit_pair", name: "Pair", isActive: true },
+      { id: "unit_set", name: "Set", isActive: true },
+      { id: "unit_bottle", name: "Bottle", isActive: true },
+      { id: "unit_litre", name: "Litre", isActive: true },
+      { id: "unit_box", name: "Box", isActive: true },
+    ];
+  });
+  const [warehouses, setWarehouses] = useState<WarehouseMaster[]>(() => {
+    try {
+      const raw = localStorage.getItem("setup_warehouses");
+      if (raw) return JSON.parse(raw);
+    } catch {
+      // ignore parse issues
+    }
+    return [
+      { id: "wh_main", name: "Main", isActive: true },
+      { id: "wh_a", name: "Warehouse A", isActive: true },
+      { id: "wh_b", name: "Warehouse B", isActive: true },
+    ];
+  });
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
@@ -114,6 +147,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>(undefined);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
+  const [editingUnit, setEditingUnit] = useState<UnitMaster | undefined>(undefined);
+  const [editingWarehouse, setEditingWarehouse] = useState<WarehouseMaster | undefined>(undefined);
   const [editingStockAdjustment, setEditingStockAdjustment] = useState<StockLedgerEntry | undefined>(undefined);
   const [pendingFilterTarget, setPendingFilterTarget] = useState<string>("");
   const [pendingFilterTick, setPendingFilterTick] = useState(0);
@@ -128,6 +163,22 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       // ignore storage write errors
     }
   }, [activeTab, activeTabStorageKey]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("setup_units", JSON.stringify(units));
+    } catch {
+      // ignore storage write errors
+    }
+  }, [units]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("setup_warehouses", JSON.stringify(warehouses));
+    } catch {
+      // ignore storage write errors
+    }
+  }, [warehouses]);
 
   const updateMainThumb = useCallback(() => {
     const el = mainScrollRef.current;
@@ -414,6 +465,34 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       setError(err instanceof Error ? err.message : "Failed to import categories");
       console.error(err);
     });
+  };
+
+  const handleAddUnit = () => {
+    setEditingUnit(undefined);
+    setActiveTab("add_unit");
+  };
+
+  const handleEditUnit = (unit: UnitMaster) => {
+    setEditingUnit(unit);
+    setActiveTab("add_unit");
+  };
+
+  const handleDeleteUnit = (id: string) => {
+    setUnits((prev) => prev.filter((u) => u.id !== id));
+  };
+
+  const handleAddWarehouse = () => {
+    setEditingWarehouse(undefined);
+    setActiveTab("add_warehouse");
+  };
+
+  const handleEditWarehouse = (warehouse: WarehouseMaster) => {
+    setEditingWarehouse(warehouse);
+    setActiveTab("add_warehouse");
+  };
+
+  const handleDeleteWarehouse = (id: string) => {
+    setWarehouses((prev) => prev.filter((w) => w.id !== id));
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -1184,6 +1263,66 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 setError("Failed to save category");
                 console.error(err);
               });
+            }}
+          />
+        )}
+
+        {activeTab === "units" && (
+          <UnitsPage
+            units={units}
+            onAddClick={handleAddUnit}
+            onEditClick={handleEditUnit}
+            onDelete={handleDeleteUnit}
+          />
+        )}
+
+        {activeTab === "add_unit" && (
+          <AddUnitFormPage
+            unit={editingUnit}
+            onBack={() => {
+              setEditingUnit(undefined);
+              setActiveTab("units");
+            }}
+            onSave={(unit, stayOnPage) => {
+              setUnits((prev) => {
+                const exists = prev.some((x) => x.id === unit.id);
+                if (exists) return prev.map((x) => (x.id === unit.id ? unit : x));
+                return [...prev, unit];
+              });
+              if (!stayOnPage) {
+                setEditingUnit(undefined);
+                setActiveTab("units");
+              }
+            }}
+          />
+        )}
+
+        {activeTab === "warehouses" && (
+          <WarehousesPage
+            warehouses={warehouses}
+            onAddClick={handleAddWarehouse}
+            onEditClick={handleEditWarehouse}
+            onDelete={handleDeleteWarehouse}
+          />
+        )}
+
+        {activeTab === "add_warehouse" && (
+          <AddWarehouseFormPage
+            warehouse={editingWarehouse}
+            onBack={() => {
+              setEditingWarehouse(undefined);
+              setActiveTab("warehouses");
+            }}
+            onSave={(warehouse, stayOnPage) => {
+              setWarehouses((prev) => {
+                const exists = prev.some((x) => x.id === warehouse.id);
+                if (exists) return prev.map((x) => (x.id === warehouse.id ? warehouse : x));
+                return [...prev, warehouse];
+              });
+              if (!stayOnPage) {
+                setEditingWarehouse(undefined);
+                setActiveTab("warehouses");
+              }
             }}
           />
         )}

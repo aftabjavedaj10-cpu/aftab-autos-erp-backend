@@ -124,6 +124,8 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (permissionFlags.customers) items.push({ label: "Customers", value: "customers" });
     if (permissionFlags.vendors) items.push({ label: "Vendors", value: "vendors" });
     if (permissionFlags.categories) items.push({ label: "Categories", value: "categories" });
+    if (permissionFlags.products) items.push({ label: "Units", value: "units" });
+    if (permissionFlags.products) items.push({ label: "Warehouses", value: "warehouses" });
     return items;
   }, [permissionFlags]);
 

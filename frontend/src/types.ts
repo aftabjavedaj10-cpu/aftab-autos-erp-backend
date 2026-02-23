@@ -48,6 +48,20 @@ export interface Category {
   itemCount?: number;
 }
 
+export interface UnitMaster {
+  id: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export interface WarehouseMaster {
+  id: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
 export interface Vendor {
   id: string;
   name: string;
