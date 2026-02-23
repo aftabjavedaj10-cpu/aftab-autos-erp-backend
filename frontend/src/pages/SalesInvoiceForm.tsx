@@ -296,7 +296,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     const rows: ProductSearchOption[] = [];
     products.forEach((product) => {
       getProductPackagingOptions(product).forEach((packaging) => {
-        const searchLabel = packaging.displayName || `${product.name} ${packaging.name}`.trim();
+        const searchLabel = packaging.displayName || product.name;
         const searchCode = packaging.isDefault
           ? product.productCode || ""
           : packaging.code || product.productCode || "";
