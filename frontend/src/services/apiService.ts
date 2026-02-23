@@ -1271,20 +1271,28 @@ export const productAPI = {
     const mappedProducts = allRows.map(mapProductFromDb);
     if (mappedProducts.length === 0) return mappedProducts;
 
-    // Hydrate packaging rows so all transaction forms can show full pack dropdowns.
-    const packRows = await apiCall(
-      "/product_packagings?select=*&order=product_id.asc,is_default.desc,created_at.asc"
-    ).catch(() => []);
-    const byProductId = new Map<string, any[]>();
-    if (Array.isArray(packRows)) {
-      packRows.forEach((row) => {
-        const key = String(row?.product_id ?? "");
-        if (!key) return;
-        const existing = byProductId.get(key) || [];
-        existing.push(mapProductPackagingFromDb(row));
-        byProductId.set(key, existing);
-      });
+    // Hydrate packaging rows with pagination so search lists don't miss variants on large datasets.
+    const packPageSize = 1000;
+    let packOffset = 0;
+    let packRows: any[] = [];
+    while (true) {
+      const rows = await apiCall(
+        `/product_packagings?select=*&order=product_id.asc,is_default.desc,created_at.asc&limit=${packPageSize}&offset=${packOffset}`
+      ).catch(() => []);
+      const batch = Array.isArray(rows) ? rows : [];
+      packRows = packRows.concat(batch);
+      if (batch.length < packPageSize) break;
+      packOffset += packPageSize;
+      if (packOffset > 1000000) break;
     }
+    const byProductId = new Map<string, any[]>();
+    packRows.forEach((row) => {
+      const key = String(row?.product_id ?? "");
+      if (!key) return;
+      const existing = byProductId.get(key) || [];
+      existing.push(mapProductPackagingFromDb(row));
+      byProductId.set(key, existing);
+    });
 
     return mappedProducts.map((product) => {
       const packagings = byProductId.get(String(product.id)) || [];
