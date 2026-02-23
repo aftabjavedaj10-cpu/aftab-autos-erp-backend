@@ -356,6 +356,7 @@ const mapProductPackagingFromDb = (row: any) => ({
   id: row.id,
   productId: row.product_id ?? row.productId,
   name: row.name,
+  urduName: row.urdu_name ?? row.urduName ?? "",
   code: row.code ?? "",
   displayName: row.display_name ?? row.displayName ?? "",
   displayCode: row.display_code ?? row.displayCode ?? "",
@@ -382,6 +383,7 @@ const deriveVariantPackagings = (packagings: any[]) => {
 const mapProductPackagingToDb = (row: any, productId: number | string) => ({
   product_id: Number(productId),
   name: String(row?.name ?? "").trim(),
+  urdu_name: row?.urduName ? String(row.urduName).trim() : null,
   code: row?.code ? String(row.code).trim() : null,
   display_name: row?.displayName ? String(row.displayName).trim() : null,
   display_code: row?.displayCode
@@ -1438,6 +1440,7 @@ export const productPackagingAPI = {
     const basePackaging = {
       product_id: Number(productId),
       name: String(fallback?.unit || "Piece"),
+      urdu_name: null,
       code: null,
       display_name: null,
       display_code: null,

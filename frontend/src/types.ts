@@ -29,6 +29,7 @@ export interface ProductPackaging {
   id?: string;
   productId?: number | string;
   name: string;
+  urduName?: string;
   code?: string;
   displayName?: string;
   displayCode?: string;

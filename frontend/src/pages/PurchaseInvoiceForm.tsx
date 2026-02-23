@@ -28,6 +28,7 @@ type PrintMode = "invoice" | "receipt" | "a5" | "token";
 type ProductPackagingOption = {
   id: string;
   name: string;
+  urduName?: string;
   code?: string;
   displayName?: string;
   displayCode?: string;
@@ -204,7 +205,12 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
     const english = String(item.productName || "").trim();
     if (!printSettings.showUrduName) return english;
     const matched = products.find((p) => String(p.id) === String(item.productId));
-    const urdu = String((matched as any)?.urduName || "").trim();
+    const matchedPack = Array.isArray((matched as any)?.packagings)
+      ? (matched as any).packagings.find(
+          (pk: any) => String(pk?.id ?? "") === String((item as any)?.packagingId ?? "")
+        )
+      : null;
+    const urdu = String((matchedPack as any)?.urduName || (matched as any)?.urduName || "").trim();
     if (!urdu) return english;
     return (
       <span className="inline-flex flex-col gap-0.5">
@@ -252,6 +258,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
       .map((row: any) => ({
         id: String(row.id ?? ""),
         name: String(row.name ?? "").trim(),
+        urduName: String(row.urduName ?? row.urdu_name ?? "").trim(),
         code: String(row.code ?? "").trim(),
         displayName: String(row.displayName ?? row.display_name ?? "").trim(),
         displayCode: String(row.displayCode ?? row.display_code ?? "").trim(),

@@ -20,6 +20,7 @@ const createVariantPackaging = (base: {
   costPrice?: number | string;
 }): ProductPackaging => ({
   name: "",
+  urduName: "",
   code: "",
   displayName: "",
   displayCode: "",
@@ -66,6 +67,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
           .map((p: any) => ({
           id: p.id,
           name: p.name || "",
+          urduName: p.urduName ?? p.urdu_name ?? "",
           code: p.code || "",
           displayName: p.displayName ?? p.display_name ?? "",
           displayCode: p.displayCode ?? p.display_code ?? "",
@@ -138,6 +140,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
       ? packagings.map((p) => ({
           ...p,
           name: String(p.name || "").trim(),
+          urduName: String(p.urduName || "").trim(),
           code: String(p.code || "").trim(),
           factor: Number(p.factor || 1),
           displayName: String(p.displayName || "").trim(),
@@ -636,10 +639,11 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-[repeat(12,minmax(0,1fr))] gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                        <div className="col-span-2">Pack Name</div>
-                        <div className="col-span-2">Code</div>
+                      <div className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         <div className="col-span-3">Display Name</div>
+                        <div className="col-span-2">Urdu Name</div>
+                        <div className="col-span-2">Code</div>
+                        <div className="col-span-2">Unit</div>
                         <div className="col-span-1">Factor</div>
                         <div className="col-span-1">Sale</div>
                         <div className="col-span-1">Cost</div>
@@ -647,13 +651,22 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                       </div>
 
                       {packagings.map((row, idx) => (
-                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-[repeat(12,minmax(0,1fr))] gap-2 items-center">
+                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2 items-center">
                           <input
                             type="text"
-                            placeholder="Name"
-                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
-                            value={row.name || ""}
-                            onChange={(e) => updatePackaging(idx, "name", e.target.value)}
+                            placeholder="Search label"
+                            className="col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.displayName || ""}
+                            onChange={(e) => updatePackaging(idx, "displayName", e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            placeholder="اردو نام"
+                            dir="rtl"
+                            lang="ur"
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm text-right focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={(row as any).urduName || ""}
+                            onChange={(e) => updatePackaging(idx, "urduName" as keyof ProductPackaging, e.target.value)}
                           />
                           <input
                             type="text"
@@ -664,10 +677,10 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                           />
                           <input
                             type="text"
-                            placeholder="Search label"
-                            className="col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
-                            value={row.displayName || ""}
-                            onChange={(e) => updatePackaging(idx, "displayName", e.target.value)}
+                            placeholder="Unit"
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.name || ""}
+                            onChange={(e) => updatePackaging(idx, "name", e.target.value)}
                           />
                           <input
                             type="number"
