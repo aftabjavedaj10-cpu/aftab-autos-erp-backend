@@ -364,6 +364,7 @@ const mapProductPackagingFromDb = (row: any) => ({
   salePrice: Number(row.sale_price ?? row.salePrice ?? 0),
   costPrice: Number(row.cost_price ?? row.costPrice ?? 0),
   isDefault: Boolean(row.is_default ?? row.isDefault),
+  isActive: (row.is_active ?? row.isActive ?? true) !== false,
 });
 
 const deriveVariantPackagings = (packagings: any[]) => {
@@ -395,6 +396,7 @@ const mapProductPackagingToDb = (row: any, productId: number | string) => ({
   sale_price: Number(row?.salePrice ?? row?.sale_price ?? 0),
   cost_price: Number(row?.costPrice ?? row?.cost_price ?? 0),
   is_default: Boolean(row?.isDefault ?? row?.is_default),
+  is_active: (row?.isActive ?? row?.is_active ?? true) !== false,
 });
 
 const normalizeLineQuantity = (row: any) => Number(row?.qty_pack ?? row?.quantity ?? 0);
@@ -1448,6 +1450,7 @@ export const productPackagingAPI = {
       sale_price: Number(fallback?.price ?? 0),
       cost_price: Number(fallback?.costPrice ?? 0),
       is_default: true,
+      is_active: true,
     };
 
     const variantPackagings = normalized.map((row) => ({

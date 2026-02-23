@@ -47,6 +47,7 @@ type ProductPackagingOption = {
   salePrice?: number;
   costPrice?: number;
   isDefault?: boolean;
+  isActive?: boolean;
 };
 type ProductSearchOption = {
   product: Product;
@@ -268,8 +269,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
         salePrice: Number(row.salePrice ?? row.sale_price ?? product.price ?? 0),
         costPrice: Number(row.costPrice ?? row.cost_price ?? product.costPrice ?? 0),
         isDefault: Boolean(row.isDefault ?? row.is_default),
+        isActive: (row.isActive ?? row.is_active ?? true) !== false,
       }))
-      .filter((row: ProductPackagingOption) => row.id && row.name && Number.isFinite(row.factor) && row.factor > 0);
+      .filter((row: ProductPackagingOption) => row.id && row.name && Number.isFinite(row.factor) && row.factor > 0 && row.isActive !== false);
     const baseDefault: ProductPackagingOption = {
       id: "",
       name: String(product.unit || "Piece"),

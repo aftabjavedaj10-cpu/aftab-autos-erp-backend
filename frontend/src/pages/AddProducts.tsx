@@ -28,6 +28,7 @@ const createVariantPackaging = (base: {
   salePrice: Number(base.price || 0),
   costPrice: Number(base.costPrice || 0),
   isDefault: false,
+  isActive: true,
 });
 
 const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vendors, nextProductCode, onBack, onSave, onAddCategory }) => {
@@ -75,6 +76,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
           salePrice: Number((p.salePrice ?? p.sale_price ?? formData.price) || 0),
           costPrice: Number((p.costPrice ?? p.cost_price ?? formData.costPrice) || 0),
           isDefault: false,
+          isActive: (p.isActive ?? p.is_active ?? true) !== false,
         }))
       : [createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]
   );
@@ -124,8 +126,11 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
       if (packagings.length === 0) newErrors.packagings = 'Add at least one packaging row';
       const invalidRow = packagings.find(
         (p) =>
+          (p.isActive ?? true) !== false &&
           !String(p.name || "").trim() ||
+          (p.isActive ?? true) !== false &&
           !String(p.code || "").trim() ||
+          (p.isActive ?? true) !== false &&
           Number(p.factor) <= 0
       );
       if (invalidRow) newErrors.packagings = 'Packaging name, code, and factor (> 0) are required';
@@ -148,6 +153,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
           salePrice: Number(p.salePrice || 0),
           costPrice: Number(p.costPrice || 0),
           isDefault: false,
+          isActive: (p.isActive ?? true) !== false,
         }))
       : [];
     onSave({ ...product, ...formData, packagingEnabled, packagings: sanitizedPackagings }, stayOnPage);
@@ -710,6 +716,15 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                             onChange={(e) => updatePackaging(idx, "costPrice", Number(e.target.value || 0))}
                           />
                           <div className="col-span-2 flex items-center justify-center gap-2">
+                            <label className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                              <input
+                                type="checkbox"
+                                checked={(row.isActive ?? true) !== false}
+                                onChange={(e) => updatePackaging(idx, "isActive", e.target.checked)}
+                                className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500/30"
+                              />
+                              {(row.isActive ?? true) !== false ? "Active" : "Non Active"}
+                            </label>
                             <button
                               type="button"
                               onClick={() => removePackagingRow(idx)}

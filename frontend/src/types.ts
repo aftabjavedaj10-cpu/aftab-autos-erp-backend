@@ -37,6 +37,7 @@ export interface ProductPackaging {
   salePrice?: number | string;
   costPrice?: number | string;
   isDefault?: boolean;
+  isActive?: boolean;
 }
 
 export interface Category {
