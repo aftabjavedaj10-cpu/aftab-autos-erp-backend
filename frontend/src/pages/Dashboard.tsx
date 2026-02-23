@@ -1064,6 +1064,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             product={editingProduct}
             categories={categories}
             vendors={vendors}
+            units={units}
+            warehouses={warehouses}
             nextProductCode={nextProductCode}
             onBack={() => { setEditingProduct(undefined); setActiveTab('products'); }}
             onSave={(product, stayOnPage) => {

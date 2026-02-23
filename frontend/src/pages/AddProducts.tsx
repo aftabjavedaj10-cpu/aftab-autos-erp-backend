@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Product, Category, Vendor, ProductPackaging } from '../types';
-import { WAREHOUSES } from '../constants';
+import type { Product, Category, Vendor, ProductPackaging, UnitMaster, WarehouseMaster } from '../types';
 
 interface ProductFormPageProps {
   product?: Product;
   categories: Category[];
   vendors: Vendor[];
+  units: UnitMaster[];
+  warehouses: WarehouseMaster[];
   nextProductCode: string;
   onBack: () => void;
   onSave: (product: any, stayOnPage: boolean) => void;
@@ -13,6 +14,7 @@ interface ProductFormPageProps {
 }
 
 const DEFAULT_UNITS = ['Piece', 'Pair', 'Set', 'Bottle', 'Litre', 'Box'];
+const DEFAULT_WAREHOUSES = ['Main', 'Warehouse A', 'Warehouse B'];
 
 const createVariantPackaging = (base: {
   unit?: string;
@@ -31,22 +33,45 @@ const createVariantPackaging = (base: {
   isActive: true,
 });
 
-const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vendors, nextProductCode, onBack, onSave, onAddCategory }) => {
+const AddProducts: React.FC<ProductFormPageProps> = ({
+  product,
+  categories,
+  vendors,
+  units: setupUnits,
+  warehouses: setupWarehouses,
+  nextProductCode,
+  onBack,
+  onSave,
+  onAddCategory,
+}) => {
   const isEdit = !!product;
+  const activeUnitNames = (Array.isArray(setupUnits) ? setupUnits : [])
+    .filter((u) => u.isActive !== false)
+    .map((u) => String(u.name || "").trim())
+    .filter(Boolean);
+  const activeWarehouseNames = (Array.isArray(setupWarehouses) ? setupWarehouses : [])
+    .filter((w) => w.isActive !== false)
+    .map((w) => String(w.name || "").trim())
+    .filter(Boolean);
+  const unitOptions = Array.from(new Set([...(activeUnitNames.length ? activeUnitNames : DEFAULT_UNITS)]));
+  const warehouseOptions = Array.from(
+    new Set([...(activeWarehouseNames.length ? activeWarehouseNames : DEFAULT_WAREHOUSES)])
+  );
+
   const [formData, setFormData] = useState({
     name: product?.name || '',
     urduName: (product as any)?.urduName || '',
     productCode: product?.productCode || nextProductCode,
     brandName: product?.brandName || '',
     productType: product?.productType || 'Product' as 'Product' | 'Service',
-    warehouse: product?.warehouse || WAREHOUSES[0],
+    warehouse: product?.warehouse || warehouseOptions[0] || 'Main',
     category: product?.category || '',
     price: product?.price || '',
     costPrice: product?.costPrice || '',
     barcode: product?.barcode || '',
     vendorId: product?.vendorId || vendors[0]?.id || '',
     stock: product?.stock || 0,
-    unit: product?.unit || 'Piece',
+    unit: product?.unit || unitOptions[0] || 'Piece',
     reorderPoint: product?.reorderPoint || 10,
     reorderQty: (product as any)?.reorderQty || 1,
     description: product?.description || '',
@@ -81,7 +106,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
       : [createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]
   );
 
-  const [units, setUnits] = useState(DEFAULT_UNITS);
+  const [units, setUnits] = useState(unitOptions);
   const [isQuickAddingCategory, setIsQuickAddingCategory] = useState(false);
   const [isQuickAddingUnit, setIsQuickAddingUnit] = useState(false);
   const [quickInput, setQuickInput] = useState('');
@@ -99,6 +124,23 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
        // Only auto-select first if not editing and nothing selected
     }
   }, [productCategories]);
+
+  useEffect(() => {
+    setUnits(unitOptions);
+  }, [setupUnits]);
+
+  useEffect(() => {
+    setFormData((prev) => {
+      const next = { ...prev };
+      if (!unitOptions.includes(prev.unit)) {
+        next.unit = unitOptions[0] || 'Piece';
+      }
+      if (!warehouseOptions.includes(prev.warehouse)) {
+        next.warehouse = warehouseOptions[0] || 'Main';
+      }
+      return next;
+    });
+  }, [setupUnits, setupWarehouses]);
 
   useEffect(() => {
     if (isEdit || isProductCodeTouched) return;
@@ -159,9 +201,9 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     onSave({ ...product, ...formData, packagingEnabled, packagings: sanitizedPackagings }, stayOnPage);
     if (stayOnPage && !isEdit) {
       setFormData({ 
-        name: '', urduName: '', productCode: nextProductCode, brandName: '', productType: 'Product', warehouse: WAREHOUSES[0],
+        name: '', urduName: '', productCode: nextProductCode, brandName: '', productType: 'Product', warehouse: warehouseOptions[0] || 'Main',
         category: '', price: '', costPrice: '', barcode: '', 
-        vendorId: vendors[0]?.id || '', stock: 0, unit: 'Piece', 
+        vendorId: vendors[0]?.id || '', stock: 0, unit: unitOptions[0] || 'Piece',
         reorderPoint: 10, reorderQty: 1, description: '', image: '', isActive: true
       });
       setPackagingEnabled(false);
@@ -549,7 +591,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                       value={formData.warehouse}
                       onChange={(e) => setFormData({...formData, warehouse: e.target.value})}
                     >
-                      {WAREHOUSES.map(wh => (
+                      {warehouseOptions.map(wh => (
                         <option key={wh} value={wh}>{wh}</option>
                       ))}
                     </select>
