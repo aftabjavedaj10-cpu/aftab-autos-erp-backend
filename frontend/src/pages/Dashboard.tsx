@@ -339,10 +339,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const handleEditProduct = async (product: Product) => {
     try {
       const packagings = await productPackagingAPI.getByProductId(product.id);
+      const variantPackagings = packagings.filter((p: any) => !p.isDefault);
       setEditingProduct({
         ...product,
-        packagings,
-        packagingEnabled: packagings.length > 0,
+        packagings: variantPackagings,
+        packagingEnabled: variantPackagings.length > 0,
       });
     } catch (err) {
       console.error("Failed to load product packagings", err);
@@ -1012,14 +1013,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                       product.packagingEnabled ? product.packagings : [],
                       { unit: product.unit, price: product.price, costPrice: product.costPrice }
                     );
+                    const variantPackagings = savedPackagings.filter((p: any) => !p.isDefault);
                     setProducts((prev) =>
                       prev.map((p) =>
                         p.id === updated.id
                           ? {
                               ...p,
                               ...updated,
-                              packagings: savedPackagings,
-                              packagingEnabled: savedPackagings.length > 0,
+                              packagings: variantPackagings,
+                              packagingEnabled: variantPackagings.length > 0,
                             }
                           : p
                       )
@@ -1032,12 +1034,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                       product.packagingEnabled ? product.packagings : [],
                       { unit: product.unit, price: product.price, costPrice: product.costPrice }
                     );
+                    const variantPackagings = savedPackagings.filter((p: any) => !p.isDefault);
                     const newProduct = {
                       ...product,
                       ...res,
                       id: res.id || `prod_${Date.now()}`,
-                      packagings: savedPackagings,
-                      packagingEnabled: savedPackagings.length > 0,
+                      packagings: variantPackagings,
+                      packagingEnabled: variantPackagings.length > 0,
                     };
                     setProducts((prev) => [...prev, newProduct]);
                   });

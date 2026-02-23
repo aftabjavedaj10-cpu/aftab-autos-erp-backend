@@ -14,19 +14,19 @@ interface ProductFormPageProps {
 
 const DEFAULT_UNITS = ['Piece', 'Pair', 'Set', 'Bottle', 'Litre', 'Box'];
 
-const createDefaultPackaging = (base: {
+const createVariantPackaging = (base: {
   unit?: string;
   price?: number | string;
   costPrice?: number | string;
 }): ProductPackaging => ({
-  name: String(base.unit || "Piece"),
+  name: "",
   code: "",
   displayName: "",
   displayCode: "",
   factor: 1,
   salePrice: Number(base.price || 0),
   costPrice: Number(base.costPrice || 0),
-  isDefault: true,
+  isDefault: false,
 });
 
 const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vendors, nextProductCode, onBack, onSave, onAddCategory }) => {
@@ -52,11 +52,18 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     isActive: product?.isActive ?? true
   });
   const [packagingEnabled, setPackagingEnabled] = useState<boolean>(
-    Boolean((product as any)?.packagingEnabled || ((product as any)?.packagings?.length ?? 0) > 0)
+    Boolean(
+      (product as any)?.packagingEnabled ||
+        (Array.isArray((product as any)?.packagings)
+          ? (product as any).packagings.some((p: any) => !Boolean(p.isDefault ?? p.is_default))
+          : false)
+    )
   );
   const [packagings, setPackagings] = useState<ProductPackaging[]>(
     Array.isArray((product as any)?.packagings) && (product as any).packagings.length > 0
-      ? (product as any).packagings.map((p: any) => ({
+      ? (product as any).packagings
+          .filter((p: any) => !Boolean(p.isDefault ?? p.is_default))
+          .map((p: any) => ({
           id: p.id,
           name: p.name || "",
           code: p.code || "",
@@ -65,9 +72,9 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
           factor: Number(p.factor || 1),
           salePrice: Number((p.salePrice ?? p.sale_price ?? formData.price) || 0),
           costPrice: Number((p.costPrice ?? p.cost_price ?? formData.costPrice) || 0),
-          isDefault: Boolean(p.isDefault ?? p.is_default),
+          isDefault: false,
         }))
-      : [createDefaultPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]
+      : [createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]
   );
 
   const [units, setUnits] = useState(DEFAULT_UNITS);
@@ -112,11 +119,14 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     if (!formData.costPrice.toString().trim()) newErrors.costPrice = 'Enter a purchase price';
     if (!formData.vendorId) newErrors.vendorId = 'Select a supplier';
     if (packagingEnabled) {
-      const hasDefault = packagings.some((p) => p.isDefault);
-      if (!hasDefault) newErrors.packagingDefault = 'Select one default packaging';
       if (packagings.length === 0) newErrors.packagings = 'Add at least one packaging row';
-      const invalidRow = packagings.find((p) => !String(p.name || "").trim() || Number(p.factor) <= 0);
-      if (invalidRow) newErrors.packagings = 'Packaging name and factor (> 0) are required';
+      const invalidRow = packagings.find(
+        (p) =>
+          !String(p.name || "").trim() ||
+          !String(p.code || "").trim() ||
+          Number(p.factor) <= 0
+      );
+      if (invalidRow) newErrors.packagings = 'Packaging name, code, and factor (> 0) are required';
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -125,15 +135,16 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
   const handleAction = (stayOnPage: boolean) => {
     if (!validate()) return;
     const sanitizedPackagings = packagingEnabled
-      ? packagings.map((p, idx) => ({
+      ? packagings.map((p) => ({
           ...p,
           name: String(p.name || "").trim(),
+          code: String(p.code || "").trim(),
           factor: Number(p.factor || 1),
           displayName: String(p.displayName || "").trim(),
-          displayCode: String(p.displayCode || "").trim(),
+          displayCode: String(p.code || "").trim(),
           salePrice: Number(p.salePrice || 0),
           costPrice: Number(p.costPrice || 0),
-          isDefault: packagings.some((x) => x.isDefault) ? Boolean(p.isDefault) : idx === 0,
+          isDefault: false,
         }))
       : [];
     onSave({ ...product, ...formData, packagingEnabled, packagings: sanitizedPackagings }, stayOnPage);
@@ -145,16 +156,12 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
         reorderPoint: 10, reorderQty: 1, description: '', image: '', isActive: true
       });
       setPackagingEnabled(false);
-      setPackagings([createDefaultPackaging({ unit: "Piece", price: 0, costPrice: 0 })]);
+      setPackagings([createVariantPackaging({ unit: "Piece", price: 0, costPrice: 0 })]);
       setIsProductCodeTouched(false);
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
       setIsDropdownOpen(false);
     }
-  };
-
-  const setDefaultPackaging = (index: number) => {
-    setPackagings((prev) => prev.map((row, i) => ({ ...row, isDefault: i === index })));
   };
 
   const updatePackaging = (index: number, key: keyof ProductPackaging, value: any) => {
@@ -164,7 +171,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
   const addPackagingRow = () => {
     setPackagings((prev) => [
       ...prev,
-      createDefaultPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice }),
+      createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice }),
     ]);
   };
 
@@ -172,10 +179,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     setPackagings((prev) => {
       const next = prev.filter((_, i) => i !== index);
       if (next.length === 0) {
-        return [createDefaultPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })];
-      }
-      if (!next.some((row) => row.isDefault)) {
-        next[0] = { ...next[0], isDefault: true };
+        return [createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })];
       }
       return next;
     });
@@ -609,7 +613,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                           const next = !packagingEnabled;
                           setPackagingEnabled(next);
                           if (next && packagings.length === 0) {
-                            setPackagings([createDefaultPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]);
+                            setPackagings([createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]);
                           }
                         }}
                       />
@@ -632,19 +636,18 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      <div className="grid grid-cols-[repeat(12,minmax(0,1fr))] gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
                         <div className="col-span-2">Pack Name</div>
-                        <div className="col-span-2">Pack Code</div>
+                        <div className="col-span-2">Code</div>
                         <div className="col-span-3">Display Name</div>
-                        <div className="col-span-2">Display Code</div>
                         <div className="col-span-1">Factor</div>
                         <div className="col-span-1">Sale</div>
                         <div className="col-span-1">Cost</div>
-                        <div className="col-span-2">Default / Action</div>
+                        <div className="col-span-2">Action</div>
                       </div>
 
                       {packagings.map((row, idx) => (
-                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2 items-center">
+                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-[repeat(12,minmax(0,1fr))] gap-2 items-center">
                           <input
                             type="text"
                             placeholder="Name"
@@ -665,13 +668,6 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                             className="col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
                             value={row.displayName || ""}
                             onChange={(e) => updatePackaging(idx, "displayName", e.target.value)}
-                          />
-                          <input
-                            type="text"
-                            placeholder="Search code"
-                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
-                            value={row.displayCode || ""}
-                            onChange={(e) => updatePackaging(idx, "displayCode", e.target.value)}
                           />
                           <input
                             type="number"
@@ -700,28 +696,26 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                             value={row.costPrice ?? 0}
                             onChange={(e) => updatePackaging(idx, "costPrice", Number(e.target.value || 0))}
                           />
-                          <div className="col-span-2 flex items-center gap-2">
-                            <label className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-                              <input
-                                type="radio"
-                                name="defaultPackaging"
-                                checked={Boolean(row.isDefault)}
-                                onChange={() => setDefaultPackaging(idx)}
-                              />
-                              Default
-                            </label>
+                          <div className="col-span-2 flex items-center justify-center gap-2">
                             <button
                               type="button"
                               onClick={() => removePackagingRow(idx)}
-                              className="px-2 py-1 text-[10px] font-black uppercase rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200"
+                              className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200"
+                              title="Delete packaging"
+                              aria-label="Delete packaging"
                             >
-                              Del
+                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 6h18" />
+                                <path d="M8 6V4h8v2" />
+                                <path d="M19 6l-1 14H6L5 6" />
+                                <path d="M10 11v6M14 11v6" />
+                              </svg>
                             </button>
                           </div>
                         </div>
                       ))}
-                      {(errors.packagings || errors.packagingDefault) && (
-                        <p className="text-xs text-rose-500 font-medium">{errors.packagings || errors.packagingDefault}</p>
+                      {errors.packagings && (
+                        <p className="text-xs text-rose-500 font-medium">{errors.packagings}</p>
                       )}
                     </div>
                   )}

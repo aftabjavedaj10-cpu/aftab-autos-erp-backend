@@ -370,7 +370,11 @@ const mapProductPackagingToDb = (row: any, productId: number | string) => ({
   name: String(row?.name ?? "").trim(),
   code: row?.code ? String(row.code).trim() : null,
   display_name: row?.displayName ? String(row.displayName).trim() : null,
-  display_code: row?.displayCode ? String(row.displayCode).trim() : null,
+  display_code: row?.displayCode
+    ? String(row.displayCode).trim()
+    : row?.code
+      ? String(row.code).trim()
+      : null,
   factor: Number(row?.factor ?? 1),
   sale_price: Number(row?.salePrice ?? row?.sale_price ?? 0),
   cost_price: Number(row?.costPrice ?? row?.cost_price ?? 0),
@@ -1270,10 +1274,11 @@ export const productAPI = {
 
     return mappedProducts.map((product) => {
       const packagings = byProductId.get(String(product.id)) || [];
+      const variantPackagings = packagings.filter((p: any) => !p.isDefault);
       return {
         ...product,
-        packagings,
-        packagingEnabled: packagings.length > 0,
+        packagings: variantPackagings,
+        packagingEnabled: variantPackagings.length > 0,
       };
     });
   },
@@ -1284,10 +1289,11 @@ export const productAPI = {
       `/product_packagings?select=*&product_id=eq.${id}&order=is_default.desc,created_at.asc`
     ).catch(() => []);
     const packagings = Array.isArray(packRows) ? packRows.map(mapProductPackagingFromDb) : [];
+    const variantPackagings = packagings.filter((p: any) => !p.isDefault);
     return {
       ...product,
-      packagings,
-      packagingEnabled: packagings.length > 0,
+      packagings: variantPackagings,
+      packagingEnabled: variantPackagings.length > 0,
     };
   },
   create: async (product: any) => {
@@ -1407,23 +1413,26 @@ export const productPackagingAPI = {
       .map((row) => mapProductPackagingToDb(row, productId))
       .filter((row) => row.name.length > 0 && Number.isFinite(row.factor) && row.factor > 0);
 
-    const payload =
-      normalized.length > 0
-        ? normalized.map((row, idx) => ({
-            ...row,
-            is_default: normalized.some((x) => x.is_default) ? row.is_default : idx === 0,
-          }))
-        : [
-            {
-              product_id: Number(productId),
-              name: String(fallback?.unit || "Piece"),
-              code: null,
-              factor: 1,
-              sale_price: Number(fallback?.price ?? 0),
-              cost_price: Number(fallback?.costPrice ?? 0),
-              is_default: true,
-            },
-          ];
+    const basePackaging = {
+      product_id: Number(productId),
+      name: String(fallback?.unit || "Piece"),
+      code: null,
+      display_name: null,
+      display_code: null,
+      factor: 1,
+      sale_price: Number(fallback?.price ?? 0),
+      cost_price: Number(fallback?.costPrice ?? 0),
+      is_default: true,
+    };
+
+    const variantPackagings = normalized.map((row) => ({
+      ...row,
+      code: row.code || null,
+      display_code: row.display_code || row.code || null,
+      is_default: false,
+    }));
+
+    const payload = [basePackaging, ...variantPackagings];
 
     const created = await apiCall("/product_packagings", "POST", payload, true);
     return Array.isArray(created) ? created.map(mapProductPackagingFromDb) : [];

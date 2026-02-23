@@ -251,6 +251,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
       .map((row: any) => ({
         id: String(row.id ?? ""),
         name: String(row.name ?? "").trim(),
+        code: String(row.code ?? "").trim(),
         displayName: String(row.displayName ?? row.display_name ?? "").trim(),
         displayCode: String(row.displayCode ?? row.display_code ?? "").trim(),
         factor: Number(row.factor ?? 1),
@@ -259,19 +260,19 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
         isDefault: Boolean(row.isDefault ?? row.is_default),
       }))
       .filter((row: ProductPackagingOption) => row.id && row.name && Number.isFinite(row.factor) && row.factor > 0);
+    const baseDefault: ProductPackagingOption = {
+      id: "",
+      name: String(product.unit || "Piece"),
+      code: String(product.productCode || "").trim(),
+      factor: 1,
+      salePrice: Number(product.price ?? 0),
+      costPrice: Number(product.costPrice ?? 0),
+      isDefault: true,
+    };
     if (mapped.length > 0) {
-      return mapped;
+      return [baseDefault, ...mapped];
     }
-    return [
-      {
-        id: "",
-        name: String(product.unit || "Piece"),
-        factor: 1,
-        salePrice: Number(product.price ?? 0),
-        costPrice: Number(product.costPrice ?? 0),
-        isDefault: true,
-      },
-    ];
+    return [baseDefault];
   };
 
   const getDefaultPackaging = (product: Product): ProductPackagingOption => {
@@ -284,7 +285,9 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
     products.forEach((product) => {
       getProductPackagingOptions(product).forEach((packaging) => {
         const searchLabel = packaging.displayName || `${product.name} ${packaging.name}`.trim();
-        const searchCode = packaging.displayCode || packaging.code || product.productCode || "";
+        const searchCode = packaging.isDefault
+          ? product.productCode || ""
+          : packaging.code || product.productCode || "";
         rows.push({
           product,
           packaging,
