@@ -53,7 +53,9 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
     .filter((w) => w.isActive !== false)
     .map((w) => String(w.name || "").trim())
     .filter(Boolean);
-  const unitOptions = Array.from(new Set([...(activeUnitNames.length ? activeUnitNames : DEFAULT_UNITS)]));
+  const unitOptions = Array.from(
+    new Set(['pc', ...(activeUnitNames.length ? activeUnitNames : DEFAULT_UNITS)])
+  );
   const warehouseOptions = Array.from(
     new Set([...(activeWarehouseNames.length ? activeWarehouseNames : DEFAULT_WAREHOUSES)])
   );
@@ -71,7 +73,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
     barcode: product?.barcode || '',
     vendorId: product?.vendorId || vendors[0]?.id || '',
     stock: product?.stock || 0,
-    unit: product?.unit || unitOptions[0] || 'Piece',
+    unit: product?.unit || 'pc',
     reorderPoint: product?.reorderPoint || 10,
     reorderQty: (product as any)?.reorderQty || 1,
     description: product?.description || '',
@@ -203,11 +205,11 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
       setFormData({ 
         name: '', urduName: '', productCode: nextProductCode, brandName: '', productType: 'Product', warehouse: warehouseOptions[0] || 'Main',
         category: '', price: '', costPrice: '', barcode: '', 
-        vendorId: vendors[0]?.id || '', stock: 0, unit: unitOptions[0] || 'Piece',
+        vendorId: vendors[0]?.id || '', stock: 0, unit: 'pc',
         reorderPoint: 10, reorderQty: 1, description: '', image: '', isActive: true
       });
       setPackagingEnabled(false);
-      setPackagings([createVariantPackaging({ unit: "Piece", price: 0, costPrice: 0 })]);
+      setPackagings([createVariantPackaging({ unit: "pc", price: 0, costPrice: 0 })]);
       setIsProductCodeTouched(false);
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
@@ -525,7 +527,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
                     </label>
                     <input 
                       type="text" 
-                      placeholder="$0.00"
+                      placeholder="0.00"
                       className={`w-full bg-white dark:bg-slate-800 border rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white ${errors.costPrice ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'}`}
                       value={formData.costPrice}
                       onChange={(e) => setFormData({...formData, costPrice: e.target.value})}
@@ -538,7 +540,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
                     </label>
                     <input 
                       type="text" 
-                      placeholder="$0.00"
+                      placeholder="0.00"
                       className={`w-full bg-white dark:bg-slate-800 border rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white ${errors.price ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'}`}
                       value={formData.price}
                       onChange={(e) => setFormData({...formData, price: e.target.value})}
@@ -723,13 +725,20 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
                             value={row.code || ""}
                             onChange={(e) => updatePackaging(idx, "code", e.target.value)}
                           />
-                          <input
-                            type="text"
-                            placeholder="Unit"
+                          <select
                             className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
                             value={row.name || ""}
                             onChange={(e) => updatePackaging(idx, "name", e.target.value)}
-                          />
+                          >
+                            {(!row.name || !units.includes(row.name)) && (
+                              <option value={row.name || ""}>{row.name || "Select Unit"}</option>
+                            )}
+                            {units.map((unit) => (
+                              <option key={unit} value={unit}>
+                                {unit}
+                              </option>
+                            ))}
+                          </select>
                           <input
                             type="number"
                             step="0.001"
