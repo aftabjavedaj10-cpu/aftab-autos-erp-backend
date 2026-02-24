@@ -1,6 +1,5 @@
 import React, { useState, useRef } from 'react';
 import * as XLSX from 'xlsx';
-import { WAREHOUSES } from '../constants';
 import type { Vendor } from '../types';
 
 interface ImportModalProps {
@@ -163,12 +162,7 @@ const ImportModal: React.FC<ImportModalProps> = ({ isOpen, onClose, entityName, 
         const importedData = csvRows.map((row) => {
           const obj: any = {};
           
-          if (entityName === 'Products') {
-            obj.productType = 'Product';
-            obj.warehouse = WAREHOUSES[0];
-            obj.brandName = 'Generic';
-            obj.vendorId = null;
-          } else if (entityName === 'Categories') {
+          if (entityName === 'Categories') {
             obj.type = 'product';
           } else if (entityName === 'Vendors') {
             obj.country = 'Pakistan';
