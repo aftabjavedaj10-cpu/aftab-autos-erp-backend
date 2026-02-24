@@ -47,7 +47,15 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
   }, [categories, products]);
 
   const vendorOptions = useMemo(() => {
-    return ["All", ...vendors.map((v) => String(v.name || "").trim()).filter(Boolean)];
+    return [
+      { value: "All", label: "All" },
+      ...vendors
+        .map((v) => ({
+          value: String(v.id || "").trim(),
+          label: String(v.name || "").trim(),
+        }))
+        .filter((v) => v.value && v.label),
+    ];
   }, [vendors]);
 
   const rows = useMemo(() => {
@@ -61,6 +69,7 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
           ...p,
           stockInHand,
           reorderPoint,
+          vendorId: String(p.vendorId || "").trim(),
           vendorName: vendorNameById.get(String(p.vendorId || "")) || "",
         };
       })
@@ -74,7 +83,7 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
         );
       })
       .filter((p) => categoryFilter === "All" || String(p.category || "").trim() === categoryFilter)
-      .filter((p) => vendorFilter === "All" || String(p.vendorName || "").trim() === vendorFilter)
+      .filter((p) => vendorFilter === "All" || String((p as any).vendorId || "") === vendorFilter)
       .sort((a, b) => a.stockInHand - b.stockInHand);
   }, [products, vendorNameById, search, categoryFilter, vendorFilter]);
 
@@ -82,7 +91,7 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
     const base = purchaseOrders
       .filter((po) => {
         if (vendorFilter === "All") return true;
-        return String(po.customerName || "").trim() === vendorFilter;
+        return String(po.customerId || "").trim() === vendorFilter;
       })
       .filter((po) => !["Void", "Deleted"].includes(String(po.status || "")))
       .sort((a, b) => String(b.id).localeCompare(String(a.id)));
@@ -190,8 +199,8 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
               className="w-full bg-slate-50 border rounded-xl py-2 px-3 text-[12px] font-bold"
             >
               {vendorOptions.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
                 </option>
               ))}
             </select>
