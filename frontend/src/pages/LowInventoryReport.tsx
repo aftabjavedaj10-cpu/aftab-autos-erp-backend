@@ -88,12 +88,13 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
   }, [products, vendorNameById, search, categoryFilter, vendorFilter]);
 
   const purchaseOrderOptions = useMemo(() => {
+    const allowedStatuses = new Set(["draft", "pending"]);
     const base = purchaseOrders
       .filter((po) => {
         if (vendorFilter === "All") return true;
         return String(po.customerId || "").trim() === vendorFilter;
       })
-      .filter((po) => !["Void", "Deleted"].includes(String(po.status || "")))
+      .filter((po) => allowedStatuses.has(String(po.status || "").trim().toLowerCase()))
       .sort((a, b) => String(b.id).localeCompare(String(a.id)));
     return base;
   }, [purchaseOrders, vendorFilter]);
@@ -285,7 +286,7 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
             <option value="">Select Purchase Order #</option>
             {purchaseOrderOptions.map((po) => (
               <option key={String(po.id)} value={String(po.id)}>
-                {String(po.id)} - {String(po.customerName || "")}
+                {String(po.id)} - {String(po.customerName || "")} [{String(po.status || "-")}]
               </option>
             ))}
           </select>
