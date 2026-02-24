@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import type { Product, Category, Vendor } from '../types';
-import { WAREHOUSES } from '../constants';
+import type { Product, Category, Vendor, ProductPackaging, UnitMaster, WarehouseMaster } from '../types';
 
 interface ProductFormPageProps {
   product?: Product;
   categories: Category[];
   vendors: Vendor[];
+  units: UnitMaster[];
+  warehouses: WarehouseMaster[];
   nextProductCode: string;
   onBack: () => void;
   onSave: (product: any, stayOnPage: boolean) => void;
@@ -13,31 +14,101 @@ interface ProductFormPageProps {
 }
 
 const DEFAULT_UNITS = ['Piece', 'Pair', 'Set', 'Bottle', 'Litre', 'Box'];
+const DEFAULT_WAREHOUSES = ['Main', 'Warehouse A', 'Warehouse B'];
 
-const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vendors, nextProductCode, onBack, onSave, onAddCategory }) => {
+const createVariantPackaging = (base: {
+  unit?: string;
+  price?: number | string;
+  costPrice?: number | string;
+}): ProductPackaging => ({
+  name: "",
+  urduName: "",
+  code: "",
+  displayName: "",
+  displayCode: "",
+  factor: 1,
+  salePrice: Number(base.price || 0),
+  costPrice: Number(base.costPrice || 0),
+  isDefault: false,
+  isActive: true,
+});
+
+const AddProducts: React.FC<ProductFormPageProps> = ({
+  product,
+  categories,
+  vendors,
+  units: setupUnits,
+  warehouses: setupWarehouses,
+  nextProductCode,
+  onBack,
+  onSave,
+  onAddCategory,
+}) => {
   const isEdit = !!product;
+  const activeUnitNames = (Array.isArray(setupUnits) ? setupUnits : [])
+    .filter((u) => u.isActive !== false)
+    .map((u) => String(u.name || "").trim())
+    .filter(Boolean);
+  const activeWarehouseNames = (Array.isArray(setupWarehouses) ? setupWarehouses : [])
+    .filter((w) => w.isActive !== false)
+    .map((w) => String(w.name || "").trim())
+    .filter(Boolean);
+  const unitOptions = Array.from(
+    new Set(['pc', ...(activeUnitNames.length ? activeUnitNames : DEFAULT_UNITS)])
+  );
+  const warehouseOptions = Array.from(
+    new Set([...(activeWarehouseNames.length ? activeWarehouseNames : DEFAULT_WAREHOUSES)])
+  );
+
   const [formData, setFormData] = useState({
     name: product?.name || '',
     urduName: (product as any)?.urduName || '',
     productCode: product?.productCode || nextProductCode,
     brandName: product?.brandName || '',
     productType: product?.productType || 'Product' as 'Product' | 'Service',
-    warehouse: product?.warehouse || WAREHOUSES[0],
+    warehouse: product?.warehouse || warehouseOptions[0] || 'Main',
     category: product?.category || '',
     price: product?.price || '',
     costPrice: product?.costPrice || '',
     barcode: product?.barcode || '',
     vendorId: product?.vendorId || vendors[0]?.id || '',
     stock: product?.stock || 0,
-    unit: product?.unit || 'Piece',
+    unit: product?.unit || 'pc',
     reorderPoint: product?.reorderPoint || 10,
     reorderQty: (product as any)?.reorderQty || 1,
     description: product?.description || '',
     image: product?.image || '',
     isActive: product?.isActive ?? true
   });
+  const [packagingEnabled, setPackagingEnabled] = useState<boolean>(
+    Boolean(
+      (product as any)?.packagingEnabled ||
+        (Array.isArray((product as any)?.packagings)
+          ? (product as any).packagings.some((p: any) => !Boolean(p.isDefault ?? p.is_default))
+          : false)
+    )
+  );
+  const [packagings, setPackagings] = useState<ProductPackaging[]>(
+    Array.isArray((product as any)?.packagings) && (product as any).packagings.length > 0
+      ? (product as any).packagings
+          .filter((p: any) => !Boolean(p.isDefault ?? p.is_default))
+          .map((p: any) => ({
+          id: p.id,
+          name: p.name || "",
+          urduName: p.urduName ?? p.urdu_name ?? "",
+          code: p.code || "",
+          displayName: p.displayName ?? p.display_name ?? "",
+          displayCode: p.displayCode ?? p.display_code ?? "",
+          factor: Number(p.factor || 1),
+          salePrice: Number((p.salePrice ?? p.sale_price ?? formData.price) || 0),
+          costPrice: Number((p.costPrice ?? p.cost_price ?? formData.costPrice) || 0),
+          isDefault: false,
+          isActive: (p.isActive ?? p.is_active ?? true) !== false,
+        }))
+      : [createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]
+  );
 
-  const [units, setUnits] = useState(DEFAULT_UNITS);
+  const [units, setUnits] = useState(unitOptions);
   const [isQuickAddingCategory, setIsQuickAddingCategory] = useState(false);
   const [isQuickAddingUnit, setIsQuickAddingUnit] = useState(false);
   const [quickInput, setQuickInput] = useState('');
@@ -55,6 +126,23 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
        // Only auto-select first if not editing and nothing selected
     }
   }, [productCategories]);
+
+  useEffect(() => {
+    setUnits(unitOptions);
+  }, [setupUnits]);
+
+  useEffect(() => {
+    setFormData((prev) => {
+      const next = { ...prev };
+      if (!unitOptions.includes(prev.unit)) {
+        next.unit = unitOptions[0] || 'Piece';
+      }
+      if (!warehouseOptions.includes(prev.warehouse)) {
+        next.warehouse = warehouseOptions[0] || 'Main';
+      }
+      return next;
+    });
+  }, [setupUnits, setupWarehouses]);
 
   useEffect(() => {
     if (isEdit || isProductCodeTouched) return;
@@ -78,25 +166,76 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
     if (!formData.price.toString().trim()) newErrors.price = 'Enter a sale price';
     if (!formData.costPrice.toString().trim()) newErrors.costPrice = 'Enter a purchase price';
     if (!formData.vendorId) newErrors.vendorId = 'Select a supplier';
+    if (packagingEnabled) {
+      if (packagings.length === 0) newErrors.packagings = 'Add at least one packaging row';
+      const invalidRow = packagings.find(
+        (p) =>
+          (p.isActive ?? true) !== false &&
+          !String(p.name || "").trim() ||
+          (p.isActive ?? true) !== false &&
+          !String(p.code || "").trim() ||
+          (p.isActive ?? true) !== false &&
+          Number(p.factor) <= 0
+      );
+      if (invalidRow) newErrors.packagings = 'Packaging name, code, and factor (> 0) are required';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleAction = (stayOnPage: boolean) => {
     if (!validate()) return;
-    onSave({ ...product, ...formData }, stayOnPage);
+    const sanitizedPackagings = packagingEnabled
+      ? packagings.map((p) => ({
+          ...p,
+          name: String(p.name || "").trim(),
+          urduName: String(p.urduName || "").trim(),
+          code: String(p.code || "").trim(),
+          factor: Number(p.factor || 1),
+          displayName: String(p.displayName || "").trim(),
+          displayCode: String(p.code || "").trim(),
+          salePrice: Number(p.salePrice || 0),
+          costPrice: Number(p.costPrice || 0),
+          isDefault: false,
+          isActive: (p.isActive ?? true) !== false,
+        }))
+      : [];
+    onSave({ ...product, ...formData, packagingEnabled, packagings: sanitizedPackagings }, stayOnPage);
     if (stayOnPage && !isEdit) {
       setFormData({ 
-        name: '', urduName: '', productCode: nextProductCode, brandName: '', productType: 'Product', warehouse: WAREHOUSES[0],
+        name: '', urduName: '', productCode: nextProductCode, brandName: '', productType: 'Product', warehouse: warehouseOptions[0] || 'Main',
         category: '', price: '', costPrice: '', barcode: '', 
-        vendorId: vendors[0]?.id || '', stock: 0, unit: 'Piece', 
+        vendorId: vendors[0]?.id || '', stock: 0, unit: 'pc',
         reorderPoint: 10, reorderQty: 1, description: '', image: '', isActive: true
       });
+      setPackagingEnabled(false);
+      setPackagings([createVariantPackaging({ unit: "pc", price: 0, costPrice: 0 })]);
       setIsProductCodeTouched(false);
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
       setIsDropdownOpen(false);
     }
+  };
+
+  const updatePackaging = (index: number, key: keyof ProductPackaging, value: any) => {
+    setPackagings((prev) => prev.map((row, i) => (i === index ? { ...row, [key]: value } : row)));
+  };
+
+  const addPackagingRow = () => {
+    setPackagings((prev) => [
+      ...prev,
+      createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice }),
+    ]);
+  };
+
+  const removePackagingRow = (index: number) => {
+    setPackagings((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        return [createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })];
+      }
+      return next;
+    });
   };
 
   const handleQuickAddCategory = () => {
@@ -388,7 +527,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                     </label>
                     <input 
                       type="text" 
-                      placeholder="$0.00"
+                      placeholder="0.00"
                       className={`w-full bg-white dark:bg-slate-800 border rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white ${errors.costPrice ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'}`}
                       value={formData.costPrice}
                       onChange={(e) => setFormData({...formData, costPrice: e.target.value})}
@@ -401,7 +540,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                     </label>
                     <input 
                       type="text" 
-                      placeholder="$0.00"
+                      placeholder="0.00"
                       className={`w-full bg-white dark:bg-slate-800 border rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white ${errors.price ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'}`}
                       value={formData.price}
                       onChange={(e) => setFormData({...formData, price: e.target.value})}
@@ -454,7 +593,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                       value={formData.warehouse}
                       onChange={(e) => setFormData({...formData, warehouse: e.target.value})}
                     >
-                      {WAREHOUSES.map(wh => (
+                      {warehouseOptions.map(wh => (
                         <option key={wh} value={wh}>{wh}</option>
                       ))}
                     </select>
@@ -463,14 +602,21 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Initial Stock</label>
+                    <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                      Initial Stock {isEdit ? "(Create Only)" : ""}
+                    </label>
                     <input 
                       type="number" 
-                      disabled={formData.productType === 'Service'}
-                      className={`w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white ${formData.productType === 'Service' ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      disabled={formData.productType === 'Service' || isEdit}
+                      className={`w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white ${(formData.productType === 'Service' || isEdit) ? 'opacity-50 cursor-not-allowed' : ''}`}
                       value={formData.productType === 'Service' ? 0 : formData.stock}
                       onChange={(e) => setFormData({...formData, stock: parseInt(e.target.value) || 0})}
                     />
+                    {isEdit && (
+                      <p className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                        Initial stock is applied only when creating a new product.
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Alert Level</label>
@@ -493,6 +639,165 @@ const AddProducts: React.FC<ProductFormPageProps> = ({ product, categories, vend
                       onChange={(e) => setFormData({...formData, reorderQty: Math.max(1, parseInt(e.target.value) || 1)})}
                     />
                   </div>
+                </div>
+
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 overflow-hidden mt-6">
+              <div className="p-6 border-b border-slate-50 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+                <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 uppercase text-xs tracking-widest">
+                  <span className="text-orange-500">PK</span> Multi Packaging
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">Enable Multiple Packaging</p>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400">If off, system keeps one default packaging with factor 1.</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={packagingEnabled}
+                        onChange={() => {
+                          const next = !packagingEnabled;
+                          setPackagingEnabled(next);
+                          if (next && packagings.length === 0) {
+                            setPackagings([createVariantPackaging({ unit: formData.unit, price: formData.price, costPrice: formData.costPrice })]);
+                          }
+                        }}
+                      />
+                      <div className={`w-12 h-6 rounded-full transition-all ${packagingEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform translate-y-0.5 ${packagingEnabled ? 'translate-x-6' : 'translate-x-1'}`}></div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {packagingEnabled && (
+                    <div className="mt-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-black uppercase tracking-wider text-slate-600 dark:text-slate-300">Packaging Rows</p>
+                        <button
+                          type="button"
+                          onClick={addPackagingRow}
+                          className="px-3 py-1.5 text-[10px] font-black uppercase rounded-lg bg-orange-600 text-white hover:bg-orange-700 transition-all"
+                        >
+                          Add Packaging
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2 px-1 text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        <div className="col-span-3">Display Name</div>
+                        <div className="col-span-2">Urdu Name</div>
+                        <div className="col-span-2">Code</div>
+                        <div className="col-span-2">Unit</div>
+                        <div className="col-span-1">Factor</div>
+                        <div className="col-span-1">Sale</div>
+                        <div className="col-span-1">Cost</div>
+                        <div className="col-span-2">Action</div>
+                      </div>
+
+                      {packagings.map((row, idx) => (
+                        <div key={`${row.id || "pack"}-${idx}`} className="grid grid-cols-[repeat(14,minmax(0,1fr))] gap-2 items-center">
+                          <input
+                            type="text"
+                            placeholder="Search label"
+                            className="col-span-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.displayName || ""}
+                            onChange={(e) => updatePackaging(idx, "displayName", e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            placeholder="اردو نام"
+                            dir="rtl"
+                            lang="ur"
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm text-right focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={(row as any).urduName || ""}
+                            onChange={(e) => updatePackaging(idx, "urduName" as keyof ProductPackaging, e.target.value)}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Code"
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.code || ""}
+                            onChange={(e) => updatePackaging(idx, "code", e.target.value)}
+                          />
+                          <select
+                            className="col-span-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.name || ""}
+                            onChange={(e) => updatePackaging(idx, "name", e.target.value)}
+                          >
+                            {(!row.name || !units.includes(row.name)) && (
+                              <option value={row.name || ""}>{row.name || "Select Unit"}</option>
+                            )}
+                            {units.map((unit) => (
+                              <option key={unit} value={unit}>
+                                {unit}
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            step="0.001"
+                            min="0.001"
+                            placeholder="Factor"
+                            className="col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.factor ?? 1}
+                            onChange={(e) => updatePackaging(idx, "factor", Number(e.target.value || 1))}
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Sale"
+                            className="col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.salePrice ?? 0}
+                            onChange={(e) => updatePackaging(idx, "salePrice", Number(e.target.value || 0))}
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Cost"
+                            className="col-span-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/20 dark:text-white"
+                            value={row.costPrice ?? 0}
+                            onChange={(e) => updatePackaging(idx, "costPrice", Number(e.target.value || 0))}
+                          />
+                          <div className="col-span-2 flex items-center justify-center gap-2">
+                            <label className="inline-flex items-center gap-1.5 text-[10px] font-semibold text-slate-600 dark:text-slate-300">
+                              <input
+                                type="checkbox"
+                                checked={(row.isActive ?? true) !== false}
+                                onChange={(e) => updatePackaging(idx, "isActive", e.target.checked)}
+                                className="h-3.5 w-3.5 rounded border-slate-300 text-orange-600 focus:ring-orange-500/30"
+                              />
+                              {(row.isActive ?? true) !== false ? "Active" : "Non Active"}
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => removePackagingRow(idx)}
+                              className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-rose-100 text-rose-700 hover:bg-rose-200"
+                              title="Delete packaging"
+                              aria-label="Delete packaging"
+                            >
+                              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 6h18" />
+                                <path d="M8 6V4h8v2" />
+                                <path d="M19 6l-1 14H6L5 6" />
+                                <path d="M10 11v6M14 11v6" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                      {errors.packagings && (
+                        <p className="text-xs text-rose-500 font-medium">{errors.packagings}</p>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

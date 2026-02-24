@@ -22,6 +22,20 @@ const formatDateDdMmYyyy = (value: string) => {
   return m ? `${m[3]}/${m[2]}/${m[1]}` : String(value || "");
 };
 
+const parseDdMmYyyyToIso = (value: string) => {
+  const m = String(value || "").trim().match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const dd = Number(m[1]);
+  const mm = Number(m[2]);
+  const yyyy = Number(m[3]);
+  if (mm < 1 || mm > 12 || dd < 1 || dd > 31) return null;
+  const iso = `${String(yyyy).padStart(4, "0")}-${String(mm).padStart(2, "0")}-${String(dd).padStart(2, "0")}`;
+  const dt = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(dt.getTime())) return null;
+  if (dt.getUTCFullYear() !== yyyy || dt.getUTCMonth() + 1 !== mm || dt.getUTCDate() !== dd) return null;
+  return iso;
+};
+
 const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   docs,
   customers,
@@ -47,6 +61,9 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   const [paymentDate, setPaymentDate] = useState(
     doc?.date || new Date().toISOString().slice(0, 10)
   );
+  const [paymentDateText, setPaymentDateText] = useState(
+    formatDateDdMmYyyy(doc?.date || new Date().toISOString().slice(0, 10))
+  );
   const [invoiceId, setInvoiceId] = useState(doc?.invoiceId || "");
   const [reference, setReference] = useState(doc?.reference || "");
   const [customerSearch, setCustomerSearch] = useState(doc?.customerName || "");
@@ -63,6 +80,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   const customerBoxRef = useRef<HTMLDivElement>(null);
   const saveMenuRef = useRef<HTMLDivElement>(null);
   const printMenuRef = useRef<HTMLDivElement>(null);
+  const paymentDatePickerProxyRef = useRef<HTMLInputElement>(null);
 
   const parseNumber = (value?: string | number) => {
     if (typeof value === "number") return Number.isFinite(value) ? value : 0;
@@ -72,6 +90,10 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   };
 
   const amountValue = useMemo(() => parseNumber(amountInput), [amountInput]);
+
+  useEffect(() => {
+    setPaymentDateText(formatDateDdMmYyyy(paymentDate));
+  }, [paymentDate]);
 
   const nextPaymentNo = useMemo(() => {
     const maxNo = docs.reduce((max, row) => {
@@ -295,8 +317,27 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
     w.document.close();
   };
 
+  const preventNumberWheelStep = (e: React.WheelEvent) => {
+    const target = e.target as HTMLInputElement | null;
+    if (!target || target.tagName !== "INPUT" || target.type !== "number") return;
+    target.blur();
+    e.preventDefault();
+  };
+
+  const preventNumberArrowStep = (e: React.KeyboardEvent) => {
+    const target = e.target as HTMLInputElement | null;
+    if (!target || target.tagName !== "INPUT" || target.type !== "number") return;
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+    }
+  };
+
   return (
-    <div className="animate-in fade-in duration-500 pb-10">
+    <div
+      className="animate-in fade-in duration-500 pb-10"
+      onWheelCapture={preventNumberWheelStep}
+      onKeyDownCapture={preventNumberArrowStep}
+    >
       <div className="mb-5 flex items-start gap-3">
         <button
           type="button"
@@ -371,13 +412,42 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                 <span className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-500">
                   Payment Date
                 </span>
-                <input
-                  type="date"
-                  lang="en-GB"
-                  value={paymentDate}
-                  onChange={(e) => setPaymentDate(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-[13px] font-black text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={paymentDateText}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setPaymentDateText(raw);
+                      const iso = parseDdMmYyyyToIso(raw);
+                      if (iso) setPaymentDate(iso);
+                    }}
+                    onBlur={() => setPaymentDateText(formatDateDdMmYyyy(paymentDate))}
+                    placeholder="dd/mm/yyyy"
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 pr-9 text-[13px] font-black text-slate-900 outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  />
+                  <input
+                    ref={paymentDatePickerProxyRef}
+                    type="date"
+                    value={paymentDate}
+                    onChange={(e) => setPaymentDate(e.target.value)}
+                    className="absolute -z-10 h-0 w-0 opacity-0"
+                    tabIndex={-1}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const picker = paymentDatePickerProxyRef.current as any;
+                      if (!picker) return;
+                      if (typeof picker.showPicker === "function") picker.showPicker();
+                      else picker.click();
+                    }}
+                    className="absolute inset-y-0 right-2 flex items-center text-slate-500 hover:text-orange-600"
+                    title="Open calendar"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+                  </button>
+                </div>
               </label>
 
               <div className="md:col-span-2" ref={customerBoxRef}>

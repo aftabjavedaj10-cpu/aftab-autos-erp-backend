@@ -17,6 +17,10 @@ import VendorsPage from "./Vendors";
 import AddVendorPage from "./AddVendor";
 import CategoriesPage from "./Categories";
 import AddCategoryFormPage from "./AddCategoryForm";
+import UnitsPage from "./Units";
+import AddUnitFormPage from "./AddUnitForm";
+import WarehousesPage from "./Warehouses";
+import AddWarehouseFormPage from "./AddWarehouseForm";
 import SettingsPage from "./Settings";
 import SalesInvoicePage from "./SalesInvoice";
 import SalesInvoiceFormPage from "./SalesInvoiceForm";
@@ -37,8 +41,8 @@ import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
 import MakePaymentFormPage from "./MakePaymentForm";
 import { ALL_REPORTS } from "../constants";
-import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company } from "../types";
-import { productAPI, customerAPI, vendorAPI, categoryAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
+import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company, UnitMaster, WarehouseMaster } from "../types";
+import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, unitAPI, warehouseAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -77,6 +81,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [noCompany, setNoCompany] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [units, setUnits] = useState<UnitMaster[]>([]);
+  const [warehouses, setWarehouses] = useState<WarehouseMaster[]>([]);
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
@@ -114,6 +120,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
   const [editingVendor, setEditingVendor] = useState<Vendor | undefined>(undefined);
   const [editingCategory, setEditingCategory] = useState<Category | undefined>(undefined);
+  const [editingUnit, setEditingUnit] = useState<UnitMaster | undefined>(undefined);
+  const [editingWarehouse, setEditingWarehouse] = useState<WarehouseMaster | undefined>(undefined);
   const [editingStockAdjustment, setEditingStockAdjustment] = useState<StockLedgerEntry | undefined>(undefined);
   const [pendingFilterTarget, setPendingFilterTarget] = useState<string>("");
   const [pendingFilterTick, setPendingFilterTick] = useState(0);
@@ -128,6 +136,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       // ignore storage write errors
     }
   }, [activeTab, activeTabStorageKey]);
+
 
   const updateMainThumb = useCallback(() => {
     const el = mainScrollRef.current;
@@ -248,6 +257,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           customersData,
           vendorsData,
           categoriesData,
+          unitsData,
+          warehousesData,
           salesInvoicesData,
           purchaseInvoicesData,
           purchaseOrdersData,
@@ -262,6 +273,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           customerAPI.getAll().catch(() => []),
           vendorAPI.getAll().catch(() => []),
           categoryAPI.getAll().catch(() => []),
+          unitAPI.getAll().catch(() => []),
+          warehouseAPI.getAll().catch(() => []),
           salesInvoiceAPI.getAll().catch(() => []),
           purchaseInvoiceAPI.getAll().catch(() => []),
           purchaseOrderAPI.getAll().catch(() => []),
@@ -280,6 +293,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         setCustomers(Array.isArray(customersData) ? customersData : customersData.data || []);
         setVendors(Array.isArray(vendorsData) ? vendorsData : vendorsData.data || []);
         setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
+        setUnits(Array.isArray(unitsData) ? unitsData : []);
+        setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
         setSalesInvoices(
           Array.isArray(salesInvoicesData) ? salesInvoicesData : salesInvoicesData.data || []
         );
@@ -336,8 +351,26 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab('add_customer');
   };
 
-  const handleEditProduct = (product: Product) => {
-    setEditingProduct(product);
+  const handleEditProduct = async (product: Product) => {
+    try {
+      const packagings = await productPackagingAPI.getByProductId(product.id);
+      const preferredDefault =
+        packagings.find((p: any) => Boolean(p?.isDefault) && Number(p?.factor) === 1) ||
+        packagings.find((p: any) => Number(p?.factor) === 1) ||
+        packagings.find((p: any) => Boolean(p?.isDefault)) ||
+        packagings[0];
+      const variantPackagings = packagings.filter(
+        (p: any) => String(p?.id ?? "") !== String(preferredDefault?.id ?? "")
+      );
+      setEditingProduct({
+        ...product,
+        packagings: variantPackagings,
+        packagingEnabled: variantPackagings.length > 0,
+      });
+    } catch (err) {
+      console.error("Failed to load product packagings", err);
+      setEditingProduct(product);
+    }
     setActiveTab('add_product');
   };
 
@@ -396,6 +429,46 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       setError(err instanceof Error ? err.message : "Failed to import categories");
       console.error(err);
     });
+  };
+
+  const handleAddUnit = () => {
+    setEditingUnit(undefined);
+    setActiveTab("add_unit");
+  };
+
+  const handleEditUnit = (unit: UnitMaster) => {
+    setEditingUnit(unit);
+    setActiveTab("add_unit");
+  };
+
+  const handleDeleteUnit = (id: string) => {
+    unitAPI
+      .delete(id)
+      .then(() => setUnits((prev) => prev.filter((u) => u.id !== id)))
+      .catch((err) => {
+        setError("Failed to delete unit");
+        console.error(err);
+      });
+  };
+
+  const handleAddWarehouse = () => {
+    setEditingWarehouse(undefined);
+    setActiveTab("add_warehouse");
+  };
+
+  const handleEditWarehouse = (warehouse: WarehouseMaster) => {
+    setEditingWarehouse(warehouse);
+    setActiveTab("add_warehouse");
+  };
+
+  const handleDeleteWarehouse = (id: string) => {
+    warehouseAPI
+      .delete(id)
+      .then(() => setWarehouses((prev) => prev.filter((w) => w.id !== id)))
+      .catch((err) => {
+        setError("Failed to delete warehouse");
+        console.error(err);
+      });
   };
 
   const handleDeleteProduct = async (id: string) => {
@@ -991,18 +1064,49 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             product={editingProduct}
             categories={categories}
             vendors={vendors}
+            units={units}
+            warehouses={warehouses}
             nextProductCode={nextProductCode}
             onBack={() => { setEditingProduct(undefined); setActiveTab('products'); }}
             onSave={(product, stayOnPage) => {
               const saveProduct = () => {
                 if (product.id) {
-                  return productAPI.update(product.id, product).then(() => {
-                    setProducts(products.map(p => p.id === product.id ? product : p));
+                  return productAPI.update(product.id, product).then(async (updated: any) => {
+                    const savedPackagings = await productPackagingAPI.replaceForProduct(
+                      updated.id,
+                      product.packagingEnabled ? product.packagings : [],
+                      { unit: product.unit, price: product.price, costPrice: product.costPrice }
+                    );
+                    const variantPackagings = savedPackagings.filter((p: any) => !p.isDefault);
+                    setProducts((prev) =>
+                      prev.map((p) =>
+                        p.id === updated.id
+                          ? {
+                              ...p,
+                              ...updated,
+                              packagings: variantPackagings,
+                              packagingEnabled: variantPackagings.length > 0,
+                            }
+                          : p
+                      )
+                    );
                   });
                 } else {
-                  return productAPI.create(product).then((res: any) => {
-                    const newProduct = { ...product, id: res.id || `prod_${Date.now()}` };
-                    setProducts([...products, newProduct]);
+                  return productAPI.create(product).then(async (res: any) => {
+                    const savedPackagings = await productPackagingAPI.replaceForProduct(
+                      res.id,
+                      product.packagingEnabled ? product.packagings : [],
+                      { unit: product.unit, price: product.price, costPrice: product.costPrice }
+                    );
+                    const variantPackagings = savedPackagings.filter((p: any) => !p.isDefault);
+                    const newProduct = {
+                      ...product,
+                      ...res,
+                      id: res.id || `prod_${Date.now()}`,
+                      packagings: variantPackagings,
+                      packagingEnabled: variantPackagings.length > 0,
+                    };
+                    setProducts((prev) => [...prev, newProduct]);
                   });
                 }
               };
@@ -1137,6 +1241,84 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 setError("Failed to save category");
                 console.error(err);
               });
+            }}
+          />
+        )}
+
+        {activeTab === "units" && (
+          <UnitsPage
+            units={units}
+            onAddClick={handleAddUnit}
+            onEditClick={handleEditUnit}
+            onDelete={handleDeleteUnit}
+          />
+        )}
+
+        {activeTab === "add_unit" && (
+          <AddUnitFormPage
+            unit={editingUnit}
+            onBack={() => {
+              setEditingUnit(undefined);
+              setActiveTab("units");
+            }}
+            onSave={(unit, stayOnPage) => {
+              const saveUnit = unit.id ? unitAPI.update(unit.id, unit) : unitAPI.create(unit);
+              saveUnit
+                .then((saved) => {
+                  setUnits((prev) => {
+                    const exists = prev.some((x) => x.id === saved.id);
+                    if (exists) return prev.map((x) => (x.id === saved.id ? saved : x));
+                    return [...prev, saved];
+                  });
+                  if (!stayOnPage) {
+                    setEditingUnit(undefined);
+                    setActiveTab("units");
+                  }
+                })
+                .catch((err) => {
+                  setError("Failed to save unit");
+                  console.error(err);
+                });
+            }}
+          />
+        )}
+
+        {activeTab === "warehouses" && (
+          <WarehousesPage
+            warehouses={warehouses}
+            onAddClick={handleAddWarehouse}
+            onEditClick={handleEditWarehouse}
+            onDelete={handleDeleteWarehouse}
+          />
+        )}
+
+        {activeTab === "add_warehouse" && (
+          <AddWarehouseFormPage
+            warehouse={editingWarehouse}
+            onBack={() => {
+              setEditingWarehouse(undefined);
+              setActiveTab("warehouses");
+            }}
+            onSave={(warehouse, stayOnPage) => {
+              const saveWarehouse = warehouse.id
+                ? warehouseAPI.update(warehouse.id, warehouse)
+                : warehouseAPI.create(warehouse);
+              saveWarehouse
+                .then((saved) => {
+                  setWarehouses((prev) => {
+                    const exists = prev.some((x) => x.id === saved.id);
+                    if (exists) return prev.map((x) => (x.id === saved.id ? saved : x));
+                    return [...prev, saved];
+                  });
+                  if (!stayOnPage) {
+                    setEditingWarehouse(undefined);
+                    setActiveTab("warehouses");
+                  }
+                })
+                .catch((err) => {
+                  setError("Failed to save warehouse");
+                  console.error(err);
+                });
             }}
           />
         )}

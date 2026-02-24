@@ -296,6 +296,8 @@ const mapProductToDb = (product: any) =>
         "reorderQty",
         "brandName",
         "productType",
+        "packagingEnabled",
+        "packagings",
         "stockAvailable",
         "stockOnHand",
         "stockReserved",
@@ -306,6 +308,9 @@ const mapProductToDb = (product: any) =>
 const sanitizeProductPayload = (payload: any) => {
   const clean = { ...(payload || {}) };
   if ("isActive" in clean) delete clean.isActive;
+  if ("packagingEnabled" in clean) delete clean.packagingEnabled;
+  if ("packagings" in clean) delete clean.packagings;
+  if ("packaging_enabled" in clean) delete clean.packaging_enabled;
   return clean;
 };
 
@@ -347,6 +352,96 @@ const mapCategoryToDb = (category: any) =>
   // Never send id in write payloads so Postgres can auto-generate and avoid type errors.
   stripClientOnly({ ...category }, ["itemCount", "id"]);
 
+const mapUnitFromDb = (row: any) => ({
+  id: String(row.id),
+  name: String(row.name ?? ""),
+  description: row.description ?? "",
+  isActive: row.is_active ?? row.isActive ?? true,
+});
+
+const mapUnitToDb = (unit: any) =>
+  stripClientOnly(
+    {
+      ...unit,
+      is_active: unit.isActive ?? unit.is_active ?? true,
+    },
+    ["id", "isActive"]
+  );
+
+const mapWarehouseFromDb = (row: any) => ({
+  id: String(row.id),
+  name: String(row.name ?? ""),
+  description: row.description ?? "",
+  isActive: row.is_active ?? row.isActive ?? true,
+});
+
+const mapWarehouseToDb = (warehouse: any) =>
+  stripClientOnly(
+    {
+      ...warehouse,
+      is_active: warehouse.isActive ?? warehouse.is_active ?? true,
+    },
+    ["id", "isActive"]
+  );
+
+const mapProductPackagingFromDb = (row: any) => ({
+  id: row.id,
+  productId: row.product_id ?? row.productId,
+  name: row.name,
+  urduName: row.urdu_name ?? row.urduName ?? "",
+  code: row.code ?? "",
+  displayName: row.display_name ?? row.displayName ?? "",
+  displayCode: row.display_code ?? row.displayCode ?? "",
+  factor: Number(row.factor ?? 1),
+  salePrice: Number(row.sale_price ?? row.salePrice ?? 0),
+  costPrice: Number(row.cost_price ?? row.costPrice ?? 0),
+  isDefault: Boolean(row.is_default ?? row.isDefault),
+  isActive: (row.is_active ?? row.isActive ?? true) !== false,
+});
+
+const deriveVariantPackagings = (packagings: any[]) => {
+  const rows = Array.isArray(packagings) ? packagings : [];
+  if (rows.length === 0) return [] as any[];
+
+  // Be resilient to bad historical flags: pick one canonical default, treat the rest as variants.
+  const preferredDefault =
+    rows.find((p: any) => Boolean(p?.isDefault) && Number(p?.factor) === 1) ||
+    rows.find((p: any) => Number(p?.factor) === 1) ||
+    rows.find((p: any) => Boolean(p?.isDefault)) ||
+    rows[0];
+
+  return rows.filter((p: any) => String(p?.id ?? "") !== String(preferredDefault?.id ?? ""));
+};
+
+const mapProductPackagingToDb = (row: any, productId: number | string) => ({
+  product_id: Number(productId),
+  name: String(row?.name ?? "").trim(),
+  urdu_name: row?.urduName ? String(row.urduName).trim() : null,
+  code: row?.code ? String(row.code).trim() : null,
+  display_name: row?.displayName ? String(row.displayName).trim() : null,
+  display_code: row?.displayCode
+    ? String(row.displayCode).trim()
+    : row?.code
+      ? String(row.code).trim()
+      : null,
+  factor: Number(row?.factor ?? 1),
+  sale_price: Number(row?.salePrice ?? row?.sale_price ?? 0),
+  cost_price: Number(row?.costPrice ?? row?.cost_price ?? 0),
+  is_default: Boolean(row?.isDefault ?? row?.is_default),
+  is_active: (row?.isActive ?? row?.is_active ?? true) !== false,
+});
+
+const normalizeLineQuantity = (row: any) => Number(row?.qty_pack ?? row?.quantity ?? 0);
+const normalizePackFactor = (row: any) => {
+  const value = Number(row?.packFactor ?? row?.pack_factor ?? 1);
+  return Number.isFinite(value) && value > 0 ? value : 1;
+};
+const normalizeQtyBase = (row: any, qtyPack: number, packFactor: number) => {
+  const value = Number(row?.qtyBase ?? row?.qty_base ?? qtyPack * packFactor);
+  return Number.isFinite(value) && value > 0 ? value : qtyPack * packFactor;
+};
+const normalizePackagingId = (row: any) => row?.packagingId ?? row?.packaging_id ?? null;
+
 const mapSalesInvoiceFromDb = (row: any) => ({
   id: row.id,
   customerId: row.customer_id ?? row.customerId,
@@ -366,20 +461,29 @@ const mapSalesInvoiceFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapSalesInvoiceItemFromDb) : [],
 });
 
-const mapSalesInvoiceItemFromDb = (row: any) => ({
+const mapSalesInvoiceItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.invoice_id ?? row.invoiceId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapQuotationFromDb = (row: any) => ({
   id: row.id,
@@ -398,20 +502,29 @@ const mapQuotationFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapQuotationItemFromDb) : [],
 });
 
-const mapQuotationItemFromDb = (row: any) => ({
+const mapQuotationItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.quotation_id ?? row.quotationId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapSalesInvoiceToDb = (invoice: any) =>
   stripClientOnly(
@@ -429,19 +542,28 @@ const mapSalesInvoiceToDb = (invoice: any) =>
     ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "paymentStatus", "overallDiscount", "amountReceived", "totalAmount"]
   );
 
-const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) => ({
-  invoice_id: invoiceId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    invoice_id: invoiceId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapQuotationToDb = (quotation: any) =>
   stripClientOnly(
@@ -469,19 +591,28 @@ const mapQuotationToDb = (quotation: any) =>
     ]
   );
 
-const mapQuotationItemToDb = (item: any, quotationId: string) => ({
-  quotation_id: quotationId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapQuotationItemToDb = (item: any, quotationId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    quotation_id: quotationId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapSalesReturnFromDb = (row: any) => ({
   id: row.id,
@@ -502,20 +633,29 @@ const mapSalesReturnFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapSalesReturnItemFromDb) : [],
 });
 
-const mapSalesReturnItemFromDb = (row: any) => ({
+const mapSalesReturnItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.sales_return_id ?? row.salesReturnId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_price ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapSalesReturnToDb = (invoice: any) =>
   stripClientOnly(
@@ -533,19 +673,28 @@ const mapSalesReturnToDb = (invoice: any) =>
     ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "paymentStatus", "overallDiscount", "amountReceived", "totalAmount"]
   );
 
-const mapSalesReturnItemToDb = (item: any, salesReturnId: string) => ({
-  sales_return_id: salesReturnId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapSalesReturnItemToDb = (item: any, salesReturnId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    sales_return_id: salesReturnId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_price: Number(item.unitPrice ?? item.unit_price ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapReceivePaymentFromDb = (row: any) => ({
   id: row.id,
@@ -620,20 +769,29 @@ const mapPurchaseInvoiceFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapPurchaseInvoiceItemFromDb) : [],
 });
 
-const mapPurchaseInvoiceItemFromDb = (row: any) => ({
+const mapPurchaseInvoiceItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.purchase_invoice_id ?? row.purchaseInvoiceId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_cost ?? row.unitCost ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapPurchaseInvoiceToDb = (invoice: any) =>
   stripClientOnly(
@@ -661,19 +819,28 @@ const mapPurchaseInvoiceToDb = (invoice: any) =>
     ]
   );
 
-const mapPurchaseInvoiceItemToDb = (item: any, invoiceId: string) => ({
-  purchase_invoice_id: invoiceId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapPurchaseInvoiceItemToDb = (item: any, invoiceId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    purchase_invoice_id: invoiceId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapPurchaseOrderFromDb = (row: any) => ({
   id: row.id,
@@ -694,20 +861,29 @@ const mapPurchaseOrderFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapPurchaseOrderItemFromDb) : [],
 });
 
-const mapPurchaseOrderItemFromDb = (row: any) => ({
+const mapPurchaseOrderItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.purchase_order_id ?? row.purchaseOrderId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_cost ?? row.unitCost ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapPurchaseOrderToDb = (order: any) =>
   stripClientOnly(
@@ -735,19 +911,28 @@ const mapPurchaseOrderToDb = (order: any) =>
     ]
   );
 
-const mapPurchaseOrderItemToDb = (item: any, orderId: string) => ({
-  purchase_order_id: orderId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapPurchaseOrderItemToDb = (item: any, orderId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    purchase_order_id: orderId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapPurchaseReturnFromDb = (row: any) => ({
   id: row.id,
@@ -768,20 +953,29 @@ const mapPurchaseReturnFromDb = (row: any) => ({
   items: Array.isArray(row.items) ? row.items.map(mapPurchaseReturnItemFromDb) : [],
 });
 
-const mapPurchaseReturnItemFromDb = (row: any) => ({
+const mapPurchaseReturnItemFromDb = (row: any) => {
+  const quantity = normalizeLineQuantity(row);
+  const packFactor = normalizePackFactor(row);
+  const qtyBase = normalizeQtyBase(row, quantity, packFactor);
+  return {
   id: row.id,
   invoiceId: row.purchase_return_id ?? row.purchaseReturnId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
   unit: row.unit,
-  quantity: Number(row.quantity ?? 0),
+  quantity,
+  packagingId: normalizePackagingId(row),
+  packFactor,
+  qtyPack: quantity,
+  qtyBase,
   unitPrice: Number(row.unit_cost ?? row.unitCost ?? row.unitPrice ?? 0),
   discountValue: Number(row.discount_value ?? row.discountValue ?? 0),
   discountType: row.discount_type ?? row.discountType ?? "fixed",
   tax: Number(row.tax ?? 0),
   total: Number(row.total ?? 0),
-});
+  };
+};
 
 const mapPurchaseReturnToDb = (invoice: any) =>
   stripClientOnly(
@@ -809,19 +1003,28 @@ const mapPurchaseReturnToDb = (invoice: any) =>
     ]
   );
 
-const mapPurchaseReturnItemToDb = (item: any, invoiceId: string) => ({
-  purchase_return_id: invoiceId,
-  product_id: item.productId ?? item.product_id ?? null,
-  product_code: item.productCode ?? item.product_code ?? "",
-  product_name: item.productName ?? item.product_name ?? "",
-  unit: item.unit ?? "",
-  quantity: Number(item.quantity ?? 0),
-  unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
-  discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
-  discount_type: item.discountType ?? item.discount_type ?? "fixed",
-  tax: Number(item.tax ?? 0),
-  total: Number(item.total ?? 0),
-});
+const mapPurchaseReturnItemToDb = (item: any, invoiceId: string) => {
+  const qtyPack = normalizeLineQuantity(item);
+  const packFactor = normalizePackFactor(item);
+  const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
+  return {
+    purchase_return_id: invoiceId,
+    product_id: item.productId ?? item.product_id ?? null,
+    product_code: item.productCode ?? item.product_code ?? "",
+    product_name: item.productName ?? item.product_name ?? "",
+    unit: item.unit ?? "",
+    quantity: qtyPack,
+    packaging_id: normalizePackagingId(item),
+    pack_factor: packFactor,
+    qty_pack: qtyPack,
+    qty_base: qtyBase,
+    unit_cost: Number(item.unitPrice ?? item.unit_cost ?? 0),
+    discount_value: Number(item.discountValue ?? item.discount_value ?? 0),
+    discount_type: item.discountType ?? item.discount_type ?? "fixed",
+    tax: Number(item.tax ?? 0),
+    total: Number(item.total ?? 0),
+  };
+};
 
 const mapCompanyFromDb = (row: any) => {
   if (!row) return row;
@@ -1101,10 +1304,56 @@ export const productAPI = {
       offset += pageSize;
       if (offset > 1000000) break;
     }
-    return allRows.map(mapProductFromDb);
+    const mappedProducts = allRows.map(mapProductFromDb);
+    if (mappedProducts.length === 0) return mappedProducts;
+
+    // Hydrate packaging rows with pagination so search lists don't miss variants on large datasets.
+    const packPageSize = 1000;
+    let packOffset = 0;
+    let packRows: any[] = [];
+    while (true) {
+      const rows = await apiCall(
+        `/product_packagings?select=*&order=product_id.asc,is_default.desc,created_at.asc&limit=${packPageSize}&offset=${packOffset}`
+      ).catch(() => []);
+      const batch = Array.isArray(rows) ? rows : [];
+      packRows = packRows.concat(batch);
+      if (batch.length < packPageSize) break;
+      packOffset += packPageSize;
+      if (packOffset > 1000000) break;
+    }
+    const byProductId = new Map<string, any[]>();
+    packRows.forEach((row) => {
+      const key = String(row?.product_id ?? "");
+      if (!key) return;
+      const existing = byProductId.get(key) || [];
+      existing.push(mapProductPackagingFromDb(row));
+      byProductId.set(key, existing);
+    });
+
+    return mappedProducts.map((product) => {
+      const packagings = byProductId.get(String(product.id)) || [];
+      const variantPackagings = deriveVariantPackagings(packagings);
+      return {
+        ...product,
+        packagings: variantPackagings,
+        packagingEnabled: variantPackagings.length > 0,
+      };
+    });
   },
-  getById: (id: string) =>
-    getFirst(`/products?select=*&id=eq.${id}`).then(mapProductFromDb),
+  getById: async (id: string) => {
+    const product = await getFirst(`/products?select=*&id=eq.${id}`).then(mapProductFromDb);
+    if (!product) return product;
+    const packRows = await apiCall(
+      `/product_packagings?select=*&product_id=eq.${id}&order=is_default.desc,created_at.asc`
+    ).catch(() => []);
+    const packagings = Array.isArray(packRows) ? packRows.map(mapProductPackagingFromDb) : [];
+    const variantPackagings = deriveVariantPackagings(packagings);
+    return {
+      ...product,
+      packagings: variantPackagings,
+      packagingEnabled: variantPackagings.length > 0,
+    };
+  },
   create: async (product: any) => {
     await ensurePermission("products.write");
     const productPayload = sanitizeProductPayload(
@@ -1141,6 +1390,11 @@ export const productAPI = {
   update: async (id: string, product: any) => {
     await ensurePermission("products.write");
     const productPayload = sanitizeProductPayload(mapProductToDb(product));
+    // Opening stock is create-only. Ignore stock fields on product updates.
+    if ("stock" in productPayload) delete productPayload.stock;
+    if ("stock_on_hand" in productPayload) delete productPayload.stock_on_hand;
+    if ("stock_available" in productPayload) delete productPayload.stock_available;
+    if ("stock_reserved" in productPayload) delete productPayload.stock_reserved;
     return apiCall(`/products?id=eq.${id}`, "PATCH", productPayload, true)
       .then(firstRow)
       .then(mapProductFromDb);
@@ -1182,7 +1436,74 @@ export const productAPI = {
       );
     }
 
-    const rows = normalizeBulkRows(sanitized.map(attachOwnership).map(mapProductToDb));
+    // Strict mapping: import unit/warehouse must exist in setup masters.
+    // We normalize to canonical DB names (case-insensitive match).
+    const [activeUnits, activeWarehouses] = await Promise.all([
+      apiCall("/units?select=name&is_active=eq.true&order=name.asc").catch(() => null),
+      apiCall("/warehouses?select=name&is_active=eq.true&order=name.asc").catch(() => null),
+    ]);
+
+    if (!Array.isArray(activeUnits) || !Array.isArray(activeWarehouses)) {
+      throw new Error(
+        "Units/Warehouses setup masters are unavailable. Run setup migrations before product import."
+      );
+    }
+
+    const unitMap = new Map<string, string>();
+    activeUnits.forEach((u: any) => {
+      const name = String(u?.name ?? "").trim();
+      if (!name) return;
+      unitMap.set(name.toLowerCase(), name);
+    });
+
+    const warehouseMap = new Map<string, string>();
+    activeWarehouses.forEach((w: any) => {
+      const name = String(w?.name ?? "").trim();
+      if (!name) return;
+      warehouseMap.set(name.toLowerCase(), name);
+    });
+
+    if (unitMap.size === 0 || warehouseMap.size === 0) {
+      throw new Error(
+        "Units/Warehouses setup masters are empty. Create active units and warehouses before import."
+      );
+    }
+
+    const unknownUnits = new Set<string>();
+    const unknownWarehouses = new Set<string>();
+
+    const normalizedSanitized = sanitized.map((product) => {
+      const rawUnit = String(product.unit || "").trim();
+      const rawWarehouse = String(product.warehouse || "").trim();
+      const mappedUnit = unitMap.get(rawUnit.toLowerCase());
+      const mappedWarehouse = warehouseMap.get(rawWarehouse.toLowerCase());
+
+      if (!mappedUnit) unknownUnits.add(rawUnit || "(blank)");
+      if (!mappedWarehouse) unknownWarehouses.add(rawWarehouse || "(blank)");
+
+      return {
+        ...product,
+        unit: mappedUnit || rawUnit,
+        warehouse: mappedWarehouse || rawWarehouse,
+      };
+    });
+
+    if (unknownUnits.size > 0 || unknownWarehouses.size > 0) {
+      const unitText =
+        unknownUnits.size > 0
+          ? `Unknown units: ${[...unknownUnits].slice(0, 8).join(", ")}`
+          : "";
+      const warehouseText =
+        unknownWarehouses.size > 0
+          ? `Unknown warehouses: ${[...unknownWarehouses].slice(0, 8).join(", ")}`
+          : "";
+      throw new Error(
+        [unitText, warehouseText].filter(Boolean).join(" | ") +
+          ". Add them in Setup and retry import."
+      );
+    }
+
+    const rows = normalizeBulkRows(normalizedSanitized.map(attachOwnership).map(mapProductToDb));
     const chunks = chunkRows(rows, 100);
     for (const chunk of chunks) {
       await apiCall(
@@ -1194,6 +1515,54 @@ export const productAPI = {
       );
     }
     return null;
+  },
+};
+
+export const productPackagingAPI = {
+  getByProductId: async (productId: number | string) => {
+    await ensurePermission("products.read");
+    const rows = await apiCall(
+      `/product_packagings?select=*&product_id=eq.${productId}&order=is_default.desc,created_at.asc`
+    );
+    return Array.isArray(rows) ? rows.map(mapProductPackagingFromDb) : [];
+  },
+  replaceForProduct: async (
+    productId: number | string,
+    rows: any[],
+    fallback?: { unit?: string; price?: number | string; costPrice?: number | string }
+  ) => {
+    await ensurePermission("products.write");
+    await apiCall(`/product_packagings?product_id=eq.${productId}`, "DELETE");
+
+    const normalized = (Array.isArray(rows) ? rows : [])
+      .map((row) => mapProductPackagingToDb(row, productId))
+      .filter((row) => row.name.length > 0 && Number.isFinite(row.factor) && row.factor > 0);
+
+    const basePackaging = {
+      product_id: Number(productId),
+      name: String(fallback?.unit || "Piece"),
+      urdu_name: null,
+      code: null,
+      display_name: null,
+      display_code: null,
+      factor: 1,
+      sale_price: Number(fallback?.price ?? 0),
+      cost_price: Number(fallback?.costPrice ?? 0),
+      is_default: true,
+      is_active: true,
+    };
+
+    const variantPackagings = normalized.map((row) => ({
+      ...row,
+      code: row.code || null,
+      display_code: row.display_code || row.code || null,
+      is_default: false,
+    }));
+
+    const payload = [basePackaging, ...variantPackagings];
+
+    const created = await apiCall("/product_packagings", "POST", payload, true);
+    return Array.isArray(created) ? created.map(mapProductPackagingFromDb) : [];
   },
 };
 
@@ -1344,6 +1713,56 @@ export const categoryAPI = {
   },
 };
 
+// ============ UNITS ============
+export const unitAPI = {
+  getAll: async () => {
+    await ensurePermission("products.read");
+    const rows = await apiCall("/units?select=*&order=name.asc");
+    return Array.isArray(rows) ? rows.map(mapUnitFromDb) : [];
+  },
+  create: async (unit: any) => {
+    await ensurePermission("products.write");
+    return apiCall("/units", "POST", mapUnitToDb(attachOwnership(unit)), true)
+      .then(firstRow)
+      .then(mapUnitFromDb);
+  },
+  update: async (id: string, unit: any) => {
+    await ensurePermission("products.write");
+    return apiCall(`/units?id=eq.${id}`, "PATCH", mapUnitToDb(unit), true)
+      .then(firstRow)
+      .then(mapUnitFromDb);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("products.delete");
+    return apiCall(`/units?id=eq.${id}`, "DELETE");
+  },
+};
+
+// ============ WAREHOUSES ============
+export const warehouseAPI = {
+  getAll: async () => {
+    await ensurePermission("products.read");
+    const rows = await apiCall("/warehouses?select=*&order=name.asc");
+    return Array.isArray(rows) ? rows.map(mapWarehouseFromDb) : [];
+  },
+  create: async (warehouse: any) => {
+    await ensurePermission("products.write");
+    return apiCall("/warehouses", "POST", mapWarehouseToDb(attachOwnership(warehouse)), true)
+      .then(firstRow)
+      .then(mapWarehouseFromDb);
+  },
+  update: async (id: string, warehouse: any) => {
+    await ensurePermission("products.write");
+    return apiCall(`/warehouses?id=eq.${id}`, "PATCH", mapWarehouseToDb(warehouse), true)
+      .then(firstRow)
+      .then(mapWarehouseFromDb);
+  },
+  delete: async (id: string) => {
+    await ensurePermission("products.delete");
+    return apiCall(`/warehouses?id=eq.${id}`, "DELETE");
+  },
+};
+
 // ============ SALES INVOICES ============
 export const salesInvoiceAPI = {
   getAll: async () => {
@@ -1398,8 +1817,6 @@ export const salesInvoiceAPI = {
   },
   update: async (id: string, invoice: any) => {
     await ensurePermission("sales_invoices.write");
-    await apiCall(`/sales_invoices?id=eq.${id}`, "PATCH", mapSalesInvoiceToDb(invoice), true);
-
     await apiCall(`/sales_invoice_items?invoice_id=eq.${id}`, "DELETE");
     const items = Array.isArray(invoice.items) ? invoice.items : [];
     if (items.length > 0) {
@@ -1412,6 +1829,14 @@ export const salesInvoiceAPI = {
         true
       );
     }
+
+    // Patch header last (with forced updated_at) so stock trigger rebuilds from latest items.
+    await apiCall(
+      `/sales_invoices?id=eq.${id}`,
+      "PATCH",
+      { ...mapSalesInvoiceToDb(invoice), updated_at: new Date().toISOString() },
+      true
+    );
 
     return salesInvoiceAPI.getById(id);
   },
@@ -1565,7 +1990,12 @@ export const salesReturnAPI = {
     }
 
     // Patch header last so stock trigger rebuilds from the latest item rows.
-    await apiCall(`/sales_returns?id=eq.${id}`, "PATCH", mapSalesReturnToDb(salesReturn), true);
+    await apiCall(
+      `/sales_returns?id=eq.${id}`,
+      "PATCH",
+      { ...mapSalesReturnToDb(salesReturn), updated_at: new Date().toISOString() },
+      true
+    );
 
     return salesReturnAPI.getById(id);
   },
@@ -1752,7 +2182,12 @@ export const purchaseInvoiceAPI = {
       );
     }
     // Patch header last so stock trigger rebuilds from the latest item rows.
-    await apiCall(`/purchase_invoices?id=eq.${id}`, "PATCH", mapPurchaseInvoiceToDb(invoice), true);
+    await apiCall(
+      `/purchase_invoices?id=eq.${id}`,
+      "PATCH",
+      { ...mapPurchaseInvoiceToDb(invoice), updated_at: new Date().toISOString() },
+      true
+    );
 
     return purchaseInvoiceAPI.getById(id);
   },
@@ -2250,6 +2685,7 @@ export const roleAPI = {
 
 export default {
   productAPI,
+  productPackagingAPI,
   customerAPI,
   vendorAPI,
   categoryAPI,

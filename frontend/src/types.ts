@@ -21,6 +21,23 @@ export interface Product {
   warehouse?: string;
   productType?: 'Product' | 'Service';
   description?: string;
+  packagingEnabled?: boolean;
+  packagings?: ProductPackaging[];
+}
+
+export interface ProductPackaging {
+  id?: string;
+  productId?: number | string;
+  name: string;
+  urduName?: string;
+  code?: string;
+  displayName?: string;
+  displayCode?: string;
+  factor: number;
+  salePrice?: number | string;
+  costPrice?: number | string;
+  isDefault?: boolean;
+  isActive?: boolean;
 }
 
 export interface Category {
@@ -29,6 +46,20 @@ export interface Category {
   type: 'product' | 'customer' | 'vendor';
   description?: string;
   itemCount?: number;
+}
+
+export interface UnitMaster {
+  id?: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+export interface WarehouseMaster {
+  id?: string;
+  name: string;
+  description?: string;
+  isActive?: boolean;
 }
 
 export interface Vendor {
@@ -67,11 +98,17 @@ export interface Customer {
 }
 
 export interface SalesInvoiceItem {
+  id?: string | number;
   productId: string;
   productName: string;
   productCode?: string;
   unit?: string;
   quantity: number;
+  packagingId?: string;
+  packagingName?: string;
+  packFactor?: number;
+  qtyPack?: number;
+  qtyBase?: number;
   unitPrice: number;
   tax?: number;
   discountValue?: number;
