@@ -197,6 +197,9 @@ const firstRow = (result: any) => (Array.isArray(result) ? result[0] : result);
 const buildInFilter = (ids: Array<string | number>) =>
   `in.(${ids.map((id) => String(id).replace(/"/g, "")).join(",")})`;
 
+const buildTextInFilter = (values: string[]) =>
+  `in.(${values.map((value) => `"${String(value).replace(/"/g, '\\"')}"`).join(",")})`;
+
 const stripClientOnly = (row: any, keys: string[]) => {
   const copy = { ...row };
   for (const key of keys) {
@@ -1418,22 +1421,67 @@ export const productAPI = {
   },
   import: async (products: any[]) => {
     await ensurePermission("products.write");
-    const sanitized = (Array.isArray(products) ? products : [])
-      .map((product) => ({
-        ...product,
-        name: String(product?.name ?? "").trim(),
-        productCode: String(product?.productCode ?? product?.product_code ?? "").trim(),
-        category: product?.category == null ? null : String(product.category).trim(),
-        warehouse: String(product?.warehouse ?? "Main").trim(),
-        productType: String(product?.productType ?? product?.product_type ?? "Product").trim(),
-        unit: String(product?.unit ?? "pcs").trim(),
-      }))
-      .filter((product) => product.name.length > 0 && product.productCode.length > 0);
+    const inputRows = Array.isArray(products) ? products : [];
+    const hasOwn = (obj: any, key: string) => Object.prototype.hasOwnProperty.call(obj ?? {}, key);
+    const readRaw = (obj: any, camel: string, snake?: string) => {
+      if (hasOwn(obj, camel)) return obj?.[camel];
+      if (snake && hasOwn(obj, snake)) return obj?.[snake];
+      return undefined;
+    };
+
+    const sanitized = inputRows
+      .map((product) => {
+        const name = String(readRaw(product, "name") ?? "").trim();
+        const productCode = String(readRaw(product, "productCode", "product_code") ?? "").trim();
+        if (!name || !productCode) return null;
+
+        const normalized: Record<string, any> = { name, productCode };
+
+        const optionalFields: Array<[string, string?]> = [
+          ["urduName", "urdu_name"],
+          ["category"],
+          ["vendorId", "vendor_id"],
+          ["costPrice", "cost_price"],
+          ["price"],
+          ["barcode"],
+          ["unit"],
+          ["warehouse"],
+          ["stock"],
+          ["reorderPoint", "reorder_point"],
+          ["reorderQty", "reorder_qty"],
+          ["brandName", "brand_name"],
+          ["productType", "product_type"],
+          ["isActive", "is_active"],
+        ];
+
+        optionalFields.forEach(([camel, snake]) => {
+          const raw = readRaw(product, camel, snake);
+          if (raw === undefined) return;
+          normalized[camel] = raw;
+        });
+
+        return normalized;
+      })
+      .filter(Boolean) as Record<string, any>[];
 
     if (sanitized.length === 0) {
       throw new Error(
         "No valid product rows found. Ensure Product Name and Part Number / Code are filled."
       );
+    }
+
+    const incomingCodes = Array.from(
+      new Set(sanitized.map((row) => String(row.productCode || "").trim()).filter(Boolean))
+    );
+    const existingCodes = new Set<string>();
+    for (const codeChunk of chunkRows(incomingCodes, 200)) {
+      const existingRows = await apiCall(
+        `/products?select=product_code&product_code=${buildTextInFilter(codeChunk)}`
+      ).catch(() => []);
+      (Array.isArray(existingRows) ? existingRows : []).forEach((row: any) => {
+        const code = String(row?.product_code ?? "").trim().toLowerCase();
+        if (code) existingCodes.add(code);
+      });
     }
 
     // Strict mapping: import unit/warehouse must exist in setup masters.
@@ -1469,23 +1517,59 @@ export const productAPI = {
       );
     }
 
+    const defaultUnit = String(activeUnits[0]?.name ?? "").trim();
+    const defaultWarehouse = String(activeWarehouses[0]?.name ?? "").trim();
+    if (!defaultUnit || !defaultWarehouse) {
+      throw new Error("Unable to resolve default Unit/Warehouse from setup masters.");
+    }
+
     const unknownUnits = new Set<string>();
     const unknownWarehouses = new Set<string>();
 
     const normalizedSanitized = sanitized.map((product) => {
-      const rawUnit = String(product.unit || "").trim();
-      const rawWarehouse = String(product.warehouse || "").trim();
-      const mappedUnit = unitMap.get(rawUnit.toLowerCase());
-      const mappedWarehouse = warehouseMap.get(rawWarehouse.toLowerCase());
+      const productCode = String(product.productCode || "").trim();
+      const isExisting = existingCodes.has(productCode.toLowerCase());
+      const next: Record<string, any> = { ...product };
 
-      if (!mappedUnit) unknownUnits.add(rawUnit || "(blank)");
-      if (!mappedWarehouse) unknownWarehouses.add(rawWarehouse || "(blank)");
+      if ("category" in next) {
+        const category = String(next.category ?? "").trim();
+        next.category = category || null;
+      }
+      if ("vendorId" in next) {
+        const rawVendor = String(next.vendorId ?? "").trim();
+        next.vendorId = rawVendor ? rawVendor : null;
+      }
+      if ("brandName" in next) {
+        const brandName = String(next.brandName ?? "").trim();
+        next.brandName = brandName || null;
+      }
+      if ("productType" in next) {
+        const productType = String(next.productType ?? "").trim();
+        next.productType = productType || null;
+      }
 
-      return {
-        ...product,
-        unit: mappedUnit || rawUnit,
-        warehouse: mappedWarehouse || rawWarehouse,
-      };
+      // For new inserts only, fill defaults if those columns were not mapped.
+      if (!isExisting) {
+        if (!("unit" in next)) next.unit = defaultUnit;
+        if (!("warehouse" in next)) next.warehouse = defaultWarehouse;
+        if (!("productType" in next)) next.productType = "Product";
+      }
+
+      if ("unit" in next) {
+        const rawUnit = String(next.unit ?? "").trim();
+        const mappedUnit = unitMap.get(rawUnit.toLowerCase());
+        if (!mappedUnit) unknownUnits.add(rawUnit || "(blank)");
+        next.unit = mappedUnit || rawUnit;
+      }
+
+      if ("warehouse" in next) {
+        const rawWarehouse = String(next.warehouse ?? "").trim();
+        const mappedWarehouse = warehouseMap.get(rawWarehouse.toLowerCase());
+        if (!mappedWarehouse) unknownWarehouses.add(rawWarehouse || "(blank)");
+        next.warehouse = mappedWarehouse || rawWarehouse;
+      }
+
+      return next;
     });
 
     if (unknownUnits.size > 0 || unknownWarehouses.size > 0) {
@@ -1503,7 +1587,36 @@ export const productAPI = {
       );
     }
 
-    const rows = normalizeBulkRows(normalizedSanitized.map(attachOwnership).map(mapProductToDb));
+    const toImportDbRow = (product: Record<string, any>) => {
+      const dbRow: Record<string, any> = {
+        name: String(product.name ?? "").trim(),
+        product_code: String(product.productCode ?? "").trim(),
+        company_id: product.company_id,
+        owner_id: product.owner_id,
+      };
+
+      if ("urduName" in product) dbRow.urdu_name = product.urduName || null;
+      if ("category" in product) dbRow.category = product.category || null;
+      if ("price" in product) dbRow.price = Number(product.price ?? 0);
+      if ("costPrice" in product) dbRow.cost_price = Number(product.costPrice ?? 0);
+      if ("barcode" in product) dbRow.barcode = product.barcode || null;
+      if ("unit" in product) dbRow.unit = String(product.unit ?? "").trim() || null;
+      if ("warehouse" in product) dbRow.warehouse = String(product.warehouse ?? "").trim() || null;
+      if ("stock" in product) dbRow.stock = Number(product.stock ?? 0);
+      if ("reorderPoint" in product) dbRow.reorder_point = Number(product.reorderPoint ?? 0);
+      if ("reorderQty" in product) dbRow.reorder_qty = Number(product.reorderQty ?? 1);
+      if ("brandName" in product) dbRow.brand_name = product.brandName || null;
+      if ("productType" in product) dbRow.product_type = product.productType || null;
+      if ("isActive" in product) dbRow.is_active = Boolean(product.isActive);
+      if ("vendorId" in product) {
+        const parsedVendorId = Number(String(product.vendorId ?? "").trim());
+        dbRow.vendor_id = Number.isInteger(parsedVendorId) && parsedVendorId > 0 ? parsedVendorId : null;
+      }
+
+      return dbRow;
+    };
+
+    const rows = normalizeBulkRows(normalizedSanitized.map(attachOwnership).map(toImportDbRow));
     const chunks = chunkRows(rows, 100);
     for (const chunk of chunks) {
       await apiCall(
