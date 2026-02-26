@@ -8,6 +8,7 @@ import CustomerLedgerPage from "./CustomerLedger";
 import VendorLedgerPage from "./VendorLedger";
 import LowInventoryReportPage from "./LowInventoryReport";
 import StockLedgerPage from "./StockLedger";
+import CustomerBalanceReportPage from "./CustomerBalanceReport";
 import StockAdjustmentPage from "./StockAdjustment";
 import AddStockAdjustmentPage from "./AddStockAdjustment";
 import AddProducts from "./AddProducts";
@@ -1905,6 +1906,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             vendors={vendors}
             purchaseOrders={purchaseOrders}
             onBulkAddToPurchaseOrder={handleLowInventoryBulkAddToPurchaseOrder}
+          />
+        )}
+
+        {activeTab === "report_customer_balance" && (
+          <CustomerBalanceReportPage
+            onBack={() => setActiveTab("reports")}
+            onOpenCustomerLedger={() => setActiveTab("report_customer_ledger")}
+            customers={customers}
+            salesInvoices={salesInvoices}
+            salesReturns={salesReturns}
+            receivePayments={receivePayments}
           />
         )}
 
