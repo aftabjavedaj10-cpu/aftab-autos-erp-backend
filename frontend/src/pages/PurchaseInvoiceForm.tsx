@@ -1982,7 +1982,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
           </div>
         )}
         {printMode === "receipt" && (
-          <div className="receipt-print print-sheet-80mm px-1 py-2 text-[11px] leading-tight flex flex-col min-h-[250mm]">
+          <div className="receipt-print print-sheet-80mm px-0 py-2 text-[11px] leading-tight flex flex-col min-h-[250mm]">
             <div className="text-center border-b border-black pb-2 mb-2">
               {company?.logoUrl ? (
                 <img

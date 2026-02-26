@@ -31,7 +31,7 @@ export const getPrintPageSize = (mode: PrintMode) => {
 };
 
 export const getPrintBoxWidth = (mode: PrintMode) => {
-  if (isNarrowPrintMode(mode)) return "70mm";
+  if (isNarrowPrintMode(mode)) return "68mm";
   if (mode === "a5") return "148mm";
   return "190mm";
 };
@@ -75,8 +75,8 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     page-break-after: always;
   }
   .print-sheet-80mm {
-    width: 72mm !important;
-    max-width: 72mm !important;
+    width: 68mm !important;
+    max-width: 68mm !important;
     margin: 0 !important;
     box-sizing: border-box !important;
     background: #fff !important;
@@ -157,7 +157,7 @@ export const buildPaymentPrintHtml = ({
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
 body{font-family:Arial,sans-serif;padding:${bodyPadding};color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-.box{width:${boxWidth};max-width:${boxWidth};margin:0 auto;padding:1mm}
+.box{width:${boxWidth};max-width:${boxWidth};margin:0;padding:0 0.5mm}
 .company{text-align:center;border-bottom:1px solid #111;padding-bottom:6px;margin-bottom:8px}
 .company .logo{height:42px;display:block;margin:0 auto 4px auto;object-fit:contain}
 .company .cname{font-weight:800;font-size:14px;letter-spacing:.04em;text-transform:uppercase}

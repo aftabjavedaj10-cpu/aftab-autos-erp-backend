@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FiChevronDown, FiMove } from "react-icons/fi";
 import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem, Vendor } from "../types";
 import { getPrintTemplateSettings } from "../services/printSettings";
+import { getEmbeddedInvoicePrintCss, normalizePrintMode } from "../services/printEngine";
 
 interface PurchaseReturnFormPageProps {
   invoice?: SalesInvoice;
@@ -164,6 +165,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [printSettings, setPrintSettings] = useState(() => getPrintTemplateSettings());
+  const defaultPrintMode = normalizePrintMode(printSettings.defaultTemplate, "invoice");
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [salesPriceByProductId, setSalesPriceByProductId] = useState<Record<string, number>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -1679,7 +1681,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                 type="button"
                 onClick={() => {
                   setIsPrintMenuOpen(false);
-                  handlePrintMode("invoice");
+                  handlePrintMode(defaultPrintMode);
                 }}
                 className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
               >
@@ -2107,52 +2109,7 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
           </div>
         )}
       </div>
-      <style>{`
-        @media print {
-          @page {
-            margin: 0;
-            size: auto;
-          }
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #fff !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          body * {
-            visibility: hidden !important;
-          }
-          .invoice-print-root,
-          .invoice-print-root * {
-            visibility: visible !important;
-          }
-          .invoice-print-root {
-            position: fixed !important;
-            inset: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            display: block !important;
-            overflow: hidden !important;
-            background: #fff !important;
-            z-index: 999999 !important;
-          }
-          .print-sheet-a4 {
-            width: 210mm !important;
-            min-height: 297mm !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            background: #fff !important;
-            page-break-after: always;
-          }
-          .print-sheet-80mm {
-            width: 72mm !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            background: #fff !important;
-          }
-        }
-      `}</style>
+      <style>{getEmbeddedInvoicePrintCss(printMode)}</style>
     </div>
   );
 };
