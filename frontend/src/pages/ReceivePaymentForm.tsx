@@ -1,7 +1,13 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Company, Customer, Product, SalesInvoice } from "../types";
 import type { ReceivePaymentDoc } from "./ReceivePayment";
-
+import {
+  buildPaymentPrintHtml,
+  normalizePrintMode,
+  openPrintWindow,
+  type PrintMode,
+} from "../services/printEngine";
+import { getPrintTemplateSettings } from "../services/printSettings";
 interface ReceivePaymentFormPageProps {
   docs: ReceivePaymentDoc[];
   customers: Customer[];
@@ -15,7 +21,6 @@ interface ReceivePaymentFormPageProps {
 }
 
 type SaveStatus = "Draft" | "Pending" | "Approved" | "Void";
-type PrintMode = "invoice" | "receipt" | "a5" | "token";
 
 const formatDateDdMmYyyy = (value: string) => {
   const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
@@ -42,7 +47,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   products: _products,
   salesInvoices,
   salesReturns,
-  company: _company,
+  company,
   doc,
   onBack,
   onSave,
@@ -76,6 +81,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
     doc?.totalAmount !== undefined ? String(doc.totalAmount) : "0"
   );
   const [notes, setNotes] = useState(doc?.notes || "");
+  const [printSettings, setPrintSettings] = useState(() => getPrintTemplateSettings());
   const [error, setError] = useState<string | null>(null);
   const customerBoxRef = useRef<HTMLDivElement>(null);
   const saveMenuRef = useRef<HTMLDivElement>(null);
@@ -129,6 +135,10 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
     );
     setSelectedCustomerId(String(match?.id || ""));
   }, [selectedCustomerName, customers]);
+
+  useEffect(() => {
+    setPrintSettings(getPrintTemplateSettings());
+  }, []);
 
   useEffect(() => {
     const onDocClick = (event: MouseEvent) => {
@@ -287,35 +297,28 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
   const printHtml = (mode: PrintMode) => {
     const modeTitle =
       mode === "receipt" ? "Payment Receipt" : mode === "a5" ? "A5 Payment Slip" : mode === "token" ? "Payment Token" : "Payment Invoice";
-    return `<!doctype html>
-<html><head><meta charset="utf-8"/><title>${modeTitle}</title>
-<style>
-body{font-family:Arial,sans-serif;padding:14px;color:#111}
-.box{max-width:${mode === "receipt" || mode === "token" ? "72mm" : mode === "a5" ? "148mm" : "190mm"};margin:0 auto}
-.line{display:flex;justify-content:space-between;margin:4px 0}
-.head{font-size:20px;font-weight:700;text-align:center;margin-bottom:8px}
-.small{font-size:12px}
-.row{border-top:1px solid #ddd;padding-top:8px;margin-top:8px}
-</style></head>
-<body><div class="box">
-<div class="head">${modeTitle}</div>
-<div class="line"><span>No</span><span>${paymentNo}</span></div>
-<div class="line"><span>Reference</span><span>${reference || "-"}</span></div>
-<div class="line"><span>Date</span><span>${formatDateDdMmYyyy(paymentDate)}</span></div>
-<div class="line"><span>Customer</span><span>${selectedCustomerName || "-"}</span></div>
-<div class="line"><span>Ledger Balance</span><span>Rs. ${ledgerBalance.amount.toLocaleString()} ${ledgerBalance.side}</span></div>
-<div class="line"><span>Amount</span><span>Rs. ${amountValue.toLocaleString()}</span></div>
-<div class="row small"><strong>Notes:</strong> ${notes || "-"}</div>
-</div><script>window.onload=()=>window.print();</script></body></html>`;
+    return buildPaymentPrintHtml({
+      mode,
+      modeTitle,
+      no: paymentNo,
+      reference,
+      date: formatDateDdMmYyyy(paymentDate),
+      partyLabel: "Customer",
+      partyName: selectedCustomerName,
+      ledgerAmount: ledgerBalance.amount,
+      ledgerSide: ledgerBalance.side,
+      amount: amountValue,
+      notes,
+      company,
+      settings: printSettings,
+    });
   };
 
   const handlePrint = (mode: PrintMode) => {
-    const w = window.open("", "_blank", "width=900,height=700");
-    if (!w) return;
-    w.document.open();
-    w.document.write(printHtml(mode));
-    w.document.close();
+    openPrintWindow(printHtml(mode));
   };
+
+  const defaultPrintMode = normalizePrintMode(printSettings.defaultTemplate, "receipt");
 
   const preventNumberWheelStep = (e: React.WheelEvent) => {
     const target = e.target as HTMLInputElement | null;
@@ -345,7 +348,7 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
           className="rounded-xl border border-slate-200 bg-white p-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           title="Back"
         >
-          <span className="text-sm">←</span>
+          <span className="text-sm">?</span>
         </button>
         <div className="space-y-1">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -593,7 +596,7 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                     type="button"
                     onClick={() => {
                       setShowPrintMenu(false);
-                      handlePrint("receipt");
+                      handlePrint(defaultPrintMode);
                     }}
                     className="rounded-l-xl border border-slate-300 bg-white px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
@@ -604,7 +607,7 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                     onClick={() => setShowPrintMenu((prev) => !prev)}
                     className="rounded-r-xl border border-l-0 border-slate-300 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
-                    ▼
+                    ?
                   </button>
                 </div>
                 {showPrintMenu && (
@@ -634,7 +637,7 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
                     onClick={() => setShowSaveMenu((prev) => !prev)}
                     className="rounded-r-xl border-l border-orange-500 bg-orange-600 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-orange-600/30 hover:bg-orange-700"
                   >
-                    ▼
+                    ?
                   </button>
                 </div>
                 {showSaveMenu && (
@@ -683,6 +686,10 @@ body{font-family:Arial,sans-serif;padding:14px;color:#111}
 };
 
 export default ReceivePaymentFormPage;
+
+
+
+
 
 
 
