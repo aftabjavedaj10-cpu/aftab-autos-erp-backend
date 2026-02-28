@@ -267,6 +267,14 @@ const mapProductFromDb = (row: any) => ({
 
 const mapProductToDb = (product: any) =>
   (() => {
+    const toNumberOr = (value: any, fallback: number) => {
+      if (value === null || value === undefined) return fallback;
+      const text = String(value).trim();
+      if (!text) return fallback;
+      const num = Number(text);
+      return Number.isFinite(num) ? num : fallback;
+    };
+
     const rawVendorId = product.vendorId ?? product.vendor_id;
     const parsedVendorId: number | null =
       rawVendorId === null || rawVendorId === undefined || String(rawVendorId).trim() === ""
@@ -283,9 +291,11 @@ const mapProductToDb = (product: any) =>
         product_code: product.productCode ?? product.product_code,
         urdu_name: product.urduName ?? product.urdu_name,
         vendor_id: vendorId,
-        cost_price: product.costPrice ?? product.cost_price,
-        reorder_point: product.reorderPoint ?? product.reorder_point,
-        reorder_qty: product.reorderQty ?? product.reorder_qty ?? 1,
+        price: toNumberOr(product.price ?? product.sale_price, 0),
+        cost_price: toNumberOr(product.costPrice ?? product.cost_price, 0),
+        stock: toNumberOr(product.stock, 0),
+        reorder_point: toNumberOr(product.reorderPoint ?? product.reorder_point, 0),
+        reorder_qty: toNumberOr(product.reorderQty ?? product.reorder_qty, 1),
         brand_name: product.brandName ?? product.brand_name,
         product_type: product.productType ?? product.product_type,
         is_active: product.isActive ?? product.is_active ?? true,
