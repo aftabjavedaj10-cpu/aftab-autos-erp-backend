@@ -2469,6 +2469,18 @@ export const purchaseReturnAPI = {
 
 // ============ STOCK LEDGER ============
 export const stockLedgerAPI = {
+  assertStockTrackedProduct: async (companyId: string, productId: number) => {
+    const product = await getFirst(
+      `/products?select=id,product_type&company_id=eq.${companyId}&id=eq.${productId}`
+    );
+    if (!product) {
+      throw new Error("Product not found");
+    }
+    const productType = String(product.product_type ?? "Product").toLowerCase();
+    if (productType === "service") {
+      throw new Error("Service products are not stock-tracked");
+    }
+  },
   listByCompany: async (companyId: string, limit = 2000) => {
     if (!companyId) return [];
     const rows = await apiCall(
@@ -2501,6 +2513,7 @@ export const stockLedgerAPI = {
     if (!Number.isFinite(productId) || productId <= 0) {
       throw new Error("Invalid product");
     }
+    await stockLedgerAPI.assertStockTrackedProduct(companyId, productId);
     const qty = Number(payload.qty || 0);
     if (!Number.isFinite(qty) || qty <= 0) {
       throw new Error("Quantity must be greater than 0");
@@ -2561,6 +2574,7 @@ export const stockLedgerAPI = {
     if (!Number.isFinite(productId) || productId <= 0) {
       throw new Error("Invalid product");
     }
+    await stockLedgerAPI.assertStockTrackedProduct(companyId, productId);
     const qty = Number(payload.qty || 0);
     if (!Number.isFinite(qty) || qty <= 0) {
       throw new Error("Quantity must be greater than 0");
