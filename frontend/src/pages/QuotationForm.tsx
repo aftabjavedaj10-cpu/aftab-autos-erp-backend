@@ -1273,7 +1273,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                                           <img
                                             src={p.image}
                                             alt={option.searchLabel}
-                                            className="w-full h-full object-cover rounded-lg cursor-zoom-in transition-transform duration-200 group-hover/image:scale-105"
+                                            className="w-full h-full object-cover rounded-lg cursor-pointer transition-transform duration-200 group-hover/image:scale-105"
                                             onClick={(e) => {
                                               e.preventDefault();
                                               e.stopPropagation();

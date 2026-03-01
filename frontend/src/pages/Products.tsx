@@ -267,7 +267,7 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                             <img
                               src={product.image}
                               alt={product.name}
-                              className="w-full h-full object-cover cursor-zoom-in transition-transform duration-200 group-hover/image:scale-105"
+                              className="w-full h-full object-cover cursor-pointer transition-transform duration-200 group-hover/image:scale-105"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setPreviewImage({ src: product.image || "", name: product.name || "Product image" });
