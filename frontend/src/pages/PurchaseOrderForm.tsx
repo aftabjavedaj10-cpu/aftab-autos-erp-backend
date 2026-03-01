@@ -1466,20 +1466,39 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                                   }`}
                                 >
                                   <div className="flex items-center gap-3">
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black ${
+                                    <div className={`relative group/image w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black ${
                                       selectedIndex === idx ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
                                     }`}>
                                       {p.image ? (
-                                        <img
-                                          src={p.image}
-                                          alt={option.searchLabel}
-                                          className="w-full h-full object-cover rounded-lg cursor-zoom-in"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setPreviewImage({ src: p.image || "", name: option.searchLabel });
-                                          }}
-                                        />
+                                        <>
+                                          <img
+                                            src={p.image}
+                                            alt={option.searchLabel}
+                                            className="w-full h-full object-cover rounded-lg cursor-zoom-in transition-transform duration-200 group-hover/image:scale-105"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              setPreviewImage({ src: p.image || "", name: option.searchLabel });
+                                            }}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              setPreviewImage({ src: p.image || "", name: option.searchLabel });
+                                            }}
+                                            className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-md bg-white/90 text-slate-800 border border-slate-200 shadow-sm opacity-0 group-hover/image:opacity-100 transition-all flex items-center justify-center"
+                                            title="View image"
+                                            aria-label="View image"
+                                          >
+                                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                              <circle cx="11" cy="11" r="6" />
+                                              <path d="m20 20-3.5-3.5" />
+                                              <path d="M11 8v6M8 11h6" />
+                                            </svg>
+                                          </button>
+                                        </>
                                       ) : (
                                         "PR"
                                       )}

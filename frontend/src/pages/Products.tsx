@@ -261,17 +261,35 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                   </td>
                   <td className="px-4 py-5">
                     <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 flex items-center justify-center text-lg shadow-inner border border-orange-100 dark:border-orange-900/30 overflow-hidden shrink-0">
+                      <div className="relative group/image w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 flex items-center justify-center text-lg shadow-inner border border-orange-100 dark:border-orange-900/30 overflow-hidden shrink-0">
                         {product.image ? (
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover cursor-zoom-in"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPreviewImage({ src: product.image || "", name: product.name || "Product image" });
-                            }}
-                          />
+                          <>
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-full object-cover cursor-zoom-in transition-transform duration-200 group-hover/image:scale-105"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewImage({ src: product.image || "", name: product.name || "Product image" });
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPreviewImage({ src: product.image || "", name: product.name || "Product image" });
+                              }}
+                              className="absolute bottom-0.5 right-0.5 w-6 h-6 rounded-lg bg-white/90 text-slate-800 border border-slate-200 shadow-sm opacity-0 group-hover/image:opacity-100 transition-all flex items-center justify-center"
+                              title="View image"
+                              aria-label="View image"
+                            >
+                              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="11" cy="11" r="6" />
+                                <path d="m20 20-3.5-3.5" />
+                                <path d="M11 8v6M8 11h6" />
+                              </svg>
+                            </button>
+                          </>
                         ) : (
                           <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 3h2l.6 2a7 7 0 0 1 1.7.7l1.8-1.1 1.4 1.4-1.1 1.8c.3.5.5 1.1.7 1.7l2 .6v2l-2 .6a7 7 0 0 1-.7 1.7l1.1 1.8-1.4 1.4-1.8-1.1a7 7 0 0 1-1.7.7l-.6 2h-2l-.6-2a7 7 0 0 1-1.7-.7l-1.8 1.1-1.4-1.4 1.1-1.8a7 7 0 0 1-.7-1.7l-2-.6v-2l2-.6c.2-.6.4-1.2.7-1.7L4.6 6l1.4-1.4 1.8 1.1c.5-.3 1.1-.5 1.7-.7z"/><circle cx="12" cy="12" r="2.5"/></svg>
                         )}
