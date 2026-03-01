@@ -1840,7 +1840,7 @@ export const categoryAPI = {
 export const unitAPI = {
   getAll: async () => {
     await ensurePermission("products.read");
-    const rows = await apiCall("/units?select=*&order=name.asc");
+    const rows = await apiCall("/units?select=*&order=created_at.desc");
     return Array.isArray(rows) ? rows.map(mapUnitFromDb) : [];
   },
   create: async (unit: any) => {
@@ -1865,7 +1865,7 @@ export const unitAPI = {
 export const warehouseAPI = {
   getAll: async () => {
     await ensurePermission("products.read");
-    const rows = await apiCall("/warehouses?select=*&order=name.asc");
+    const rows = await apiCall("/warehouses?select=*&order=created_at.desc");
     return Array.isArray(rows) ? rows.map(mapWarehouseFromDb) : [];
   },
   create: async (warehouse: any) => {

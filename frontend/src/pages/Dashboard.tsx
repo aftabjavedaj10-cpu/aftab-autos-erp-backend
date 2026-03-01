@@ -397,7 +397,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleImportVendors = (newVendors: Vendor[]) => {
     vendorAPI.import(newVendors).then(() => {
-      setVendors([...vendors, ...newVendors]);
+      setVendors((prev) => [...newVendors, ...prev]);
     }).catch(err => {
       setError("Failed to import vendors");
       console.error(err);
@@ -511,7 +511,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleImportCustomers = (newCustomers: Customer[]) => {
     customerAPI.import(newCustomers).then(() => {
-      setCustomers([...customers, ...newCustomers]);
+      setCustomers((prev) => [...newCustomers, ...prev]);
     }).catch(err => {
       setError("Failed to import customers");
       console.error(err);
@@ -520,7 +520,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleAddCategoryToState = (category: Category) => {
     // Add category to state - in real app, this would go to backend
-    setCategories([...categories, category]);
+    setCategories((prev) => [category, ...prev]);
   };
 
   const handleAddSalesInvoice = () => {
@@ -1108,7 +1108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                       packagings: variantPackagings,
                       packagingEnabled: variantPackagings.length > 0,
                     };
-                    setProducts((prev) => [...prev, newProduct]);
+                    setProducts((prev) => [newProduct, ...prev]);
                   });
                 }
               };
@@ -1142,7 +1142,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 } else {
                   return customerAPI.create(customer).then((res: any) => {
                     const newCustomer = { ...customer, id: res.id || `cust_${Date.now()}` };
-                    setCustomers([...customers, newCustomer]);
+                    setCustomers((prev) => [newCustomer, ...prev]);
                   });
                 }
               };
@@ -1187,7 +1187,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 } else {
                   return vendorAPI.create(vendor).then((res: any) => {
                     const newVendor = { ...vendor, id: res.id || `ven_${Date.now()}` };
-                    setVendors([...vendors, newVendor]);
+                    setVendors((prev) => [newVendor, ...prev]);
                   });
                 }
               };
@@ -1229,7 +1229,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 } else {
                   return categoryAPI.create(category).then((res: any) => {
                     const newCategory = { ...category, id: res.id || `cat_${Date.now()}` };
-                    setCategories([...categories, newCategory]);
+                    setCategories((prev) => [newCategory, ...prev]);
                   });
                 }
               };
@@ -1270,7 +1270,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setUnits((prev) => {
                     const exists = prev.some((x) => x.id === saved.id);
                     if (exists) return prev.map((x) => (x.id === saved.id ? saved : x));
-                    return [...prev, saved];
+                    return [saved, ...prev];
                   });
                   if (!stayOnPage) {
                     setEditingUnit(undefined);
@@ -1310,7 +1310,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setWarehouses((prev) => {
                     const exists = prev.some((x) => x.id === saved.id);
                     if (exists) return prev.map((x) => (x.id === saved.id ? saved : x));
-                    return [...prev, saved];
+                    return [saved, ...prev];
                   });
                   if (!stayOnPage) {
                     setEditingWarehouse(undefined);
