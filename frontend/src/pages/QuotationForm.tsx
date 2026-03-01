@@ -1287,15 +1287,11 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                                               e.stopPropagation();
                                               setPreviewImage({ src: p.image || "", name: option.searchLabel });
                                             }}
-                                            className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-md bg-white/90 text-slate-800 border border-slate-200 shadow-sm opacity-0 group-hover/image:opacity-100 transition-all flex items-center justify-center"
+                                            className="absolute bottom-0.5 right-0.5 h-5 px-1 rounded-md bg-white/90 text-slate-800 border border-slate-200 shadow-sm opacity-0 group-hover/image:opacity-100 transition-all flex items-center justify-center text-[7px] font-black uppercase tracking-wide"
                                             title="View image"
                                             aria-label="View image"
                                           >
-                                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                                              <circle cx="11" cy="11" r="6" />
-                                              <path d="m20 20-3.5-3.5" />
-                                              <path d="M11 8v6M8 11h6" />
-                                            </svg>
+                                            View
                                           </button>
                                         </>
                                       ) : (
