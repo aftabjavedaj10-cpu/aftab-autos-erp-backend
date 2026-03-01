@@ -26,7 +26,7 @@ interface PurchaseOrderFormPageProps {
   formTitleEdit?: string;
 }
 
-type PrintMode = "invoice" | "receipt" | "a5" | "token";
+type PrintMode = "invoice" | "receipt" | "a5" | "token" | "list";
 type ProductPackagingOption = {
   id: string;
   name: string;
@@ -1714,6 +1714,15 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 >
                   Product Token
                 </button>
+                <button
+                  onClick={() => {
+                    setIsPrintMenuOpen(false);
+                    handlePrintMode("list");
+                  }}
+                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                >
+                  Product List (Name + Qty)
+                </button>
               </div>
             )}
           </div>
@@ -2093,6 +2102,36 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
               </table>
               <p className="text-[10px] mt-2">Total Items: {(printItems.length > 0 ? printItems : formData.items).length}</p>
             </div>
+          </div>
+        )}
+        {printMode === "list" && (
+          <div className="print-sheet-a4 bg-white p-6 text-black">
+            <div className="mb-5 border-b border-black pb-3">
+              <h1 className="text-2xl font-black uppercase tracking-wide">Purchase Order List</h1>
+              <div className="mt-2 text-[12px] flex flex-wrap gap-x-6 gap-y-1">
+                <p><span className="font-semibold">PO No:</span> {formData.id}</p>
+                <p><span className="font-semibold">Date:</span> {formatDateDdMmYyyy(formData.date)}</p>
+                <p><span className="font-semibold">Vendor:</span> {currentCustomer?.name || "-"}</p>
+              </div>
+            </div>
+            <table className="w-full border-collapse text-[12px]">
+              <thead>
+                <tr className="border-b border-black">
+                  <th className="text-left py-2 font-black">Product Name</th>
+                  <th className="text-right py-2 font-black w-32">Qty</th>
+                </tr>
+              </thead>
+              <tbody>
+                {formData.items.map((item, idx) => (
+                  <tr key={`${item.productId}-${idx}`} className="border-b border-black/20">
+                    <td className="py-2">{getPrintableProductLabel(item)}</td>
+                    <td className="text-right py-2 font-semibold">
+                      {item.quantity} {item.packagingName || item.unit || ""}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>

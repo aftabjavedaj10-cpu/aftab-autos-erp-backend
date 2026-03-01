@@ -1,4 +1,4 @@
-export type PrintMode = "invoice" | "receipt" | "a5" | "token";
+export type PrintMode = "invoice" | "receipt" | "a5" | "token" | "list";
 import type { Company } from "../types";
 import type { PrintTemplateSettings } from "./printSettings";
 
@@ -18,7 +18,13 @@ export const normalizePrintMode = (
   fallback: PrintMode = "invoice"
 ): PrintMode => {
   const normalized = String(value || "").trim().toLowerCase();
-  if (normalized === "invoice" || normalized === "receipt" || normalized === "a5" || normalized === "token") {
+  if (
+    normalized === "invoice" ||
+    normalized === "receipt" ||
+    normalized === "a5" ||
+    normalized === "token" ||
+    normalized === "list"
+  ) {
     return normalized;
   }
   return fallback;
