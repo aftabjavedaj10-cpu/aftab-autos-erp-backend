@@ -1961,9 +1961,37 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               try {
                 if (savePrices) {
                   const latestPriceByProduct = new Map<string, number>();
+                  const latestSaleByPackaging = new Map<string, number>();
                   invoiceData.items.forEach((item) => {
-                    latestPriceByProduct.set(String(item.productId), Number(item.unitPrice || 0));
+                    const newPrice = Number(item.unitPrice || 0);
+                    if (!Number.isFinite(newPrice)) return;
+                    const packagingId = String(item.packagingId || "").trim();
+                    if (packagingId) {
+                      latestSaleByPackaging.set(packagingId, newPrice);
+                      return;
+                    }
+                    latestPriceByProduct.set(String(item.productId), newPrice);
                   });
+
+                  const packagingUpdates = products.flatMap((p) =>
+                    (Array.isArray(p.packagings) ? p.packagings : [])
+                      .map((pk) => {
+                        const packagingId = String(pk.id || "");
+                        const newSale = latestSaleByPackaging.get(packagingId);
+                        if (!packagingId || newSale === undefined) return null;
+                        const currentSale = Number(pk.salePrice ?? 0);
+                        if (!Number.isFinite(currentSale) || Math.abs(currentSale - newSale) >= 0.0001) {
+                          return { packagingId, newSale };
+                        }
+                        return null;
+                      })
+                      .filter(Boolean) as Array<{ packagingId: string; newSale: number }>
+                  );
+                  await Promise.all(
+                    packagingUpdates.map((row) =>
+                      productPackagingAPI.update(row.packagingId, { salePrice: row.newSale })
+                    )
+                  );
 
                   const productsToUpdate = products.filter((p) => latestPriceByProduct.has(String(p.id)));
                   await Promise.all(
@@ -1979,7 +2007,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setProducts((prev) =>
                     prev.map((p) => {
                       const newPrice = latestPriceByProduct.get(String(p.id));
-                      return newPrice === undefined ? p : { ...p, price: newPrice };
+                      const nextPackagings = Array.isArray(p.packagings)
+                        ? p.packagings.map((pk) => {
+                            const newSale = latestSaleByPackaging.get(String(pk.id || ""));
+                            return newSale === undefined ? pk : { ...pk, salePrice: newSale };
+                          })
+                        : p.packagings;
+                      if (newPrice === undefined && nextPackagings === p.packagings) return p;
+                      return {
+                        ...p,
+                        ...(newPrice === undefined ? {} : { price: newPrice }),
+                        packagings: nextPackagings,
+                      };
                     })
                   );
                 }
@@ -2080,9 +2119,51 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               try {
                 if (savePrices) {
                   const latestCostByProduct = new Map<string, number>();
+                  const latestCostByPackaging = new Map<string, number>();
                   invoiceData.items.forEach((item) => {
-                    latestCostByProduct.set(String(item.productId), Number(item.unitPrice || 0));
+                    const newCost = Number(item.unitPrice || 0);
+                    if (!Number.isFinite(newCost)) return;
+                    const packagingId = String(item.packagingId || "").trim();
+                    if (packagingId) {
+                      latestCostByPackaging.set(packagingId, newCost);
+                      return;
+                    }
+                    latestCostByProduct.set(String(item.productId), newCost);
                   });
+
+                  const packagingUpdates = products.flatMap((p) =>
+                    (Array.isArray(p.packagings) ? p.packagings : [])
+                      .map((pk) => {
+                        const packagingId = String(pk.id || "");
+                        const newCost = latestCostByPackaging.get(packagingId);
+                        if (!packagingId || newCost === undefined) return null;
+                        const currentCost = Number(pk.costPrice ?? 0);
+                        const newSale =
+                          salesPriceUpdates && Object.prototype.hasOwnProperty.call(salesPriceUpdates, String(p.id))
+                            ? Number(salesPriceUpdates[String(p.id)])
+                            : undefined;
+                        const currentSale = Number(pk.salePrice ?? 0);
+                        const costChanged =
+                          !Number.isFinite(currentCost) || Math.abs(currentCost - newCost) >= 0.0001;
+                        const saleChanged =
+                          typeof newSale === "number" && Number.isFinite(newSale)
+                            ? !Number.isFinite(currentSale) || Math.abs(currentSale - newSale) >= 0.0001
+                            : false;
+                        if (!costChanged && !saleChanged) return null;
+                        return { packagingId, newCost, newSale };
+                      })
+                      .filter(Boolean) as Array<{ packagingId: string; newCost: number; newSale?: number }>
+                  );
+                  await Promise.all(
+                    packagingUpdates.map((row) =>
+                      productPackagingAPI.update(row.packagingId, {
+                        costPrice: row.newCost,
+                        ...(typeof row.newSale === "number" && Number.isFinite(row.newSale)
+                          ? { salePrice: row.newSale }
+                          : {}),
+                      })
+                    )
+                  );
 
                   const productsToUpdate = products.filter((p) => latestCostByProduct.has(String(p.id)));
                   await Promise.all(
@@ -2112,17 +2193,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setProducts((prev) =>
                     prev.map((p) => {
                       const newCost = latestCostByProduct.get(String(p.id));
-                      if (newCost === undefined) return p;
                       const newSale =
                         salesPriceUpdates && Object.prototype.hasOwnProperty.call(salesPriceUpdates, String(p.id))
                           ? Number(salesPriceUpdates[String(p.id)])
                           : undefined;
+                      const nextPackagings = Array.isArray(p.packagings)
+                        ? p.packagings.map((pk) => {
+                            const newCostForPackaging = latestCostByPackaging.get(String(pk.id || ""));
+                            if (newCostForPackaging === undefined) return pk;
+                            return {
+                              ...pk,
+                              costPrice: newCostForPackaging,
+                              ...(typeof newSale === "number" && Number.isFinite(newSale)
+                                ? { salePrice: newSale }
+                                : {}),
+                            };
+                          })
+                        : p.packagings;
+                      if (newCost === undefined && nextPackagings === p.packagings) return p;
                       return {
                         ...p,
-                        costPrice: newCost,
+                        ...(newCost === undefined ? {} : { costPrice: newCost }),
                         ...(typeof newSale === "number" && Number.isFinite(newSale)
                           ? { price: newSale }
                           : {}),
+                        packagings: nextPackagings,
                       };
                     })
                   );

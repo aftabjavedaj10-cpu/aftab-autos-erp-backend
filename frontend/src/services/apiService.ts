@@ -1649,6 +1649,22 @@ export const productPackagingAPI = {
     );
     return Array.isArray(rows) ? rows.map(mapProductPackagingFromDb) : [];
   },
+  update: async (id: number | string, updates: any) => {
+    await ensurePermission("products.write");
+    const payload: Record<string, any> = {};
+    if (Object.prototype.hasOwnProperty.call(updates || {}, "salePrice")) {
+      payload.sale_price = Number(updates.salePrice ?? 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(updates || {}, "costPrice")) {
+      payload.cost_price = Number(updates.costPrice ?? 0);
+    }
+    if (Object.keys(payload).length === 0) {
+      const rows = await apiCall(`/product_packagings?select=*&id=eq.${id}`);
+      return mapProductPackagingFromDb(firstRow(rows));
+    }
+    const row = await apiCall(`/product_packagings?id=eq.${id}`, "PATCH", payload, true).then(firstRow);
+    return mapProductPackagingFromDb(row);
+  },
   replaceForProduct: async (
     productId: number | string,
     rows: any[],
