@@ -143,6 +143,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [printSettings, setPrintSettings] = useState(() => getPrintTemplateSettings());
   const defaultPrintMode = normalizePrintMode(printSettings.defaultTemplate, "invoice");
+  const safeDefaultPrintMode: PrintMode = defaultPrintMode === "list" ? "invoice" : defaultPrintMode;
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const createLineId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const rowKeyOf = (item: SalesInvoiceItem) => String((item as any).id ?? item.productId);
@@ -1440,7 +1441,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                 type="button"
                 onClick={() => {
                   setIsPrintMenuOpen(false);
-                  handlePrintMode(defaultPrintMode);
+                  handlePrintMode(safeDefaultPrintMode);
                 }}
                 disabled={isLocked}
                 className={`px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors ${

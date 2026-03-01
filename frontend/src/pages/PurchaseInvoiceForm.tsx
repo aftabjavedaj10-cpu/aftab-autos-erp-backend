@@ -167,6 +167,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [printSettings, setPrintSettings] = useState(() => getPrintTemplateSettings());
   const defaultPrintMode = normalizePrintMode(printSettings.defaultTemplate, "invoice");
+  const safeDefaultPrintMode: PrintMode = defaultPrintMode === "list" ? "invoice" : defaultPrintMode;
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [salesPriceByProductId, setSalesPriceByProductId] = useState<Record<string, number>>({});
   const [formError, setFormError] = useState<string | null>(null);
@@ -1727,7 +1728,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                 type="button"
                 onClick={() => {
                   setIsPrintMenuOpen(false);
-                  handlePrintMode(defaultPrintMode);
+                  handlePrintMode(safeDefaultPrintMode);
                 }}
                 className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors"
               >
