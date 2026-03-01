@@ -1,6 +1,6 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FiChevronDown, FiMove } from "react-icons/fi";
+import { FiArrowLeft, FiChevronDown, FiMove } from "react-icons/fi";
 import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem, Vendor } from "../types";
 import { getPrintTemplateSettings } from "../services/printSettings";
 import { getEmbeddedInvoicePrintCss, normalizePrintMode } from "../services/printEngine";
@@ -231,7 +231,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   };
 
   const getProductDescription = (item: SalesInvoiceItem) => {
-    return String(item.description ?? "").trim();
+    return String(item.description ?? "");
   };
 
   useEffect(() => {
@@ -864,7 +864,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
             onClick={onBack}
             className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-400 hover:text-orange-600 shadow-sm transition-all active:scale-95"
           >
-            <span className="text-lg">?</span>
+            <FiArrowLeft size={18} />
           </button>
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -1250,7 +1250,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                       }`}
                     >
                       {selectedItemIds.size === formData.items.length && formData.items.length > 0 && (
-                        <span className="text-white text-[8px]">?</span>
+                        <span className="text-white text-[8px]">✓</span>
                       )}
                     </button>
                   </th>
@@ -1315,7 +1315,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                           }`}
                         >
                           {selectedItemIds.has(rowKeyOf(item)) && (
-                            <span className="text-white text-[8px]">?</span>
+                            <span className="text-white text-[8px]">✓</span>
                           )}
                         </button>
                       </td>
@@ -2180,6 +2180,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 };
 
 export default PurchaseInvoiceFormPage;
+
 
 
 
