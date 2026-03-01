@@ -924,7 +924,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             onClick={onBack}
             className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-400 hover:text-orange-600 shadow-sm transition-all active:scale-95"
           >
-            <span className="text-lg">←</span>
+            <span className="text-lg">?</span>
           </button>
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -1312,7 +1312,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       }`}
                     >
                       {selectedItemIds.size === formData.items.length && formData.items.length > 0 && (
-                        <span className="text-white text-[8px]">✓</span>
+                        <span className="text-white text-[8px]">?</span>
                       )}
                     </button>
                   </th>
@@ -1376,7 +1376,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                           }`}
                         >
                           {selectedItemIds.has(rowKeyOf(item)) && (
-                            <span className="text-white text-[8px]">✓</span>
+                            <span className="text-white text-[8px]">?</span>
                           )}
                         </button>
                       </td>
@@ -1398,7 +1398,6 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                           value={getProductDescription(item)}
                           onChange={(e) => updateItemField(rowKeyOf(item), "description", e.target.value)}
                         />
-                        <div className="text-[8px] text-slate-400">{item.productCode || ""}</div>
                       </td>
                       <td className="px-3 py-2 text-center">
                         <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase">
@@ -2223,6 +2222,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 };
 
 export default SalesInvoiceFormPage;
+
 
 
 
