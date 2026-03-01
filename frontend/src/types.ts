@@ -101,6 +101,7 @@ export interface SalesInvoiceItem {
   id?: string | number;
   productId: string;
   productName: string;
+  description?: string;
   productCode?: string;
   unit?: string;
   quantity: number;

@@ -230,7 +230,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   const getPrintableProductLabel = (item: SalesInvoiceItem) => {
     const english = String(item.productName || "").trim();
     const matched = products.find((p) => String(p.id) === String(item.productId));
-    const description = String((matched as any)?.description || "").trim();
+    const description = String(item.description ?? (matched as any)?.description ?? "").trim();
     if (!printSettings.showUrduName && !description) return english;
     const matchedPack = Array.isArray((matched as any)?.packagings)
       ? (matched as any).packagings.find(
@@ -253,8 +253,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
   };
 
   const getProductDescription = (item: SalesInvoiceItem) => {
-    const matched = products.find((p) => String(p.id) === String(item.productId));
-    return String((matched as any)?.description || "").trim();
+    return String(item.description ?? "").trim();
   };
 
   useEffect(() => {
@@ -410,6 +409,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
       productId: product.id,
       productCode: selectedCode,
       productName: selectedName,
+      description: String((product as any)?.description || "").trim(),
       unit: selectedPackaging.name || product.unit,
       quantity: 1,
       packagingId: selectedPackaging.id || undefined,
@@ -1388,11 +1388,16 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                       </td>
                       <td className="px-3 py-2">
                         <div className="text-[10px] font-black text-slate-900 dark:text-white">{item.productName}</div>
-                        {getProductDescription(item) ? (
-                          <div className="text-[8px] leading-tight text-slate-500 dark:text-slate-400">
-                            {getProductDescription(item)}
-                          </div>
-                        ) : null}
+                        <input
+                          type="text"
+                          disabled={isLocked}
+                          className={`mt-1 w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[9px] text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-orange-400 ${
+                            isLocked ? "opacity-60 cursor-not-allowed" : ""
+                          }`}
+                          placeholder="Description"
+                          value={getProductDescription(item)}
+                          onChange={(e) => updateItemField(rowKeyOf(item), "description", e.target.value)}
+                        />
                         <div className="text-[8px] text-slate-400">{item.productCode || ""}</div>
                       </td>
                       <td className="px-3 py-2 text-center">
