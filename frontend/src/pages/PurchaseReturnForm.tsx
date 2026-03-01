@@ -206,23 +206,32 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
 
   const getPrintableProductLabel = (item: SalesInvoiceItem) => {
     const english = String(item.productName || "").trim();
-    if (!printSettings.showUrduName) return english;
     const matched = products.find((p) => String(p.id) === String(item.productId));
+    const description = String((matched as any)?.description || "").trim();
+    if (!printSettings.showUrduName && !description) return english;
     const matchedPack = Array.isArray((matched as any)?.packagings)
       ? (matched as any).packagings.find(
           (pk: any) => String(pk?.id ?? "") === String((item as any)?.packagingId ?? "")
         )
       : null;
     const urdu = String((matchedPack as any)?.urduName || (matched as any)?.urduName || "").trim();
-    if (!urdu) return english;
+    if (!urdu && !description) return english;
     return (
       <span className="inline-flex flex-col gap-0.5">
         <span>{english}</span>
-        <span dir="rtl" className="font-urdu text-right">
-          {urdu}
-        </span>
+        {description ? <span className="text-[10px] leading-tight">{description}</span> : null}
+        {urdu ? (
+          <span dir="rtl" className="font-urdu text-right">
+            {urdu}
+          </span>
+        ) : null}
       </span>
     );
+  };
+
+  const getProductDescription = (item: SalesInvoiceItem) => {
+    const matched = products.find((p) => String(p.id) === String(item.productId));
+    return String((matched as any)?.description || "").trim();
   };
 
   useEffect(() => {
@@ -1291,6 +1300,11 @@ const PurchaseReturnFormPage: React.FC<PurchaseReturnFormPageProps> = ({
                       </td>
                       <td className="px-3 py-2">
                         <div className="text-[10px] font-black text-slate-900 dark:text-white">{item.productName}</div>
+                        {getProductDescription(item) ? (
+                          <div className="text-[8px] leading-tight text-slate-500 dark:text-slate-400">
+                            {getProductDescription(item)}
+                          </div>
+                        ) : null}
                         <div className="text-[8px] text-slate-400">{item.productCode || ""}</div>
                       </td>
                       <td className="px-3 py-2 text-center">
