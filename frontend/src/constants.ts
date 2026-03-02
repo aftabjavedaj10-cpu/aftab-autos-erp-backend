@@ -46,4 +46,20 @@ export const ALL_REPORTS: ReportDefinition[] = [
     icon: "LI",
     tab: "report_low_inventory",
   },
+  {
+    id: 5,
+    title: "Customer Balance Report",
+    description: "Customer-wise opening, sales, receipts, and closing balance summary.",
+    category: "Financial",
+    icon: "CB",
+    tab: "report_customer_balance",
+  },
+  {
+    id: 6,
+    title: "Vendor Balance Report",
+    description: "Vendor-wise opening, purchases, payments, and closing balance summary.",
+    category: "Financial",
+    icon: "VB",
+    tab: "report_vendor_balance",
+  },
 ];

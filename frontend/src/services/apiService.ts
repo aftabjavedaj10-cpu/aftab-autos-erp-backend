@@ -267,6 +267,14 @@ const mapProductFromDb = (row: any) => ({
 
 const mapProductToDb = (product: any) =>
   (() => {
+    const toNumberOr = (value: any, fallback: number) => {
+      if (value === null || value === undefined) return fallback;
+      const text = String(value).trim();
+      if (!text) return fallback;
+      const num = Number(text);
+      return Number.isFinite(num) ? num : fallback;
+    };
+
     const rawVendorId = product.vendorId ?? product.vendor_id;
     const parsedVendorId: number | null =
       rawVendorId === null || rawVendorId === undefined || String(rawVendorId).trim() === ""
@@ -283,9 +291,11 @@ const mapProductToDb = (product: any) =>
         product_code: product.productCode ?? product.product_code,
         urdu_name: product.urduName ?? product.urdu_name,
         vendor_id: vendorId,
-        cost_price: product.costPrice ?? product.cost_price,
-        reorder_point: product.reorderPoint ?? product.reorder_point,
-        reorder_qty: product.reorderQty ?? product.reorder_qty ?? 1,
+        price: toNumberOr(product.price ?? product.sale_price, 0),
+        cost_price: toNumberOr(product.costPrice ?? product.cost_price, 0),
+        stock: toNumberOr(product.stock, 0),
+        reorder_point: toNumberOr(product.reorderPoint ?? product.reorder_point, 0),
+        reorder_qty: toNumberOr(product.reorderQty ?? product.reorder_qty, 1),
         brand_name: product.brandName ?? product.brand_name,
         product_type: product.productType ?? product.product_type,
         is_active: product.isActive ?? product.is_active ?? true,
@@ -474,6 +484,7 @@ const mapSalesInvoiceItemFromDb = (row: any) => {
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
+  description: row.description ?? "",
   unit: row.unit,
   quantity,
   packagingId: normalizePackagingId(row),
@@ -515,6 +526,7 @@ const mapQuotationItemFromDb = (row: any) => {
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
+  description: row.description ?? "",
   unit: row.unit,
   quantity,
   packagingId: normalizePackagingId(row),
@@ -554,6 +566,7 @@ const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) => {
     product_id: item.productId ?? item.product_id ?? null,
     product_code: item.productCode ?? item.product_code ?? "",
     product_name: item.productName ?? item.product_name ?? "",
+    description: item.description ?? "",
     unit: item.unit ?? "",
     quantity: qtyPack,
     packaging_id: normalizePackagingId(item),
@@ -603,6 +616,7 @@ const mapQuotationItemToDb = (item: any, quotationId: string) => {
     product_id: item.productId ?? item.product_id ?? null,
     product_code: item.productCode ?? item.product_code ?? "",
     product_name: item.productName ?? item.product_name ?? "",
+    description: item.description ?? "",
     unit: item.unit ?? "",
     quantity: qtyPack,
     packaging_id: normalizePackagingId(item),
@@ -646,6 +660,7 @@ const mapSalesReturnItemFromDb = (row: any) => {
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
+  description: row.description ?? "",
   unit: row.unit,
   quantity,
   packagingId: normalizePackagingId(row),
@@ -685,6 +700,7 @@ const mapSalesReturnItemToDb = (item: any, salesReturnId: string) => {
     product_id: item.productId ?? item.product_id ?? null,
     product_code: item.productCode ?? item.product_code ?? "",
     product_name: item.productName ?? item.product_name ?? "",
+    description: item.description ?? "",
     unit: item.unit ?? "",
     quantity: qtyPack,
     packaging_id: normalizePackagingId(item),
@@ -782,6 +798,7 @@ const mapPurchaseInvoiceItemFromDb = (row: any) => {
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
+  description: row.description ?? "",
   unit: row.unit,
   quantity,
   packagingId: normalizePackagingId(row),
@@ -831,6 +848,7 @@ const mapPurchaseInvoiceItemToDb = (item: any, invoiceId: string) => {
     product_id: item.productId ?? item.product_id ?? null,
     product_code: item.productCode ?? item.product_code ?? "",
     product_name: item.productName ?? item.product_name ?? "",
+    description: item.description ?? "",
     unit: item.unit ?? "",
     quantity: qtyPack,
     packaging_id: normalizePackagingId(item),
@@ -874,6 +892,7 @@ const mapPurchaseOrderItemFromDb = (row: any) => {
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
+  description: row.description ?? "",
   unit: row.unit,
   quantity,
   packagingId: normalizePackagingId(row),
@@ -923,6 +942,7 @@ const mapPurchaseOrderItemToDb = (item: any, orderId: string) => {
     product_id: item.productId ?? item.product_id ?? null,
     product_code: item.productCode ?? item.product_code ?? "",
     product_name: item.productName ?? item.product_name ?? "",
+    description: item.description ?? "",
     unit: item.unit ?? "",
     quantity: qtyPack,
     packaging_id: normalizePackagingId(item),
@@ -966,6 +986,7 @@ const mapPurchaseReturnItemFromDb = (row: any) => {
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
   productName: row.product_name ?? row.productName,
+  description: row.description ?? "",
   unit: row.unit,
   quantity,
   packagingId: normalizePackagingId(row),
@@ -1015,6 +1036,7 @@ const mapPurchaseReturnItemToDb = (item: any, invoiceId: string) => {
     product_id: item.productId ?? item.product_id ?? null,
     product_code: item.productCode ?? item.product_code ?? "",
     product_name: item.productName ?? item.product_name ?? "",
+    description: item.description ?? "",
     unit: item.unit ?? "",
     quantity: qtyPack,
     packaging_id: normalizePackagingId(item),
@@ -1639,6 +1661,22 @@ export const productPackagingAPI = {
     );
     return Array.isArray(rows) ? rows.map(mapProductPackagingFromDb) : [];
   },
+  update: async (id: number | string, updates: any) => {
+    await ensurePermission("products.write");
+    const payload: Record<string, any> = {};
+    if (Object.prototype.hasOwnProperty.call(updates || {}, "salePrice")) {
+      payload.sale_price = Number(updates.salePrice ?? 0);
+    }
+    if (Object.prototype.hasOwnProperty.call(updates || {}, "costPrice")) {
+      payload.cost_price = Number(updates.costPrice ?? 0);
+    }
+    if (Object.keys(payload).length === 0) {
+      const rows = await apiCall(`/product_packagings?select=*&id=eq.${id}`);
+      return mapProductPackagingFromDb(firstRow(rows));
+    }
+    const row = await apiCall(`/product_packagings?id=eq.${id}`, "PATCH", payload, true).then(firstRow);
+    return mapProductPackagingFromDb(row);
+  },
   replaceForProduct: async (
     productId: number | string,
     rows: any[],
@@ -1830,7 +1868,7 @@ export const categoryAPI = {
 export const unitAPI = {
   getAll: async () => {
     await ensurePermission("products.read");
-    const rows = await apiCall("/units?select=*&order=name.asc");
+    const rows = await apiCall("/units?select=*&order=created_at.desc");
     return Array.isArray(rows) ? rows.map(mapUnitFromDb) : [];
   },
   create: async (unit: any) => {
@@ -1855,7 +1893,7 @@ export const unitAPI = {
 export const warehouseAPI = {
   getAll: async () => {
     await ensurePermission("products.read");
-    const rows = await apiCall("/warehouses?select=*&order=name.asc");
+    const rows = await apiCall("/warehouses?select=*&order=created_at.desc");
     return Array.isArray(rows) ? rows.map(mapWarehouseFromDb) : [];
   },
   create: async (warehouse: any) => {
@@ -2469,6 +2507,18 @@ export const purchaseReturnAPI = {
 
 // ============ STOCK LEDGER ============
 export const stockLedgerAPI = {
+  assertStockTrackedProduct: async (companyId: string, productId: number) => {
+    const product = await getFirst(
+      `/products?select=id,product_type&company_id=eq.${companyId}&id=eq.${productId}`
+    );
+    if (!product) {
+      throw new Error("Product not found");
+    }
+    const productType = String(product.product_type ?? "Product").toLowerCase();
+    if (productType === "service") {
+      throw new Error("Service products are not stock-tracked");
+    }
+  },
   listByCompany: async (companyId: string, limit = 2000) => {
     if (!companyId) return [];
     const rows = await apiCall(
@@ -2501,6 +2551,7 @@ export const stockLedgerAPI = {
     if (!Number.isFinite(productId) || productId <= 0) {
       throw new Error("Invalid product");
     }
+    await stockLedgerAPI.assertStockTrackedProduct(companyId, productId);
     const qty = Number(payload.qty || 0);
     if (!Number.isFinite(qty) || qty <= 0) {
       throw new Error("Quantity must be greater than 0");
@@ -2561,6 +2612,7 @@ export const stockLedgerAPI = {
     if (!Number.isFinite(productId) || productId <= 0) {
       throw new Error("Invalid product");
     }
+    await stockLedgerAPI.assertStockTrackedProduct(companyId, productId);
     const qty = Number(payload.qty || 0);
     if (!Number.isFinite(qty) || qty <= 0) {
       throw new Error("Quantity must be greater than 0");

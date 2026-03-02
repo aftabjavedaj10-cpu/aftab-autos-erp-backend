@@ -146,6 +146,9 @@ body::-webkit-scrollbar-button:double-button,
   }
 
   .receipt-print {
+    width: 68mm !important;
+    max-width: 68mm !important;
+    margin: 0 !important;
     overflow: hidden !important;
   }
 

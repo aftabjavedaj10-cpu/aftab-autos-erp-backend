@@ -51,9 +51,12 @@ const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
   const [submitting, setSubmitting] = useState(false);
 
   const filteredProducts = useMemo(() => {
+    const stockProducts = products.filter(
+      (p) => String((p as any).productType || "Product").toLowerCase() !== "service"
+    );
     const query = productSearch.trim().toLowerCase();
-    if (!query) return products.slice(0, 30);
-    return products
+    if (!query) return stockProducts.slice(0, 30);
+    return stockProducts
       .filter((p) => {
         const name = String(p.name || "").toLowerCase();
         const code = String((p as any).productCode || "").toLowerCase();
@@ -71,6 +74,10 @@ const AddStockAdjustmentPage: React.FC<AddStockAdjustmentPageProps> = ({
   const handleSave = async () => {
     if (!selectedProductId) {
       alert("Select product first.");
+      return;
+    }
+    if (String((selectedProduct as any)?.productType || "Product").toLowerCase() === "service") {
+      alert("Service products are not stock-tracked.");
       return;
     }
     const qty = Number(qtyInput);

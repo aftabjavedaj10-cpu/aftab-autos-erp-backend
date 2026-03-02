@@ -8,6 +8,8 @@ import CustomerLedgerPage from "./CustomerLedger";
 import VendorLedgerPage from "./VendorLedger";
 import LowInventoryReportPage from "./LowInventoryReport";
 import StockLedgerPage from "./StockLedger";
+import CustomerBalanceReportPage from "./CustomerBalanceReport";
+import VendorBalanceReportPage from "./VendorBalanceReport";
 import StockAdjustmentPage from "./StockAdjustment";
 import AddStockAdjustmentPage from "./AddStockAdjustment";
 import AddProducts from "./AddProducts";
@@ -395,7 +397,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleImportVendors = (newVendors: Vendor[]) => {
     vendorAPI.import(newVendors).then(() => {
-      setVendors([...vendors, ...newVendors]);
+      setVendors((prev) => [...newVendors, ...prev]);
     }).catch(err => {
       setError("Failed to import vendors");
       console.error(err);
@@ -509,7 +511,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleImportCustomers = (newCustomers: Customer[]) => {
     customerAPI.import(newCustomers).then(() => {
-      setCustomers([...customers, ...newCustomers]);
+      setCustomers((prev) => [...newCustomers, ...prev]);
     }).catch(err => {
       setError("Failed to import customers");
       console.error(err);
@@ -518,7 +520,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleAddCategoryToState = (category: Category) => {
     // Add category to state - in real app, this would go to backend
-    setCategories([...categories, category]);
+    setCategories((prev) => [category, ...prev]);
   };
 
   const handleAddSalesInvoice = () => {
@@ -1106,7 +1108,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                       packagings: variantPackagings,
                       packagingEnabled: variantPackagings.length > 0,
                     };
-                    setProducts((prev) => [...prev, newProduct]);
+                    setProducts((prev) => [newProduct, ...prev]);
                   });
                 }
               };
@@ -1140,7 +1142,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 } else {
                   return customerAPI.create(customer).then((res: any) => {
                     const newCustomer = { ...customer, id: res.id || `cust_${Date.now()}` };
-                    setCustomers([...customers, newCustomer]);
+                    setCustomers((prev) => [newCustomer, ...prev]);
                   });
                 }
               };
@@ -1185,7 +1187,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 } else {
                   return vendorAPI.create(vendor).then((res: any) => {
                     const newVendor = { ...vendor, id: res.id || `ven_${Date.now()}` };
-                    setVendors([...vendors, newVendor]);
+                    setVendors((prev) => [newVendor, ...prev]);
                   });
                 }
               };
@@ -1227,7 +1229,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 } else {
                   return categoryAPI.create(category).then((res: any) => {
                     const newCategory = { ...category, id: res.id || `cat_${Date.now()}` };
-                    setCategories([...categories, newCategory]);
+                    setCategories((prev) => [newCategory, ...prev]);
                   });
                 }
               };
@@ -1268,7 +1270,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setUnits((prev) => {
                     const exists = prev.some((x) => x.id === saved.id);
                     if (exists) return prev.map((x) => (x.id === saved.id ? saved : x));
-                    return [...prev, saved];
+                    return [saved, ...prev];
                   });
                   if (!stayOnPage) {
                     setEditingUnit(undefined);
@@ -1308,7 +1310,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setWarehouses((prev) => {
                     const exists = prev.some((x) => x.id === saved.id);
                     if (exists) return prev.map((x) => (x.id === saved.id ? saved : x));
-                    return [...prev, saved];
+                    return [saved, ...prev];
                   });
                   if (!stayOnPage) {
                     setEditingWarehouse(undefined);
@@ -1908,6 +1910,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           />
         )}
 
+        {activeTab === "report_customer_balance" && (
+          <CustomerBalanceReportPage
+            onBack={() => setActiveTab("reports")}
+            onOpenCustomerLedger={() => setActiveTab("report_customer_ledger")}
+            customers={customers}
+            salesInvoices={salesInvoices}
+            salesReturns={salesReturns}
+            receivePayments={receivePayments}
+          />
+        )}
+
+        {activeTab === "report_vendor_balance" && (
+          <VendorBalanceReportPage
+            onBack={() => setActiveTab("reports")}
+            onOpenVendorLedger={() => setActiveTab("report_vendor_ledger")}
+            vendors={vendors}
+            purchaseInvoices={purchaseInvoices}
+            purchaseReturns={purchaseReturns}
+            makePayments={makePayments}
+          />
+        )}
+
         {activeTab === "add_sales_invoice" && (
           <SalesInvoiceFormPage
             invoice={editingSalesInvoice}
@@ -1937,9 +1961,37 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               try {
                 if (savePrices) {
                   const latestPriceByProduct = new Map<string, number>();
+                  const latestSaleByPackaging = new Map<string, number>();
                   invoiceData.items.forEach((item) => {
-                    latestPriceByProduct.set(String(item.productId), Number(item.unitPrice || 0));
+                    const newPrice = Number(item.unitPrice || 0);
+                    if (!Number.isFinite(newPrice)) return;
+                    const packagingId = String(item.packagingId || "").trim();
+                    if (packagingId) {
+                      latestSaleByPackaging.set(packagingId, newPrice);
+                      return;
+                    }
+                    latestPriceByProduct.set(String(item.productId), newPrice);
                   });
+
+                  const packagingUpdates = products.flatMap((p) =>
+                    (Array.isArray(p.packagings) ? p.packagings : [])
+                      .map((pk) => {
+                        const packagingId = String(pk.id || "");
+                        const newSale = latestSaleByPackaging.get(packagingId);
+                        if (!packagingId || newSale === undefined) return null;
+                        const currentSale = Number(pk.salePrice ?? 0);
+                        if (!Number.isFinite(currentSale) || Math.abs(currentSale - newSale) >= 0.0001) {
+                          return { packagingId, newSale };
+                        }
+                        return null;
+                      })
+                      .filter(Boolean) as Array<{ packagingId: string; newSale: number }>
+                  );
+                  await Promise.all(
+                    packagingUpdates.map((row) =>
+                      productPackagingAPI.update(row.packagingId, { salePrice: row.newSale })
+                    )
+                  );
 
                   const productsToUpdate = products.filter((p) => latestPriceByProduct.has(String(p.id)));
                   await Promise.all(
@@ -1955,7 +2007,18 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setProducts((prev) =>
                     prev.map((p) => {
                       const newPrice = latestPriceByProduct.get(String(p.id));
-                      return newPrice === undefined ? p : { ...p, price: newPrice };
+                      const nextPackagings = Array.isArray(p.packagings)
+                        ? p.packagings.map((pk) => {
+                            const newSale = latestSaleByPackaging.get(String(pk.id || ""));
+                            return newSale === undefined ? pk : { ...pk, salePrice: newSale };
+                          })
+                        : p.packagings;
+                      if (newPrice === undefined && nextPackagings === p.packagings) return p;
+                      return {
+                        ...p,
+                        ...(newPrice === undefined ? {} : { price: newPrice }),
+                        packagings: nextPackagings,
+                      };
                     })
                   );
                 }
@@ -2056,9 +2119,51 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               try {
                 if (savePrices) {
                   const latestCostByProduct = new Map<string, number>();
+                  const latestCostByPackaging = new Map<string, number>();
                   invoiceData.items.forEach((item) => {
-                    latestCostByProduct.set(String(item.productId), Number(item.unitPrice || 0));
+                    const newCost = Number(item.unitPrice || 0);
+                    if (!Number.isFinite(newCost)) return;
+                    const packagingId = String(item.packagingId || "").trim();
+                    if (packagingId) {
+                      latestCostByPackaging.set(packagingId, newCost);
+                      return;
+                    }
+                    latestCostByProduct.set(String(item.productId), newCost);
                   });
+
+                  const packagingUpdates = products.flatMap((p) =>
+                    (Array.isArray(p.packagings) ? p.packagings : [])
+                      .map((pk) => {
+                        const packagingId = String(pk.id || "");
+                        const newCost = latestCostByPackaging.get(packagingId);
+                        if (!packagingId || newCost === undefined) return null;
+                        const currentCost = Number(pk.costPrice ?? 0);
+                        const newSale =
+                          salesPriceUpdates && Object.prototype.hasOwnProperty.call(salesPriceUpdates, String(p.id))
+                            ? Number(salesPriceUpdates[String(p.id)])
+                            : undefined;
+                        const currentSale = Number(pk.salePrice ?? 0);
+                        const costChanged =
+                          !Number.isFinite(currentCost) || Math.abs(currentCost - newCost) >= 0.0001;
+                        const saleChanged =
+                          typeof newSale === "number" && Number.isFinite(newSale)
+                            ? !Number.isFinite(currentSale) || Math.abs(currentSale - newSale) >= 0.0001
+                            : false;
+                        if (!costChanged && !saleChanged) return null;
+                        return { packagingId, newCost, newSale };
+                      })
+                      .filter(Boolean) as Array<{ packagingId: string; newCost: number; newSale?: number }>
+                  );
+                  await Promise.all(
+                    packagingUpdates.map((row) =>
+                      productPackagingAPI.update(row.packagingId, {
+                        costPrice: row.newCost,
+                        ...(typeof row.newSale === "number" && Number.isFinite(row.newSale)
+                          ? { salePrice: row.newSale }
+                          : {}),
+                      })
+                    )
+                  );
 
                   const productsToUpdate = products.filter((p) => latestCostByProduct.has(String(p.id)));
                   await Promise.all(
@@ -2088,17 +2193,31 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setProducts((prev) =>
                     prev.map((p) => {
                       const newCost = latestCostByProduct.get(String(p.id));
-                      if (newCost === undefined) return p;
                       const newSale =
                         salesPriceUpdates && Object.prototype.hasOwnProperty.call(salesPriceUpdates, String(p.id))
                           ? Number(salesPriceUpdates[String(p.id)])
                           : undefined;
+                      const nextPackagings = Array.isArray(p.packagings)
+                        ? p.packagings.map((pk) => {
+                            const newCostForPackaging = latestCostByPackaging.get(String(pk.id || ""));
+                            if (newCostForPackaging === undefined) return pk;
+                            return {
+                              ...pk,
+                              costPrice: newCostForPackaging,
+                              ...(typeof newSale === "number" && Number.isFinite(newSale)
+                                ? { salePrice: newSale }
+                                : {}),
+                            };
+                          })
+                        : p.packagings;
+                      if (newCost === undefined && nextPackagings === p.packagings) return p;
                       return {
                         ...p,
-                        costPrice: newCost,
+                        ...(newCost === undefined ? {} : { costPrice: newCost }),
                         ...(typeof newSale === "number" && Number.isFinite(newSale)
                           ? { price: newSale }
                           : {}),
+                        packagings: nextPackagings,
                       };
                     })
                   );

@@ -330,12 +330,37 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
   }, [vendors, selectedVendorId, selectedVendor, purchaseInvoices, purchaseReturns, makePayments, includeVoid, includeDeleted]);
 
   const filteredEntries = useMemo(() => {
-    return rawEntries.filter((entry) => {
+    const openingBeforeStart = rawEntries.reduce((sum, entry) => {
+      if (entry.date < startDate) {
+        return sum + entry.debit - entry.credit;
+      }
+      return sum;
+    }, 0);
+
+    const periodEntries = rawEntries.filter((entry) => {
+      if (entry.description === "Opening Balance") return false;
       const matchesDate = entry.date >= startDate && entry.date <= endDate;
       const matchesType = typeFilter === "All Types" || entry.type === typeFilter;
       return matchesDate && matchesType;
     });
-  }, [rawEntries, startDate, endDate, typeFilter]);
+
+    const entries = [...periodEntries];
+    if (openingBeforeStart !== 0 || entries.length > 0) {
+      entries.unshift({
+        id: `opening-period-${selectedVendorId || "all"}-${startDate}`,
+        date: startDate,
+        postedAt: `${startDate}T00:00:00.000Z`,
+        orderHint: -100,
+        description: "Opening Balance",
+        reference: "-",
+        type: "Bill",
+        debit: openingBeforeStart > 0 ? openingBeforeStart : 0,
+        credit: openingBeforeStart < 0 ? Math.abs(openingBeforeStart) : 0,
+      });
+    }
+
+    return entries;
+  }, [rawEntries, startDate, endDate, typeFilter, selectedVendorId]);
 
   const totals = useMemo(() => {
     return filteredEntries.reduce(

@@ -161,11 +161,16 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
 
   const validate = () => {
     const newErrors: { [key: string]: string } = {};
+    const isServiceProduct = formData.productType === 'Service';
     if (!formData.name.trim()) newErrors.name = 'Please enter a product name';
     if (!formData.productCode.trim()) newErrors.productCode = 'Part number/code is required';
     if (!formData.price.toString().trim()) newErrors.price = 'Enter a sale price';
-    if (!formData.costPrice.toString().trim()) newErrors.costPrice = 'Enter a purchase price';
-    if (!formData.vendorId) newErrors.vendorId = 'Select a supplier';
+    if (!isServiceProduct && !formData.costPrice.toString().trim()) {
+      newErrors.costPrice = 'Enter a purchase price';
+    }
+    if (!isServiceProduct && !formData.vendorId) {
+      newErrors.vendorId = 'Select a supplier';
+    }
     if (packagingEnabled) {
       if (packagings.length === 0) newErrors.packagings = 'Add at least one packaging row';
       const invalidRow = packagings.find(
@@ -497,13 +502,15 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Supplier (Vendor) <span className="text-rose-500">*</span></label>
+                  <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                    Supplier (Vendor) {formData.productType !== 'Service' && <span className="text-rose-500">*</span>}
+                  </label>
                   <select 
                     className={`w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-3 px-4 focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all dark:text-white ${errors.vendorId ? 'border-rose-500' : 'border-slate-200 dark:border-slate-700'}`}
                     value={formData.vendorId}
                     onChange={(e) => setFormData({...formData, vendorId: e.target.value})}
                   >
-                    <option value="" disabled>Select a supplier</option>
+                    <option value="">{formData.productType === 'Service' ? 'No supplier' : 'Select a supplier'}</option>
                     {vendors.map(v => (
                       <option key={v.id} value={v.id}>{v.name}</option>
                     ))}
@@ -523,7 +530,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-                      Purchase Cost <span className="text-rose-500">*</span>
+                      Purchase Cost {formData.productType !== 'Service' && <span className="text-rose-500">*</span>}
                     </label>
                     <input 
                       type="text" 

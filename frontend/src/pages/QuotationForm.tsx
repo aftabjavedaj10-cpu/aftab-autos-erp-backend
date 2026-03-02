@@ -1,8 +1,9 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FiChevronDown, FiMove } from "react-icons/fi";
+import { FiArrowLeft, FiChevronDown, FiMove } from "react-icons/fi";
 import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem } from "../types";
 import { getPrintTemplateSettings } from "../services/printSettings";
+import { getEmbeddedInvoicePrintCss, normalizePrintMode } from "../services/printEngine";
 
 interface QuotationFormPageProps {
   invoice?: SalesInvoice;
@@ -141,6 +142,8 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
   const [printMode, setPrintMode] = useState<PrintMode>("invoice");
   const [printItems, setPrintItems] = useState<SalesInvoiceItem[]>([]);
   const [printSettings, setPrintSettings] = useState(() => getPrintTemplateSettings());
+  const defaultPrintMode = normalizePrintMode(printSettings.defaultTemplate, "invoice");
+  const safeDefaultPrintMode: PrintMode = defaultPrintMode === "list" ? "invoice" : defaultPrintMode;
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const createLineId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const rowKeyOf = (item: SalesInvoiceItem) => String((item as any).id ?? item.productId);
@@ -176,23 +179,31 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
 
   const getPrintableProductLabel = (item: SalesInvoiceItem) => {
     const english = String(item.productName || "").trim();
-    if (!printSettings.showUrduName) return english;
     const matched = products.find((p) => String(p.id) === String(item.productId));
+    const description = String(item.description ?? (matched as any)?.description ?? "").trim();
+    if (!printSettings.showUrduName && !description) return english;
     const matchedPack = Array.isArray((matched as any)?.packagings)
       ? (matched as any).packagings.find(
           (pk: any) => String(pk?.id ?? "") === String((item as any)?.packagingId ?? "")
         )
       : null;
     const urdu = String((matchedPack as any)?.urduName || (matched as any)?.urduName || "").trim();
-    if (!urdu) return english;
+    if (!urdu && !description) return english;
     return (
       <span className="inline-flex flex-col gap-0.5">
         <span>{english}</span>
-        <span dir="rtl" className="font-urdu text-right">
-          {urdu}
-        </span>
+        {description ? <span className="text-[10px] leading-tight">{description}</span> : null}
+        {urdu ? (
+          <span dir="rtl" className="font-urdu text-right">
+            {urdu}
+          </span>
+        ) : null}
       </span>
     );
+  };
+
+  const getProductDescription = (item: SalesInvoiceItem) => {
+    return String(item.description ?? "");
   };
 
   useEffect(() => {
@@ -362,6 +373,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
       productId: product.id,
       productCode: selectedCode,
       productName: selectedName,
+      description: String((product as any)?.description || "").trim(),
       unit: selectedPackaging.name || product.unit,
       quantity: 1,
       packagingId: selectedPackaging.id || undefined,
@@ -702,7 +714,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
             onClick={onBack}
             className="w-9 h-9 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-slate-400 hover:text-orange-600 shadow-sm transition-all active:scale-95"
           >
-            <span className="text-lg">←</span>
+            <FiArrowLeft size={18} />
           </button>
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
@@ -1115,7 +1127,16 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                       </td>
                       <td className="px-3 py-2">
                         <div className="text-[10px] font-black text-slate-900 dark:text-white">{item.productName}</div>
-                        <div className="text-[8px] text-slate-400">{item.productCode || ""}</div>
+                        <input
+                          type="text"
+                          disabled={isLocked}
+                          className={`mt-1 w-full rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-2 py-1 text-[9px] text-slate-600 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-orange-400 ${
+                            isLocked ? "opacity-60 cursor-not-allowed" : ""
+                          }`}
+                          placeholder="Description"
+                          value={getProductDescription(item)}
+                          onChange={(e) => updateItemField(rowKeyOf(item), "description", e.target.value)}
+                        />
                       </td>
                       <td className="px-3 py-2 text-center">
                         <span className="text-[10px] font-black text-slate-600 dark:text-slate-300 uppercase">
@@ -1263,20 +1284,39 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                                   }`}
                                 >
                                   <div className="flex items-center gap-3">
-                                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black ${
+                                    <div className={`relative group/image w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black ${
                                       selectedIndex === idx ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
                                     }`}>
                                       {p.image ? (
-                                        <img
-                                          src={p.image}
-                                          alt={option.searchLabel}
-                                          className="w-full h-full object-cover rounded-lg cursor-zoom-in"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setPreviewImage({ src: p.image || "", name: option.searchLabel });
-                                          }}
-                                        />
+                                        <>
+                                          <img
+                                            src={p.image}
+                                            alt={option.searchLabel}
+                                            className="w-full h-full object-cover rounded-lg cursor-pointer transition-transform duration-200 group-hover/image:scale-105"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              setPreviewImage({ src: p.image || "", name: option.searchLabel });
+                                            }}
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              setPreviewImage({ src: p.image || "", name: option.searchLabel });
+                                            }}
+                                            className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-md bg-white/90 text-slate-800 border border-slate-200 shadow-sm opacity-0 group-hover/image:opacity-100 transition-all flex items-center justify-center"
+                                            title="View image"
+                                            aria-label="View image"
+                                          >
+                                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                                              <circle cx="11" cy="11" r="6" />
+                                              <path d="m20 20-3.5-3.5" />
+                                              <path d="M11 8v6M8 11h6" />
+                                            </svg>
+                                          </button>
+                                        </>
                                       ) : (
                                         "PR"
                                       )}
@@ -1419,7 +1459,7 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
                 type="button"
                 onClick={() => {
                   setIsPrintMenuOpen(false);
-                  handlePrintMode("invoice");
+                  handlePrintMode(safeDefaultPrintMode);
                 }}
                 disabled={isLocked}
                 className={`px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-l-lg text-[10px] font-black uppercase tracking-widest text-slate-600 hover:text-orange-600 transition-colors ${
@@ -1871,57 +1911,14 @@ const QuotationFormPage: React.FC<QuotationFormPageProps> = ({
           </div>
         )}
       </div>
-      <style>{`
-        @media print {
-          @page {
-            margin: 0;
-            size: auto;
-          }
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #fff !important;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
-          body * {
-            visibility: hidden !important;
-          }
-          .invoice-print-root,
-          .invoice-print-root * {
-            visibility: visible !important;
-          }
-          .invoice-print-root {
-            position: fixed !important;
-            inset: 0 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            display: block !important;
-            overflow: hidden !important;
-            background: #fff !important;
-            z-index: 999999 !important;
-          }
-          .print-sheet-a4 {
-            width: 210mm !important;
-            min-height: 297mm !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            background: #fff !important;
-            page-break-after: always;
-          }
-          .print-sheet-80mm {
-            width: 72mm !important;
-            margin: 0 !important;
-            box-sizing: border-box !important;
-            background: #fff !important;
-          }
-        }
-      `}</style>
+      <style>{getEmbeddedInvoicePrintCss(printMode)}</style>
     </div>
   );
 };
 
 export default QuotationFormPage;
+
+
 
 
 
