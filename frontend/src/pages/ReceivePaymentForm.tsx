@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FiArrowLeft, FiChevronDown } from "react-icons/fi";
 import type { Company, Customer, Product, SalesInvoice } from "../types";
 import type { ReceivePaymentDoc } from "./ReceivePayment";
 import {
@@ -348,7 +349,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
           className="rounded-xl border border-slate-200 bg-white p-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
           title="Back"
         >
-          <span className="text-sm">?</span>
+          <FiArrowLeft size={16} />
         </button>
         <div className="space-y-1">
           <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -607,7 +608,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                     onClick={() => setShowPrintMenu((prev) => !prev)}
                     className="rounded-r-xl border border-l-0 border-slate-300 bg-white px-3 py-2 text-[10px] font-black uppercase tracking-widest text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
-                    ?
+                    <FiChevronDown size={14} />
                   </button>
                 </div>
                 {showPrintMenu && (
@@ -637,7 +638,7 @@ const ReceivePaymentFormPage: React.FC<ReceivePaymentFormPageProps> = ({
                     onClick={() => setShowSaveMenu((prev) => !prev)}
                     className="rounded-r-xl border-l border-orange-500 bg-orange-600 px-3 py-2 text-[11px] font-black uppercase tracking-widest text-white shadow-lg shadow-orange-600/30 hover:bg-orange-700"
                   >
-                    ?
+                    <FiChevronDown size={14} />
                   </button>
                 </div>
                 {showSaveMenu && (
