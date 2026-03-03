@@ -944,11 +944,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         onMobileClose={() => setIsMobileOpen(false)}
       />
 
-      <div className="relative flex-1 min-w-0">
+      <div className="relative flex-1 min-w-0 print:bg-white">
       <main
         ref={mainScrollRef}
         onScroll={updateMainThumb}
-        className="flex-1 h-screen overflow-y-auto sidebar-native-scroll-hidden"
+        className="flex-1 h-screen overflow-y-auto sidebar-native-scroll-hidden print:h-auto print:overflow-visible print:bg-white"
       >
         <TopBar
           onMenuClick={() => setIsMobileOpen(true)}
@@ -2411,7 +2411,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         </div>
       </main>
       {mainThumb.visible && (
-        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-1.5">
+        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-1.5 print:hidden">
           <div
             className="absolute left-0 right-0 rounded-full bg-[#CBD5E1] dark:bg-[#334155]"
             style={{ top: `${mainThumb.top}px`, height: `${mainThumb.height}px` }}
