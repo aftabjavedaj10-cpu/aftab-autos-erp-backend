@@ -113,7 +113,8 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     display: none !important;
   }
   .print-sheet-a4 {
-    width: 210mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
     min-height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -122,8 +123,8 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     page-break-after: auto;
   }
   .print-sheet-80mm {
-    width: 72mm !important;
-    max-width: 72mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     box-sizing: border-box !important;
@@ -132,8 +133,8 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
   .receipt-print {
     margin: 0 !important;
     padding: 0 !important;
-    width: 72mm !important;
-    max-width: 72mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
   table {
     page-break-inside: auto;
