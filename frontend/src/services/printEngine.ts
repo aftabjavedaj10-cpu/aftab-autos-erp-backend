@@ -55,24 +55,25 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  body * {
+  body *:not(.invoice-print-root):not(.invoice-print-root *) {
     visibility: hidden !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
   }
   .invoice-print-root,
   .invoice-print-root * {
     visibility: visible !important;
   }
   .invoice-print-root {
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
+    position: static !important;
     margin: 0 !important;
     padding: 0 !important;
     display: block !important;
     overflow: visible !important;
     height: auto !important;
-    width: 100% !important;
+    width: auto !important;
     background: #fff !important;
     z-index: 999999 !important;
   }
