@@ -121,6 +121,8 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     box-sizing: border-box !important;
     background: #fff !important;
     page-break-after: auto;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
   .print-sheet-80mm {
     width: 100% !important;
@@ -129,6 +131,8 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     padding: 0 !important;
     box-sizing: border-box !important;
     background: #fff !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
   .receipt-print {
     margin: 0 !important;
@@ -137,17 +141,37 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     max-width: 100% !important;
   }
   table {
-    page-break-inside: auto;
-  }
-  tr, td, th {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
   thead {
-    display: table-header-group;
+    display: table-header-group !important;
+    break-inside: avoid-page !important;
+  }
+  thead tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+    page-break-after: avoid !important;
+  }
+  thead th {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+    page-break-after: avoid !important;
+    background: #fff !important;
   }
   tfoot {
-    display: table-footer-group;
+    display: table-footer-group !important;
+  }
+  tbody tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+  th, td {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    vertical-align: top !important;
   }
 }
 `;
