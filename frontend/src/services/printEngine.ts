@@ -147,19 +147,7 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     break-inside: auto !important;
   }
   thead {
-    display: table-header-group !important;
-    break-inside: avoid-page !important;
-  }
-  thead tr {
-    page-break-inside: avoid !important;
-    break-inside: avoid-page !important;
-    page-break-after: avoid !important;
-  }
-  thead th {
-    page-break-inside: avoid !important;
-    break-inside: avoid-page !important;
-    page-break-after: avoid !important;
-    background: #fff !important;
+    display: table-row-group !important;
   }
   tfoot {
     display: table-footer-group !important;
