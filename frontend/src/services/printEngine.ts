@@ -61,16 +61,19 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     height: auto !important;
     min-height: 0 !important;
     overflow: visible !important;
+    background: #fff !important;
   }
   #root > * {
     height: auto !important;
     min-height: 0 !important;
     overflow: visible !important;
+    background: #fff !important;
   }
   main {
     height: auto !important;
     min-height: 0 !important;
     overflow: visible !important;
+    background: #fff !important;
   }
   .invoice-editor-root > :not(.invoice-print-root):not(style) {
     display: none !important;
@@ -80,6 +83,7 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
+    background: #fff !important;
   }
   .invoice-print-root,
   .invoice-print-root * {
@@ -95,6 +99,14 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     width: 100% !important;
     background: #fff !important;
     z-index: 1 !important;
+  }
+  * {
+    scrollbar-width: none !important;
+  }
+  *::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
   }
   .print-sheet-a4 {
     width: 210mm !important;
