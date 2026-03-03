@@ -89,6 +89,10 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
   .invoice-print-root * {
     visibility: visible !important;
   }
+  .invoice-print-root * {
+    overflow: visible !important;
+    max-height: none !important;
+  }
   .invoice-print-root {
     position: static !important;
     margin: 0 !important;
