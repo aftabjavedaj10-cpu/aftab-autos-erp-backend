@@ -237,7 +237,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           (pk: any) => String(pk?.id ?? "") === String((item as any)?.packagingId ?? "")
         )
       : null;
-    const urdu = String((matchedPack as any)?.urduName || (matched as any)?.urduName || "").trim();
+    const urdu = printSettings.showUrduName
+      ? String((matchedPack as any)?.urduName || (matched as any)?.urduName || "").trim()
+      : "";
     if (!urdu && !description) return english;
     return (
       <span className="inline-flex flex-col gap-0.5">
@@ -2222,6 +2224,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
 };
 
 export default SalesInvoiceFormPage;
+
 
 
 

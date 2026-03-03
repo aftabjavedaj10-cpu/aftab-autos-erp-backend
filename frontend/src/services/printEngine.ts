@@ -63,22 +63,22 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     visibility: visible !important;
   }
   .invoice-print-root {
-    position: fixed !important;
-    inset: 0 !important;
+    position: static !important;
     margin: 0 !important;
     padding: 0 !important;
     display: block !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+    height: auto !important;
     background: #fff !important;
     z-index: 999999 !important;
   }
   .print-sheet-a4 {
     width: 210mm !important;
-    min-height: 297mm !important;
+    min-height: auto !important;
     margin: 0 !important;
     box-sizing: border-box !important;
     background: #fff !important;
-    page-break-after: always;
+    page-break-after: auto;
   }
   .print-sheet-80mm {
     width: 68mm !important;
@@ -86,6 +86,19 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     margin: 0 !important;
     box-sizing: border-box !important;
     background: #fff !important;
+  }
+  table {
+    page-break-inside: auto;
+  }
+  tr, td, th {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+  tfoot {
+    display: table-footer-group;
   }
 }
 `;

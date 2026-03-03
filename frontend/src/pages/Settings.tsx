@@ -1390,6 +1390,7 @@ const SettingsPage: React.FC = () => {
                     <option value="receipt">Receipt</option>
                     <option value="a5">A5</option>
                     <option value="token">Product Token</option>
+                    <option value="list">Product List (Name + Qty)</option>
                   </select>
                 </div>
 
