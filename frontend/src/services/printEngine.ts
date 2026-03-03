@@ -62,8 +62,28 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     min-height: 0 !important;
     overflow: visible !important;
   }
-  body *:not(.invoice-print-root):not(.invoice-print-root *) {
-    visibility: hidden !important;
+  #root > * {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  main {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  .invoice-editor-root > :not(.invoice-print-root):not(style) {
+    display: none !important;
+  }
+  .invoice-editor-root {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  .invoice-print-root,
+  .invoice-print-root * {
+    visibility: visible !important;
   }
   .invoice-print-root {
     position: static !important;
