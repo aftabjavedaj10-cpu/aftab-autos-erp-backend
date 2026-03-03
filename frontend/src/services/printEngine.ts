@@ -112,16 +112,24 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     width: 210mm !important;
     min-height: auto !important;
     margin: 0 !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
     background: #fff !important;
     page-break-after: auto;
   }
   .print-sheet-80mm {
-    width: 68mm !important;
-    max-width: 68mm !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
     margin: 0 !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
     background: #fff !important;
+  }
+  .receipt-print {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
   }
   table {
     page-break-inside: auto;
