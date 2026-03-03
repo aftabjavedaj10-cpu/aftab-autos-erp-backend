@@ -140,6 +140,18 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     width: 100% !important;
     max-width: 100% !important;
   }
+  ${
+    isNarrowPrintMode(mode)
+      ? `
+  .print-sheet-80mm,
+  .receipt-print {
+    margin-left: -0.8mm !important;
+    width: calc(100% + 0.8mm) !important;
+    max-width: calc(100% + 0.8mm) !important;
+  }
+  `
+      : ""
+  }
   table {
     width: 100% !important;
     border-collapse: collapse !important;
