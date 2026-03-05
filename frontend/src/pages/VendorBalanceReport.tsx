@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from "react";
-import type { SalesInvoice, Vendor } from "../types";
+import type { PurchaseInvoice, PurchaseReturn, Vendor } from "../types";
 import type { MakePaymentDoc } from "./MakePayment";
 
 interface VendorBalanceReportPageProps {
   onBack: () => void;
   onOpenVendorLedger?: (vendorId?: string) => void;
   vendors: Vendor[];
-  purchaseInvoices: SalesInvoice[];
-  purchaseReturns: SalesInvoice[];
+  purchaseInvoices: PurchaseInvoice[];
+  purchaseReturns: PurchaseReturn[];
   makePayments: MakePaymentDoc[];
 }
 
@@ -67,8 +67,8 @@ const VendorBalanceReportPage: React.FC<VendorBalanceReportPageProps> = ({
           .filter((inv) => inDateRange(inv.date, startDate, endDate))
           .filter(
             (inv) =>
-              String(inv.customerId || "") === vendorId ||
-              String(inv.customerName || "").trim().toLowerCase() === vendorName.trim().toLowerCase()
+              String(inv.vendorId || "") === vendorId ||
+              String(inv.vendorName || "").trim().toLowerCase() === vendorName.trim().toLowerCase()
           )
           .reduce((sum, inv) => sum + toNumber(inv.totalAmount), 0);
 
@@ -77,8 +77,8 @@ const VendorBalanceReportPage: React.FC<VendorBalanceReportPageProps> = ({
           .filter((inv) => inDateRange(inv.date, startDate, endDate))
           .filter(
             (inv) =>
-              String(inv.customerId || "") === vendorId ||
-              String(inv.customerName || "").trim().toLowerCase() === vendorName.trim().toLowerCase()
+              String(inv.vendorId || "") === vendorId ||
+              String(inv.vendorName || "").trim().toLowerCase() === vendorName.trim().toLowerCase()
           )
           .reduce((sum, inv) => sum + toNumber(inv.totalAmount), 0);
 

@@ -771,8 +771,8 @@ const mapMakePaymentToDb = (payment: any) =>
 
 const mapPurchaseInvoiceFromDb = (row: any) => ({
   id: row.id,
-  customerId: row.vendor_id ?? row.vendorId,
-  customerName: row.vendor_name ?? row.vendorName,
+  vendorId: row.vendor_id ?? row.vendorId,
+  vendorName: row.vendor_name ?? row.vendorName,
   reference: row.reference,
   vehicleNumber: row.vehicle_number ?? row.vehicleNumber,
   date: row.date,
@@ -817,8 +817,8 @@ const mapPurchaseInvoiceToDb = (invoice: any) =>
   stripClientOnly(
     {
       ...invoice,
-      vendor_id: invoice.customerId ?? invoice.vendor_id,
-      vendor_name: invoice.customerName ?? invoice.vendor_name,
+      vendor_id: invoice.vendorId ?? invoice.vendor_id,
+      vendor_name: invoice.vendorName ?? invoice.vendor_name,
       vehicle_number: invoice.vehicleNumber ?? invoice.vehicle_number,
       due_date: invoice.dueDate ?? invoice.due_date,
       payment_status: invoice.paymentStatus ?? invoice.payment_status,
@@ -828,8 +828,8 @@ const mapPurchaseInvoiceToDb = (invoice: any) =>
     },
     [
       "items",
-      "customerId",
-      "customerName",
+      "vendorId",
+      "vendorName",
       "vehicleNumber",
       "dueDate",
       "paymentStatus",
@@ -865,8 +865,8 @@ const mapPurchaseInvoiceItemToDb = (item: any, invoiceId: string) => {
 
 const mapPurchaseOrderFromDb = (row: any) => ({
   id: row.id,
-  customerId: row.vendor_id ?? row.vendorId,
-  customerName: row.vendor_name ?? row.vendorName,
+  vendorId: row.vendor_id ?? row.vendorId,
+  vendorName: row.vendor_name ?? row.vendorName,
   reference: row.reference,
   vehicleNumber: row.vehicle_number ?? row.vehicleNumber,
   date: row.date,
@@ -911,8 +911,8 @@ const mapPurchaseOrderToDb = (order: any) =>
   stripClientOnly(
     {
       ...order,
-      vendor_id: order.customerId ?? order.vendor_id,
-      vendor_name: order.customerName ?? order.vendor_name,
+      vendor_id: order.vendorId ?? order.vendor_id,
+      vendor_name: order.vendorName ?? order.vendor_name,
       vehicle_number: order.vehicleNumber ?? order.vehicle_number,
       due_date: order.dueDate ?? order.due_date,
       payment_status: order.paymentStatus ?? order.payment_status,
@@ -922,8 +922,8 @@ const mapPurchaseOrderToDb = (order: any) =>
     },
     [
       "items",
-      "customerId",
-      "customerName",
+      "vendorId",
+      "vendorName",
       "vehicleNumber",
       "dueDate",
       "paymentStatus",
@@ -959,8 +959,8 @@ const mapPurchaseOrderItemToDb = (item: any, orderId: string) => {
 
 const mapPurchaseReturnFromDb = (row: any) => ({
   id: row.id,
-  customerId: row.vendor_id ?? row.vendorId,
-  customerName: row.vendor_name ?? row.vendorName,
+  vendorId: row.vendor_id ?? row.vendorId,
+  vendorName: row.vendor_name ?? row.vendorName,
   reference: row.reference,
   vehicleNumber: row.vehicle_number ?? row.vehicleNumber,
   date: row.date,
@@ -1005,8 +1005,8 @@ const mapPurchaseReturnToDb = (invoice: any) =>
   stripClientOnly(
     {
       ...invoice,
-      vendor_id: invoice.customerId ?? invoice.vendor_id,
-      vendor_name: invoice.customerName ?? invoice.vendor_name,
+      vendor_id: invoice.vendorId ?? invoice.vendor_id,
+      vendor_name: invoice.vendorName ?? invoice.vendor_name,
       vehicle_number: invoice.vehicleNumber ?? invoice.vehicle_number,
       due_date: invoice.dueDate ?? invoice.due_date,
       payment_status: invoice.paymentStatus ?? invoice.payment_status,
@@ -1016,8 +1016,8 @@ const mapPurchaseReturnToDb = (invoice: any) =>
     },
     [
       "items",
-      "customerId",
-      "customerName",
+      "vendorId",
+      "vendorName",
       "vehicleNumber",
       "dueDate",
       "paymentStatus",

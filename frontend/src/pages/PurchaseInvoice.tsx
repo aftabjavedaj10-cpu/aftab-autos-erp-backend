@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect, useRef } from "react";
-import type { SalesInvoice } from "../types";
+﻿import React, { useState, useMemo, useEffect, useRef } from "react";
+import type { PurchaseInvoice } from "../types";
 import Pagination from "../components/Pagination";
 import { formatDateDMY } from "../services/dateFormat";
 
@@ -42,9 +42,9 @@ const isoToDMY = (iso: string): string => {
 };
 
 interface PurchaseInvoicePageProps {
-  invoices: SalesInvoice[];
+  invoices: PurchaseInvoice[];
   onAddClick: () => void;
-  onEditClick: (invoice: SalesInvoice) => void;
+  onEditClick: (invoice: PurchaseInvoice) => void;
   onDelete: (id: string) => void;
   statusFilterPreset?: string;
   statusFilterPresetTick?: number;
@@ -86,7 +86,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
       }
       const matchesSearch =
         inv.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        inv.customerName.toLowerCase().includes(searchQuery.toLowerCase());
+        inv.vendorName.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesRef =
         !refSearch ||
         (inv.reference?.toLowerCase() || "").includes(refSearch.toLowerCase());
@@ -201,7 +201,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
             onClick={onAddClick}
             className="bg-orange-600 hover:bg-orange-700 text-white font-black py-2 px-4 rounded-xl shadow-lg shadow-orange-600/20 transition-all active:scale-95 flex items-center gap-2 text-[9px] uppercase tracking-widest"
           >
-            <span>➕</span> Create Purchase Invoice
+            <span>âž•</span> Create Purchase Invoice
           </button>
         </div>
       </div>
@@ -209,7 +209,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
       {successMsg && (
         <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm animate-in slide-in-from-top-4 duration-300 flex items-center gap-3">
           <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs">
-            ✓
+            âœ“
           </div>
           {successMsg}
         </div>
@@ -220,7 +220,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-3 relative">
               <span className="absolute inset-y-0 left-4 flex items-center text-slate-400 text-xs">
-                🔍
+                ðŸ”
               </span>
               <input
                 type="text"
@@ -232,7 +232,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
             </div>
             <div className="md:col-span-3 relative">
               <span className="absolute inset-y-0 left-4 flex items-center text-slate-400 text-xs">
-                🔖
+                ðŸ”–
               </span>
               <input
                 type="text"
@@ -244,7 +244,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
             </div>
             <div className="md:col-span-3 relative">
               <span className="absolute inset-y-0 left-4 flex items-center text-slate-400 text-xs">
-                📦
+                ðŸ“¦
               </span>
               <input
                 type="text"
@@ -287,7 +287,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                   className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:text-orange-600 text-[12px]"
                   title="Pick start date"
                 >
-                  📅
+                  ðŸ“…
                 </button>
                 <input
                   ref={startPickerRef}
@@ -311,7 +311,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                   className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:text-orange-600 text-[12px]"
                   title="Pick end date"
                 >
-                  📅
+                  ðŸ“…
                 </button>
                 <input
                   ref={endPickerRef}
@@ -341,7 +341,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                       }`}
                     >
                       {selectedIds.size === paginatedInvoices.length && paginatedInvoices.length > 0 && (
-                        <span className="text-white text-[9px]">✓</span>
+                        <span className="text-white text-[9px]">âœ“</span>
                       )}
                     </button>
                     {selectedIds.size > 0 && (
@@ -355,7 +355,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                   </div>
                 </th>
                 <th className="px-4 py-3">Document #</th>
-                <th className="px-4 py-3">Customer Entity</th>
+                <th className="px-4 py-3">Vendor</th>
                 <th className="px-4 py-3">Reference / PO</th>
                 <th className="px-4 py-3">Date / Due</th>
                 <th className="px-4 py-3">Total Amount</th>
@@ -389,7 +389,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                             : "border-slate-200 dark:border-slate-700"
                         }`}
                       >
-                        {selectedIds.has(inv.id) && <span className="text-white text-[9px]">✓</span>}
+                        {selectedIds.has(inv.id) && <span className="text-white text-[9px]">âœ“</span>}
                       </button>
                     </div>
                   </td>
@@ -400,7 +400,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                   </td>
                   <td className="px-4 py-3">
                     <p className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight uppercase tracking-tight">
-                      {inv.customerName}
+                      {inv.vendorName}
                     </p>
                   </td>
                   <td className="px-4 py-3">
@@ -440,7 +440,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                         onClick={() => onEditClick(inv)}
                         className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-orange-600 transition-all shadow-sm"
                       >
-                        <span className="text-xs">👁️</span>
+                        <span className="text-xs">ðŸ‘ï¸</span>
                       </button>
                       <button
                         onClick={() => {
@@ -508,7 +508,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
                 onClick={() => setIsConfirmModalOpen(true)}
                 className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-rose-600/20 flex items-center gap-2 group"
               >
-                <span>🗑️</span> Delete Selected
+                <span>ðŸ—‘ï¸</span> Delete Selected
               </button>
               <button
                 onClick={() => setSelectedIds(new Set())}
@@ -532,7 +532,7 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
             <div className="bg-rose-600 h-1.5 w-full"></div>
             <div className="p-10 text-center">
               <div className="w-20 h-20 bg-rose-50 dark:bg-rose-950/30 text-rose-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-6 border border-rose-100 dark:border-rose-900/40">
-                ⚠️
+                âš ï¸
               </div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">
                 Mark As Deleted?
@@ -565,3 +565,4 @@ const PurchaseInvoicePage: React.FC<PurchaseInvoicePageProps> = ({
 };
 
 export default PurchaseInvoicePage;
+

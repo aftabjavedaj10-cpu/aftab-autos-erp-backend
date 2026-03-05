@@ -134,6 +134,57 @@ export interface SalesInvoice {
   totalAmount: number;
 }
 
+export interface PurchaseInvoice {
+  id: string;
+  vendorId?: string;
+  vendorName: string;
+  reference?: string;
+  vehicleNumber?: string;
+  date: string;
+  dueDate?: string;
+  status: "Paid" | "Unpaid" | "Partial" | "Overdue" | "Pending" | "Draft" | string;
+  paymentStatus?: "Unpaid" | "Partial" | "Paid" | string;
+  notes?: string;
+  overallDiscount?: number;
+  amountReceived?: number;
+  items: SalesInvoiceItem[];
+  totalAmount: number;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  vendorId?: string;
+  vendorName: string;
+  reference?: string;
+  vehicleNumber?: string;
+  date: string;
+  dueDate?: string;
+  status: "Paid" | "Unpaid" | "Partial" | "Overdue" | "Pending" | "Draft" | string;
+  paymentStatus?: "Unpaid" | "Partial" | "Paid" | string;
+  notes?: string;
+  overallDiscount?: number;
+  amountReceived?: number;
+  items: SalesInvoiceItem[];
+  totalAmount: number;
+}
+
+export interface PurchaseReturn {
+  id: string;
+  vendorId?: string;
+  vendorName: string;
+  reference?: string;
+  vehicleNumber?: string;
+  date: string;
+  dueDate?: string;
+  status: "Paid" | "Unpaid" | "Partial" | "Overdue" | "Pending" | "Draft" | string;
+  paymentStatus?: "Unpaid" | "Partial" | "Paid" | string;
+  notes?: string;
+  overallDiscount?: number;
+  amountReceived?: number;
+  items: SalesInvoiceItem[];
+  totalAmount: number;
+}
+
 export interface StockLedgerEntry {
   id: string;
   companyId: string;

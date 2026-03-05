@@ -43,7 +43,20 @@ import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
 import MakePaymentFormPage from "./MakePaymentForm";
 import { ALL_REPORTS } from "../constants";
-import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company, UnitMaster, WarehouseMaster } from "../types";
+import type {
+  Product,
+  Category,
+  Vendor,
+  Customer,
+  SalesInvoice,
+  PurchaseInvoice,
+  PurchaseOrder,
+  PurchaseReturn,
+  StockLedgerEntry,
+  Company,
+  UnitMaster,
+  WarehouseMaster,
+} from "../types";
 import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, unitAPI, warehouseAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
@@ -88,13 +101,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
-  const [purchaseInvoices, setPurchaseInvoices] = useState<SalesInvoice[]>([]);
-  const [purchaseOrders, setPurchaseOrders] = useState<SalesInvoice[]>([]);
-  const [purchaseReturns, setPurchaseReturns] = useState<SalesInvoice[]>([]);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [purchaseReturns, setPurchaseReturns] = useState<PurchaseReturn[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
-  const [editingPurchaseInvoice, setEditingPurchaseInvoice] = useState<SalesInvoice | undefined>(undefined);
-  const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<SalesInvoice | undefined>(undefined);
-  const [editingPurchaseReturn, setEditingPurchaseReturn] = useState<SalesInvoice | undefined>(undefined);
+  const [editingPurchaseInvoice, setEditingPurchaseInvoice] = useState<PurchaseInvoice | undefined>(undefined);
+  const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<PurchaseOrder | undefined>(undefined);
+  const [editingPurchaseReturn, setEditingPurchaseReturn] = useState<PurchaseReturn | undefined>(undefined);
   const [salesInvoiceForceNewMode, setSalesInvoiceForceNewMode] = useState(false);
   const [purchaseInvoiceForceNewMode, setPurchaseInvoiceForceNewMode] = useState(false);
   const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
@@ -571,7 +584,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_invoice");
   };
 
-  const handleEditPurchaseInvoice = (invoice: SalesInvoice) => {
+  const handleEditPurchaseInvoice = (invoice: PurchaseInvoice) => {
     setEditingPurchaseInvoice(invoice);
     setPurchaseInvoiceForceNewMode(false);
     setActiveTab("add_purchase_invoice");
@@ -582,7 +595,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_order");
   };
 
-  const handleEditPurchaseOrder = (invoice: SalesInvoice) => {
+  const handleEditPurchaseOrder = (invoice: PurchaseOrder) => {
     setEditingPurchaseOrder(invoice);
     setActiveTab("add_purchase_order");
   };
@@ -661,7 +674,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     if (purchaseOrderId) {
       const existing = purchaseOrders.find((po) => String(po.id) === String(purchaseOrderId));
       if (!existing) throw new Error("Selected purchase order not found.");
-      if (String(existing.customerId || "") !== vendorId) {
+      if (String(existing.vendorId || "") !== vendorId) {
         throw new Error("Selected purchase order vendor does not match selected products.");
       }
 
@@ -680,10 +693,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         }
       });
       const totalAmount = merged.reduce((sum, i) => sum + Number(i.total || 0), 0);
-      const updatedDoc: SalesInvoice = {
+      const updatedDoc: PurchaseOrder = {
         id: existing.id,
-        customerId: vendorId,
-        customerName: String(vendor.name || ""),
+        vendorId: vendorId,
+        vendorName: String(vendor.name || ""),
         reference: existing.reference || "",
         vehicleNumber: existing.vehicleNumber || "",
         date: existing.date,
@@ -704,10 +717,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     }
 
     const totalAmount = newItems.reduce((sum, i) => sum + Number(i.total || 0), 0);
-    const newDoc: SalesInvoice = {
+    const newDoc: PurchaseOrder = {
       id: getNextPurchaseOrderId(),
-      customerId: vendorId,
-      customerName: String(vendor.name || ""),
+      vendorId: vendorId,
+      vendorName: String(vendor.name || ""),
       reference: "",
       vehicleNumber: "",
       date: nowDate,
@@ -731,7 +744,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_return");
   };
 
-  const handleEditPurchaseReturn = (invoice: SalesInvoice) => {
+  const handleEditPurchaseReturn = (invoice: PurchaseReturn) => {
     setEditingPurchaseReturn(invoice);
     setActiveTab("add_purchase_return");
   };
@@ -2243,8 +2256,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 if (paidAmount > 0) {
                   const paymentPayload: MakePaymentDoc = {
                     id: linkedPayment?.id || getNextMakePaymentId(makePayments),
-                    vendorId: saved.customerId,
-                    vendorName: saved.customerName,
+                    vendorId: saved.vendorId,
+                    vendorName: saved.vendorName,
                     invoiceId: saved.id,
                     reference: saved.reference || "",
                     date: saved.date,
@@ -2306,7 +2319,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             vendors={vendors}
             company={activeCompany || undefined}
             onConvertToPurchaseInvoice={(purchaseOrder) => {
-              const converted: SalesInvoice = {
+              const converted: PurchaseInvoice = {
                 ...purchaseOrder,
                 id: getNextPurchaseInvoiceId(),
                 status: "Draft",

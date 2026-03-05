@@ -1,25 +1,25 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FiArrowLeft, FiChevronDown, FiMove } from "react-icons/fi";
-import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem, Vendor } from "../types";
+import type { Company, Product, PurchaseInvoice, SalesInvoiceItem, Vendor } from "../types";
 import { getPrintTemplateSettings } from "../services/printSettings";
 import { getEmbeddedInvoicePrintCss, normalizePrintMode } from "../services/printEngine";
 
 interface PurchaseInvoiceFormPageProps {
-  invoice?: SalesInvoice;
+  invoice?: PurchaseInvoice;
   forceNewMode?: boolean;
-  invoices: SalesInvoice[];
+  invoices: PurchaseInvoice[];
   products: Product[];
   vendors: Vendor[];
   company?: Company;
   onBack: () => void;
   onSave: (
-    invoice: SalesInvoice,
+    invoice: PurchaseInvoice,
     stayOnPage: boolean,
     savePrices: boolean,
     salesPriceUpdates?: Record<string, number>
   ) => void;
-  onNavigate?: (invoice: SalesInvoice) => void;
+  onNavigate?: (invoice: PurchaseInvoice) => void;
   onNavigateNew?: () => void;
   formTitleNew?: string;
   formTitleEdit?: string;
@@ -88,14 +88,17 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const isEdit = !!invoice && !forceNewMode;
   const isPurchaseMode = true;
 
-  const customers = useMemo<Customer[]>(
+  const vendorsByParty = useMemo(
     () =>
       vendors.map((v) => ({
         id: String(v.id),
         name: v.name,
-        customerCode: v.vendorCode || "",
+        vendorCode: v.vendorCode || "",
         phone: v.phone || "",
         email: v.email || "",
+        balance: v.balance,
+        category: v.category || "",
+        address: v.address || "",
       })),
     [vendors]
   );
@@ -128,7 +131,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 
   const [formData, setFormData] = useState({
     id: invoice?.id || nextInvoiceId,
-    customerId: invoice?.customerId || "",
+    vendorId: invoice?.vendorId || "",
     reference: invoice?.reference || "",
     vehicleNumber: invoice?.vehicleNumber || "",
     date: invoice?.date || new Date().toISOString().split("T")[0],
@@ -152,10 +155,10 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
-  const [isCustomerSearching, setIsCustomerSearching] = useState(false);
+  const [vendorSearchTerm, setVendorSearchTerm] = useState("");
+  const [isVendorSearching, setIsVendorSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [customerSelectedIndex, setCustomerSelectedIndex] = useState(0);
+  const [vendorSelectedIndex, setVendorSelectedIndex] = useState(0);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -175,7 +178,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const createLineId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const rowKeyOf = (item: SalesInvoiceItem) => String((item as any).id ?? item.productId);
 
-  const customerInputRef = useRef<HTMLInputElement>(null);
+  const vendorInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dueDateInputRef = useRef<HTMLInputElement>(null);
   const datePickerProxyRef = useRef<HTMLInputElement>(null);
@@ -189,7 +192,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const productListContainerRef = useRef<HTMLDivElement>(null);
   const productItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const customerSearchContainerRef = useRef<HTMLDivElement>(null);
+  const vendorSearchContainerRef = useRef<HTMLDivElement>(null);
   const saveMenuRef = useRef<HTMLDivElement>(null);
   const printMenuRef = useRef<HTMLDivElement>(null);
 
@@ -242,8 +245,8 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
       if (searchContainerRef.current && !searchContainerRef.current.contains(target)) {
         setIsSearching(false);
       }
-      if (customerSearchContainerRef.current && !customerSearchContainerRef.current.contains(target)) {
-        setIsCustomerSearching(false);
+      if (vendorSearchContainerRef.current && !vendorSearchContainerRef.current.contains(target)) {
+        setIsVendorSearching(false);
       }
       if (saveMenuRef.current && !saveMenuRef.current.contains(target)) {
         setIsSaveMenuOpen(false);
@@ -339,15 +342,15 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
       .slice(0, 30);
   }, [searchTerm, searchableProducts]);
 
-  const availableCustomers = useMemo(() => {
-    const query = customerSearchTerm.toLowerCase().trim();
-    if (!query) return customers;
+  const availableVendors = useMemo(() => {
+    const query = vendorSearchTerm.toLowerCase().trim();
+    if (!query) return vendorsByParty;
     const keywords = query.split(/\s+/);
-    return customers.filter((c) => {
-      const searchableText = `${c.name} ${c.customerCode || ""} ${c.phone || ""} ${c.email || ""}`.toLowerCase();
+    return vendorsByParty.filter((c) => {
+      const searchableText = `${c.name} ${c.vendorCode || ""} ${c.phone || ""} ${c.email || ""}`.toLowerCase();
       return keywords.every((kw) => searchableText.includes(kw));
     });
-  }, [customerSearchTerm, customers]);
+  }, [vendorSearchTerm, vendorsByParty]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -363,8 +366,8 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   }, [selectedIndex, isSearching]);
 
   useEffect(() => {
-    setCustomerSelectedIndex(0);
-  }, [availableCustomers]);
+    setVendorSelectedIndex(0);
+  }, [availableVendors]);
 
   const totals = useMemo(() => {
     const itemsSubtotal = formData.items.reduce((sum, item) => {
@@ -442,8 +445,8 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
     });
   };
 
-  const handleCustomerKeyDown = (e: React.KeyboardEvent) => {
-    if (!isCustomerSearching || availableCustomers.length === 0) {
+  const handleVendorKeyDown = (e: React.KeyboardEvent) => {
+    if (!isVendorSearching || availableVendors.length === 0) {
       if (e.key === "Enter") {
         e.preventDefault();
         dateInputRef.current?.focus();
@@ -453,21 +456,21 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setCustomerSelectedIndex((prev) => (prev < availableCustomers.length - 1 ? prev + 1 : prev));
+      setVendorSelectedIndex((prev) => (prev < availableVendors.length - 1 ? prev + 1 : prev));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setCustomerSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+      setVendorSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const selected = availableCustomers[customerSelectedIndex];
+      const selected = availableVendors[vendorSelectedIndex];
       const selectedId = selected.id || "";
       if (!selectedId) return;
-      setFormData({ ...formData, customerId: selectedId });
-      setCustomerSearchTerm(selected.name);
-      setIsCustomerSearching(false);
+      setFormData({ ...formData, vendorId: selectedId });
+      setVendorSearchTerm(selected.name);
+      setIsVendorSearching(false);
       setTimeout(() => dateInputRef.current?.focus(), 10);
     } else if (e.key === "Escape") {
-      setIsCustomerSearching(false);
+      setIsVendorSearching(false);
     }
   };
 
@@ -630,9 +633,9 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const canCopy = isEdit && (isVoid || isDeleted);
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
-    if (!formData.customerId) {
+    if (!formData.vendorId) {
       setFormError(`Required: Please select a ${partyLabel}.`);
-      customerInputRef.current?.focus();
+      vendorInputRef.current?.focus();
       return;
     }
 
@@ -654,14 +657,14 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
       return;
     }
 
-    const customer = customers.find((c) => c.id === formData.customerId);
+    const vendor = vendorsByParty.find((c) => String(c.id) === String(formData.vendorId));
     const finalPaymentStatus = computePaymentStatus();
     const finalStatus = status === "Draft" ? "Draft" : status;
-    const invoiceData: SalesInvoice = {
+    const invoiceData: PurchaseInvoice = {
       ...formData,
       status: finalStatus,
       paymentStatus: finalPaymentStatus,
-      customerName: customer?.name || "Unknown",
+      vendorName: vendor?.name || "Unknown",
       totalAmount: totals.netTotal,
     };
     onSave(invoiceData, stayOnPage, savePrices, isPurchaseMode ? salesPriceByProductId : undefined);
@@ -706,21 +709,21 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
     onNavigateNew?.();
   };
 
-  const currentCustomer = useMemo(() => {
-    return customers.find((c) => c.id === formData.customerId);
-  }, [formData.customerId, customers]);
+  const currentVendor = useMemo(() => {
+    return vendorsByParty.find((c) => String(c.id) === String(formData.vendorId));
+  }, [formData.vendorId, vendorsByParty]);
 
   useEffect(() => {
-    if (currentCustomer) {
-      setCustomerSearchTerm(currentCustomer.name);
+    if (currentVendor) {
+      setVendorSearchTerm(currentVendor.name);
     }
-  }, [formData.customerId, currentCustomer]);
+  }, [formData.vendorId, currentVendor]);
 
   useEffect(() => {
     if (invoice) {
       setFormData({
         id: invoice.id,
-        customerId: invoice.customerId || "",
+        vendorId: invoice.vendorId || "",
         reference: invoice.reference || "",
         vehicleNumber: invoice.vehicleNumber || "",
         date: invoice.date || new Date().toISOString().split("T")[0],
@@ -1004,32 +1007,32 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
               <span className="text-[8px] font-bold uppercase text-emerald-500 mt-1 block">Auto-ID</span>
             </div>
 
-            <div className="md:col-span-5 relative" ref={customerSearchContainerRef}>
+            <div className="md:col-span-5 relative" ref={vendorSearchContainerRef}>
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                 {partyLabel}
               </label>
               <div className="relative group">
               <input
-                ref={customerInputRef}
+                ref={vendorInputRef}
                 type="text"
                 disabled={isLocked}
                 className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-slate-400 ${
                   isLocked ? "opacity-60 cursor-not-allowed" : ""
                 }`}
                 placeholder={partySearchPlaceholder}
-                value={customerSearchTerm}
+                value={vendorSearchTerm}
                 onChange={(e) => {
-                  setCustomerSearchTerm(e.target.value);
-                  setIsCustomerSearching(true);
+                  setVendorSearchTerm(e.target.value);
+                  setIsVendorSearching(true);
                 }}
-                onFocus={() => setIsCustomerSearching(true)}
-                onKeyDown={handleCustomerKeyDown}
+                onFocus={() => setIsVendorSearching(true)}
+                onKeyDown={handleVendorKeyDown}
               />
-                {formData.customerId && !isLocked && (
+                {formData.vendorId && !isLocked && (
                   <button
                     onClick={() => {
-                      setFormData({ ...formData, customerId: "" });
-                      setCustomerSearchTerm("");
+                      setFormData({ ...formData, vendorId: "" });
+                      setVendorSearchTerm("");
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 p-1"
                   >
@@ -1038,51 +1041,51 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                 )}
               </div>
 
-              {formData.customerId && currentCustomer && (
+              {formData.vendorId && currentVendor && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                     Account Ledger Balance:
                   </span>
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                    {currentCustomer.balance || "Rs. 0.00"}
+                    {currentVendor.balance || "Rs. 0.00"}
                   </span>
                 </div>
               )}
 
-              {isCustomerSearching && !isLocked && (
+              {isVendorSearching && !isLocked && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[60] overflow-hidden">
                   <div className="max-h-[250px] overflow-y-auto">
-                    {availableCustomers.length > 0 ? (
-                      availableCustomers.map((c, idx) => (
+                    {availableVendors.length > 0 ? (
+                      availableVendors.map((c, idx) => (
                         <button
                           key={c.id || idx}
                           onClick={() => {
                             const selectedId = c.id || "";
                             if (!selectedId) return;
-                            setFormData({ ...formData, customerId: selectedId });
-                            setCustomerSearchTerm(c.name);
-                            setIsCustomerSearching(false);
+                            setFormData({ ...formData, vendorId: selectedId });
+                            setVendorSearchTerm(c.name);
+                            setIsVendorSearching(false);
                             setTimeout(() => dateInputRef.current?.focus(), 10);
                           }}
-                          onMouseEnter={() => setCustomerSelectedIndex(idx)}
+                          onMouseEnter={() => setVendorSelectedIndex(idx)}
                           className={`w-full text-left p-2.5 flex justify-between items-center transition-colors border-b last:border-0 dark:border-slate-800 ${
-                            customerSelectedIndex === idx
+                            vendorSelectedIndex === idx
                               ? "bg-orange-600 text-white"
                               : "hover:bg-orange-50 dark:hover:bg-slate-800"
                           }`}
                         >
                           <div>
-                            <p className={`text-[10px] font-black ${customerSelectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"}`}>{c.name}</p>
+                            <p className={`text-[10px] font-black ${vendorSelectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"}`}>{c.name}</p>
                             <div className="flex gap-2 mt-0.5">
-                              <span className={`text-[7px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
-                                {partyCodeLabel}: {c.customerCode || "N/A"}
+                              <span className={`text-[7px] font-bold ${vendorSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
+                                {partyCodeLabel}: {c.vendorCode || "N/A"}
                               </span>
-                              <span className={`text-[7px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
+                              <span className={`text-[7px] font-bold ${vendorSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
                                 • {c.category || "General"}
                               </span>
                             </div>
                           </div>
-                          <span className={`text-[8px] font-bold ${customerSelectedIndex === idx ? "text-orange-200" : "text-slate-400"}`}>{c.phone || ""}</span>
+                          <span className={`text-[8px] font-bold ${vendorSelectedIndex === idx ? "text-orange-200" : "text-slate-400"}`}>{c.phone || ""}</span>
                         </button>
                       ))
                     ) : (
@@ -1221,7 +1224,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
               <input
                 ref={refInputRef}
                 type="text"
-                placeholder="Customer Reference or PO ID..."
+                placeholder="Vendor Reference or PO ID..."
                 disabled={isLocked}
                 className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all ${
                   isLocked ? "opacity-60 cursor-not-allowed" : ""
@@ -1252,7 +1255,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                       }`}
                     >
                       {selectedItemIds.size === formData.items.length && formData.items.length > 0 && (
-                        <span className="text-white text-[8px]">✓</span>
+                        <span className="text-white text-[8px]">?</span>
                       )}
                     </button>
                   </th>
@@ -1317,7 +1320,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                           }`}
                         >
                           {selectedItemIds.has(rowKeyOf(item)) && (
-                            <span className="text-white text-[8px]">✓</span>
+                            <span className="text-white text-[8px]">?</span>
                           )}
                         </button>
                       </td>
@@ -1952,8 +1955,8 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
             <div className="grid grid-cols-4 gap-4 border-b border-black/30 pb-3 mb-4">
               <div>
                 <p className="text-[12px] font-semibold">Issued to:</p>
-                <p className="text-[11px] mt-1">{currentCustomer?.name || "-"}</p>
-                <p className="text-[11px]">{currentCustomer?.address || "-"}</p>
+                <p className="text-[11px] mt-1">{currentVendor?.name || "-"}</p>
+                <p className="text-[11px]">{currentVendor?.address || "-"}</p>
               </div>
               <div>
                 <p className="text-[12px] font-semibold">Invoice No.</p>
@@ -2045,7 +2048,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
               <p><span className="font-semibold">Date :</span> <span className="font-black">{formatDateDdMmYyyy(formData.date)}</span></p>
               <p><span className="font-semibold">Time :</span> <span className="font-black">{new Date().toLocaleTimeString()}</span></p>
               <p><span className="font-semibold">Operator Name :</span> <span className="font-black">Administrator</span></p>
-              <p><span className="font-semibold">Customer Name :</span> <span className="font-black">{currentCustomer?.name || "-"}</span></p>
+              <p><span className="font-semibold">Vendor Name :</span> <span className="font-black">{currentVendor?.name || "-"}</span></p>
               <p><span className="font-semibold">Payment Type :</span> <span className="font-black">{(formData.amountReceived || 0) > 0 ? "Cash/Card" : "-"}</span></p>
             </div>
 
@@ -2124,7 +2127,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
               <h1 className="font-black">A5 Invoice</h1>
               <span>{formData.id}</span>
             </div>
-            <p>Customer: {currentCustomer?.name || "-"}</p>
+            <p>Vendor: {currentVendor?.name || "-"}</p>
             <p>Date: {formatDateDdMmYyyy(formData.date)}</p>
             <table className="w-full mt-3 text-[11px]">
               <thead>
@@ -2182,6 +2185,10 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
 };
 
 export default PurchaseInvoiceFormPage;
+
+
+
+
 
 
 

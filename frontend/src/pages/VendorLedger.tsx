@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
-import type { Company, SalesInvoice, Vendor } from "../types";
+import type { Company, PurchaseInvoice, PurchaseReturn, Vendor } from "../types";
 import type { MakePaymentDoc } from "./MakePayment";
 import { formatDateDMY } from "../services/dateFormat";
 import { FiCalendar, FiEye } from "react-icons/fi";
@@ -90,8 +90,8 @@ const TRANSACTION_TYPES = ["All Types", "Bill", "Payment", "Return"];
 interface VendorLedgerPageProps {
   onBack: () => void;
   vendors: Vendor[];
-  purchaseInvoices: SalesInvoice[];
-  purchaseReturns: SalesInvoice[];
+  purchaseInvoices: PurchaseInvoice[];
+  purchaseReturns: PurchaseReturn[];
   makePayments: MakePaymentDoc[];
   company?: Company;
   onViewPurchaseInvoice?: (id: string) => void;
@@ -190,7 +190,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
     const vendorInvoices = purchaseInvoices
       .filter(
         (inv) =>
-          String(inv.customerId || "") === String(vendorId) &&
+          String(inv.vendorId || "") === String(vendorId) &&
           (isLedgerVisibleStatus((inv as any).status) ||
             (includeVoid && String((inv as any).status || "").toLowerCase() === "void") ||
             (includeDeleted && String((inv as any).status || "").toLowerCase() === "deleted"))
@@ -265,7 +265,7 @@ const VendorLedgerPage: React.FC<VendorLedgerPageProps> = ({
     const vendorReturns = purchaseReturns
       .filter(
         (ret) =>
-          String(ret.customerId || "") === String(vendorId) &&
+          String(ret.vendorId || "") === String(vendorId) &&
           (isLedgerVisibleStatus((ret as any).status) ||
             (includeVoid && String((ret as any).status || "").toLowerCase() === "void") ||
             (includeDeleted && String((ret as any).status || "").toLowerCase() === "deleted"))
