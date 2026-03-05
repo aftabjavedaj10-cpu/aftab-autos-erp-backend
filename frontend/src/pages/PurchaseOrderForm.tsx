@@ -1,6 +1,6 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FiArrowLeft, FiChevronDown, FiMove } from "react-icons/fi";
+import { FiArrowLeft, FiCheck, FiChevronDown, FiMove } from "react-icons/fi";
 import type { Company, Product, PurchaseInvoice, PurchaseOrder, SalesInvoiceItem, Vendor } from "../types";
 import { getPrintTemplateSettings } from "../services/printSettings";
 import { getEmbeddedInvoicePrintCss, normalizePrintMode } from "../services/printEngine";
@@ -186,6 +186,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   const [moveTargetOrderId, setMoveTargetOrderId] = useState("");
   const [moveTargetVendorId, setMoveTargetVendorId] = useState("");
   const [isMovingItems, setIsMovingItems] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<"move" | "copy">("move");
   const COPY_SEED_KEY = "purchase-order-copy-seed";
   const createLineId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const rowKeyOf = (item: SalesInvoiceItem) => String((item as any).id ?? item.productId);
@@ -636,8 +637,9 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
     [invoices, formData.id]
   );
 
-  const openMoveModal = () => {
+  const openMoveModal = (action: "move" | "copy") => {
     if (selectedItemIds.size === 0) return;
+    setBulkActionType(action);
     setMoveTargetOrderId(pendingPurchaseOrdersForMove[0]?.id || "");
     setMoveTargetVendorId(String(formData.vendorId || ""));
     setIsMoveModalOpen(true);
@@ -669,11 +671,20 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
         vendorName: vendor?.name ? String(vendor.name) : undefined,
         items: selectedItems,
       });
-      removeSelectedItemsFromCurrentForm();
+      if (bulkActionType === "move") {
+        removeSelectedItemsFromCurrentForm();
+      } else {
+        setSelectedItemIds(new Set());
+      }
       setIsMoveModalOpen(false);
       setMoveTargetOrderId("");
     } catch (err: any) {
-      setFormError(err?.message || "Failed to move selected items.");
+      setFormError(
+        err?.message ||
+          (bulkActionType === "copy"
+            ? "Failed to copy selected items."
+            : "Failed to move selected items.")
+      );
     } finally {
       setIsMovingItems(false);
     }
@@ -1318,7 +1329,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                       }`}
                     >
                       {selectedItemIds.size === formData.items.length && formData.items.length > 0 && (
-                        <span className="text-white text-[8px]">✓</span>
+                        <FiCheck size={10} className="text-white" />
                       )}
                     </button>
                   </th>
@@ -1383,7 +1394,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                           }`}
                         >
                           {selectedItemIds.has(rowKeyOf(item)) && (
-                            <span className="text-white text-[8px]">✓</span>
+                            <FiCheck size={10} className="text-white" />
                           )}
                         </button>
                       </td>
@@ -1928,10 +1939,16 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 Delete Selected
               </button>
               <button
-                onClick={openMoveModal}
+                onClick={() => openMoveModal("move")}
                 className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
               >
                 Move To
+              </button>
+              <button
+                onClick={() => openMoveModal("copy")}
+                className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
+              >
+                Copy To
               </button>
               <button
                 onClick={() => setSelectedItemIds(new Set())}
@@ -1948,7 +1965,9 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
         <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onClick={() => !isMovingItems && setIsMoveModalOpen(false)} />
           <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-5">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">Move Selected Items</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">
+              {bulkActionType === "copy" ? "Copy Selected Items" : "Move Selected Items"}
+            </h3>
             <p className="mt-1 text-[11px] font-bold text-slate-500">
               {selectedItemIds.size} item(s) selected. Choose a pending purchase order or create a new one.
             </p>
@@ -2006,7 +2025,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 disabled={isMovingItems || !moveTargetVendorId}
                 className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
               >
-                Move via New PO
+                {bulkActionType === "copy" ? "Copy via New PO" : "Move via New PO"}
               </button>
               <button
                 type="button"
@@ -2014,7 +2033,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 disabled={isMovingItems || !moveTargetOrderId}
                 className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
               >
-                Move To Selected
+                {bulkActionType === "copy" ? "Copy To Selected" : "Move To Selected"}
               </button>
             </div>
           </div>
