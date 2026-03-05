@@ -785,7 +785,20 @@ const mapPurchaseInvoiceFromDb = (row: any) => ({
   totalAmount: row.total_amount ?? row.totalAmount ?? 0,
   createdAt: row.created_at ?? row.createdAt,
   updatedAt: row.updated_at ?? row.updatedAt,
-  items: Array.isArray(row.items) ? row.items.map(mapPurchaseInvoiceItemFromDb) : [],
+  items: Array.isArray(row.items)
+    ? [...row.items]
+        .sort((a: any, b: any) => {
+          const aId = Number(a?.id);
+          const bId = Number(b?.id);
+          const aNum = Number.isFinite(aId);
+          const bNum = Number.isFinite(bId);
+          if (aNum && bNum) return aId - bId;
+          if (aNum) return -1;
+          if (bNum) return 1;
+          return String(a?.id ?? "").localeCompare(String(b?.id ?? ""));
+        })
+        .map(mapPurchaseInvoiceItemFromDb)
+    : [],
 });
 
 const mapPurchaseInvoiceItemFromDb = (row: any) => {
@@ -2261,14 +2274,14 @@ export const purchaseInvoiceAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
     const rows = await apiCall(
-      "/purchase_invoices?select=*,items:purchase_invoice_items(*)&order=created_at.desc"
+      "/purchase_invoices?select=*,items:purchase_invoice_items(*)&order=created_at.desc&items.order=id.asc"
     );
     return Array.isArray(rows) ? rows.map(mapPurchaseInvoiceFromDb) : rows;
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
     const row = await getFirst(
-      `/purchase_invoices?select=*,items:purchase_invoice_items(*)&id=eq.${id}`
+      `/purchase_invoices?select=*,items:purchase_invoice_items(*)&id=eq.${id}&items.order=id.asc`
     );
     return mapPurchaseInvoiceFromDb(row);
   },

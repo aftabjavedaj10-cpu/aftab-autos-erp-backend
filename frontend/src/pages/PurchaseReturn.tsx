@@ -2,6 +2,7 @@
 import type { PurchaseReturn } from "../types";
 import Pagination from "../components/Pagination";
 import { formatDateDMY } from "../services/dateFormat";
+import { FiAlertTriangle, FiBox, FiCalendar, FiCheck, FiEye, FiPlus, FiSearch, FiTag, FiTrash2 } from "react-icons/fi";
 
 const STATUS_FILTERS = [
   "All Status",
@@ -201,7 +202,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
             onClick={onAddClick}
             className="bg-orange-600 hover:bg-orange-700 text-white font-black py-2 px-4 rounded-xl shadow-lg shadow-orange-600/20 transition-all active:scale-95 flex items-center gap-2 text-[9px] uppercase tracking-widest"
           >
-            <span>âž•</span> Create Purchase Return
+            <FiPlus className="text-[12px]" /> Create Purchase Return
           </button>
         </div>
       </div>
@@ -209,7 +210,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
       {successMsg && (
         <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-2xl font-bold text-sm animate-in slide-in-from-top-4 duration-300 flex items-center gap-3">
           <div className="w-6 h-6 bg-emerald-500 text-white rounded-full flex items-center justify-center text-xs">
-            âœ“
+            <FiCheck />
           </div>
           {successMsg}
         </div>
@@ -220,7 +221,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
             <div className="md:col-span-3 relative">
               <span className="absolute inset-y-0 left-4 flex items-center text-slate-400 text-xs">
-                ðŸ”
+                <FiSearch />
               </span>
               <input
                 type="text"
@@ -232,7 +233,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
             </div>
             <div className="md:col-span-3 relative">
               <span className="absolute inset-y-0 left-4 flex items-center text-slate-400 text-xs">
-                ðŸ”–
+                <FiTag />
               </span>
               <input
                 type="text"
@@ -244,7 +245,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
             </div>
             <div className="md:col-span-3 relative">
               <span className="absolute inset-y-0 left-4 flex items-center text-slate-400 text-xs">
-                ðŸ“¦
+                <FiBox />
               </span>
               <input
                 type="text"
@@ -287,7 +288,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
                   className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:text-orange-600 text-[12px]"
                   title="Pick start date"
                 >
-                  ðŸ“…
+                  <FiCalendar className="mx-auto" />
                 </button>
                 <input
                   ref={startPickerRef}
@@ -311,7 +312,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
                   className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-500 hover:text-orange-600 text-[12px]"
                   title="Pick end date"
                 >
-                  ðŸ“…
+                  <FiCalendar className="mx-auto" />
                 </button>
                 <input
                   ref={endPickerRef}
@@ -341,7 +342,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
                       }`}
                     >
                       {selectedIds.size === paginatedInvoices.length && paginatedInvoices.length > 0 && (
-                        <span className="text-white text-[9px]">âœ“</span>
+                        <FiCheck className="text-white text-[10px]" />
                       )}
                     </button>
                     {selectedIds.size > 0 && (
@@ -389,7 +390,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
                             : "border-slate-200 dark:border-slate-700"
                         }`}
                       >
-                        {selectedIds.has(inv.id) && <span className="text-white text-[9px]">âœ“</span>}
+                        {selectedIds.has(inv.id) && <FiCheck className="text-white text-[10px]" />}
                       </button>
                     </div>
                   </td>
@@ -440,7 +441,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
                         onClick={() => onEditClick(inv)}
                         className="w-8 h-8 flex items-center justify-center bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-lg text-slate-400 hover:text-orange-600 transition-all shadow-sm"
                       >
-                        <span className="text-xs">ðŸ‘ï¸</span>
+                        <FiEye className="text-xs" />
                       </button>
                       <button
                         onClick={() => {
@@ -508,7 +509,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
                 onClick={() => setIsConfirmModalOpen(true)}
                 className="bg-rose-600 hover:bg-rose-700 text-white px-6 py-2.5 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all active:scale-95 shadow-lg shadow-rose-600/20 flex items-center gap-2 group"
               >
-                <span>ðŸ—‘ï¸</span> Delete Selected
+                <FiTrash2 /> Delete Selected
               </button>
               <button
                 onClick={() => setSelectedIds(new Set())}
@@ -532,7 +533,7 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
             <div className="bg-rose-600 h-1.5 w-full"></div>
             <div className="p-10 text-center">
               <div className="w-20 h-20 bg-rose-50 dark:bg-rose-950/30 text-rose-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-6 border border-rose-100 dark:border-rose-900/40">
-                âš ï¸
+                <FiAlertTriangle />
               </div>
               <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-2">
                 Mark As Deleted?
