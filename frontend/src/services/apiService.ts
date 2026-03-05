@@ -849,6 +849,8 @@ const mapPurchaseInvoiceToDb = (invoice: any) =>
       "overallDiscount",
       "amountReceived",
       "totalAmount",
+      "createdAt",
+      "updatedAt",
     ]
   );
 
@@ -943,6 +945,8 @@ const mapPurchaseOrderToDb = (order: any) =>
       "overallDiscount",
       "amountReceived",
       "totalAmount",
+      "createdAt",
+      "updatedAt",
     ]
   );
 
@@ -1037,6 +1041,8 @@ const mapPurchaseReturnToDb = (invoice: any) =>
       "overallDiscount",
       "amountReceived",
       "totalAmount",
+      "createdAt",
+      "updatedAt",
     ]
   );
 
