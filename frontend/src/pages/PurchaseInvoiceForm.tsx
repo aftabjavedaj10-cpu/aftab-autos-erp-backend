@@ -1,7 +1,7 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { FiArrowLeft, FiChevronDown, FiMove } from "react-icons/fi";
-import type { Company, Product, PurchaseInvoice, SalesInvoiceItem, Vendor } from "../types";
+import type { Company, Product, PurchaseInvoice, PurchaseOrder, SalesInvoiceItem, Vendor } from "../types";
 import { getPrintTemplateSettings } from "../services/printSettings";
 import { getEmbeddedInvoicePrintCss, normalizePrintMode } from "../services/printEngine";
 
@@ -11,6 +11,7 @@ interface PurchaseInvoiceFormPageProps {
   invoices: PurchaseInvoice[];
   products: Product[];
   vendors: Vendor[];
+  purchaseOrders?: PurchaseOrder[];
   company?: Company;
   onBack: () => void;
   onSave: (
@@ -20,6 +21,13 @@ interface PurchaseInvoiceFormPageProps {
     salesPriceUpdates?: Record<string, number>
   ) => void;
   onNavigate?: (invoice: PurchaseInvoice) => void;
+  onMoveItemsToPurchaseOrder?: (args: {
+    targetPurchaseOrderId?: string;
+    createNew?: boolean;
+    vendorId: string;
+    vendorName: string;
+    items: SalesInvoiceItem[];
+  }) => Promise<void>;
   onNavigateNew?: () => void;
   formTitleNew?: string;
   formTitleEdit?: string;
@@ -72,10 +80,12 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   invoices,
   products,
   vendors,
+  purchaseOrders = [],
   company,
   onBack,
   onSave,
   onNavigate,
+  onMoveItemsToPurchaseOrder,
   onNavigateNew,
   formTitleNew = "New Purchase Invoice",
   formTitleEdit = "Edit Purchase Invoice",
@@ -174,6 +184,9 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [salesPriceByProductId, setSalesPriceByProductId] = useState<Record<string, number>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [moveTargetOrderId, setMoveTargetOrderId] = useState("");
+  const [isMovingItems, setIsMovingItems] = useState(false);
   const COPY_SEED_KEY = "purchase-invoice-copy-seed";
   const createLineId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const rowKeyOf = (item: SalesInvoiceItem) => String((item as any).id ?? item.productId);
@@ -596,6 +609,67 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
       });
     }
     setSelectedItemIds(new Set());
+  };
+
+  const removeSelectedItemsFromCurrentForm = () => {
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.filter((i) => !selectedItemIds.has(rowKeyOf(i))),
+    }));
+    if (isPurchaseMode) {
+      setSalesPriceByProductId((prev) => {
+        const next = { ...prev };
+        selectedItemIds.forEach((id) => {
+          delete next[id];
+        });
+        return next;
+      });
+    }
+    setSelectedItemIds(new Set());
+  };
+
+  const pendingPurchaseOrdersForMove = useMemo(
+    () =>
+      purchaseOrders.filter((po) => String(po.status || "").toLowerCase() === "pending"),
+    [purchaseOrders]
+  );
+
+  const openMoveModal = () => {
+    if (selectedItemIds.size === 0) return;
+    setMoveTargetOrderId(pendingPurchaseOrdersForMove[0]?.id || "");
+    setIsMoveModalOpen(true);
+  };
+
+  const handleMoveSelectedItems = async (createNew: boolean) => {
+    if (!onMoveItemsToPurchaseOrder) return;
+    if (!formData.vendorId) {
+      setFormError("Please select a vendor before moving items.");
+      return;
+    }
+    const selectedItems = formData.items.filter((i) => selectedItemIds.has(rowKeyOf(i)));
+    if (selectedItems.length === 0) return;
+    if (!createNew && !moveTargetOrderId) {
+      setFormError("Please select a pending purchase order.");
+      return;
+    }
+    const vendor = vendorsByParty.find((v) => String(v.id) === String(formData.vendorId));
+    try {
+      setIsMovingItems(true);
+      await onMoveItemsToPurchaseOrder({
+        targetPurchaseOrderId: createNew ? undefined : moveTargetOrderId,
+        createNew,
+        vendorId: String(formData.vendorId),
+        vendorName: String(vendor?.name || "Unknown"),
+        items: selectedItems,
+      });
+      removeSelectedItemsFromCurrentForm();
+      setIsMoveModalOpen(false);
+      setMoveTargetOrderId("");
+    } catch (err: any) {
+      setFormError(err?.message || "Failed to move selected items.");
+    } finally {
+      setIsMovingItems(false);
+    }
   };
 
   const handlePrintSelected = () => {
@@ -1894,10 +1968,74 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
                 Delete Selected
               </button>
               <button
+                onClick={openMoveModal}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
+              >
+                Move To
+              </button>
+              <button
                 onClick={() => setSelectedItemIds(new Set())}
                 className="text-slate-300 hover:text-white font-black text-[9px] uppercase tracking-widest transition-colors"
               >
                 Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isMoveModalOpen && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onClick={() => !isMovingItems && setIsMoveModalOpen(false)} />
+          <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-5">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">Move Selected Items</h3>
+            <p className="mt-1 text-[11px] font-bold text-slate-500">
+              {selectedItemIds.size} item(s) selected. Choose a pending purchase order or create a new one.
+            </p>
+
+            <div className="mt-4">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                Pending Purchase Orders
+              </label>
+              <select
+                value={moveTargetOrderId}
+                onChange={(e) => setMoveTargetOrderId(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white"
+                disabled={isMovingItems || pendingPurchaseOrdersForMove.length === 0}
+              >
+                <option value="">Select pending purchase order</option>
+                {pendingPurchaseOrdersForMove.map((po) => (
+                  <option key={po.id} value={po.id}>
+                    {po.id} - {po.vendorName || "Unknown Vendor"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsMoveModalOpen(false)}
+                disabled={isMovingItems}
+                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMoveSelectedItems(true)}
+                disabled={isMovingItems}
+                className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
+              >
+                Move via New PO
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMoveSelectedItems(false)}
+                disabled={isMovingItems || !moveTargetOrderId}
+                className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
+              >
+                Move To Selected
               </button>
             </div>
           </div>

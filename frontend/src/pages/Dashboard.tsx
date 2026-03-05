@@ -49,6 +49,7 @@ import type {
   Vendor,
   Customer,
   SalesInvoice,
+  SalesInvoiceItem,
   PurchaseInvoice,
   PurchaseOrder,
   PurchaseReturn,
@@ -807,6 +808,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     return Number.isFinite(numeric) ? numeric : 0;
   };
 
+  const computeLineNet = (item: SalesInvoiceItem) => {
+    const qty = Number(item.quantity || 0);
+    const unitPrice = Number(item.unitPrice || 0);
+    const gross = qty * unitPrice;
+    const discountValue = Number(item.discountValue || 0);
+    const isPercent = String(item.discountType || "").toLowerCase() === "percent";
+    const discount = isPercent ? (gross * discountValue) / 100 : discountValue;
+    return Math.max(0, gross - discount);
+  };
+
   const getNextPurchaseOrderId = () => {
     const maxNo = purchaseOrders.reduce((max, row) => {
       const match = String(row.id || "").match(/^PO-(\d{6})$/);
@@ -823,6 +834,83 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       return value > max ? value : max;
     }, 0);
     return `PI-${String(maxNo + 1).padStart(6, "0")}`;
+  };
+
+  const handleMoveItemsToPurchaseOrder = async ({
+    targetPurchaseOrderId,
+    createNew,
+    vendorId,
+    vendorName,
+    items,
+  }: {
+    targetPurchaseOrderId?: string;
+    createNew?: boolean;
+    vendorId: string;
+    vendorName: string;
+    items: SalesInvoiceItem[];
+  }) => {
+    const normalizedVendorId = String(vendorId || "").trim();
+    if (!normalizedVendorId) {
+      throw new Error("Vendor is required to move items.");
+    }
+    const movedItems = (Array.isArray(items) ? items : []).map((item) => ({
+      ...item,
+      id: undefined,
+      total: Number(item.total || computeLineNet(item)),
+    }));
+    if (movedItems.length === 0) {
+      throw new Error("No items selected to move.");
+    }
+
+    const vendor = vendors.find((v) => String(v.id || "") === normalizedVendorId);
+    const resolvedVendorName = String(vendor?.name || vendorName || "Unknown");
+
+    if (createNew) {
+      const nowDate = new Date().toISOString().split("T")[0];
+      const newDoc: PurchaseOrder = {
+        id: getNextPurchaseOrderId(),
+        vendorId: normalizedVendorId,
+        vendorName: resolvedVendorName,
+        reference: "",
+        vehicleNumber: "",
+        date: nowDate,
+        dueDate: nowDate,
+        status: "Pending",
+        paymentStatus: "Unpaid",
+        notes: "Created by Move To action",
+        overallDiscount: 0,
+        amountReceived: 0,
+        items: movedItems,
+        totalAmount: movedItems.reduce((sum, i) => sum + Number(i.total || 0), 0),
+      };
+      const saved = await purchaseOrderAPI.create(newDoc);
+      setPurchaseOrders((prev) => [saved, ...prev.filter((po) => po.id !== saved.id)]);
+      return;
+    }
+
+    const targetId = String(targetPurchaseOrderId || "").trim();
+    if (!targetId) {
+      throw new Error("Please select a pending purchase order.");
+    }
+    const existing = purchaseOrders.find((po) => String(po.id) === targetId);
+    if (!existing) {
+      throw new Error("Selected purchase order not found.");
+    }
+    if (String(existing.status || "").toLowerCase() !== "pending") {
+      throw new Error("Selected purchase order must be Pending.");
+    }
+    if (String(existing.vendorId || "") !== normalizedVendorId) {
+      throw new Error("Vendor mismatch. You can only move items to same-vendor purchase orders.");
+    }
+
+    const mergedItems = [...(existing.items || []), ...movedItems];
+    const updatedDoc: PurchaseOrder = {
+      ...existing,
+      items: mergedItems,
+      totalAmount: mergedItems.reduce((sum, i) => sum + Number(i.total || computeLineNet(i)), 0),
+    };
+    const saved = await purchaseOrderAPI.update(existing.id, updatedDoc);
+    setPurchaseOrders((prev) => prev.map((po) => (po.id === saved.id ? saved : po)));
   };
 
   const handleLowInventoryBulkAddToPurchaseOrder = async ({
@@ -2314,7 +2402,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={purchaseInvoices}
             products={products}
             vendors={vendors}
+            purchaseOrders={purchaseOrders}
             company={activeCompany || undefined}
+            onMoveItemsToPurchaseOrder={handleMoveItemsToPurchaseOrder}
             onBack={() => {
               setEditingPurchaseInvoice(undefined);
               setPurchaseInvoiceForceNewMode(false);
@@ -2520,6 +2610,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             products={products}
             vendors={vendors}
             company={activeCompany || undefined}
+            onMoveItemsToPurchaseOrder={handleMoveItemsToPurchaseOrder}
             onConvertToPurchaseInvoice={(purchaseOrder) => {
               const converted: PurchaseInvoice = {
                 ...purchaseOrder,
