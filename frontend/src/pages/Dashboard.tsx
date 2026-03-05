@@ -845,14 +845,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   }: {
     targetPurchaseOrderId?: string;
     createNew?: boolean;
-    vendorId: string;
-    vendorName: string;
+    vendorId?: string;
+    vendorName?: string;
     items: SalesInvoiceItem[];
   }) => {
     const normalizedVendorId = String(vendorId || "").trim();
-    if (!normalizedVendorId) {
-      throw new Error("Vendor is required to move items.");
-    }
     const movedItems = (Array.isArray(items) ? items : []).map((item) => ({
       ...item,
       id: undefined,
@@ -862,10 +859,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       throw new Error("No items selected to move.");
     }
 
-    const vendor = vendors.find((v) => String(v.id || "") === normalizedVendorId);
-    const resolvedVendorName = String(vendor?.name || vendorName || "Unknown");
-
     if (createNew) {
+      if (!normalizedVendorId) {
+        throw new Error("Vendor is required to move items to a new purchase order.");
+      }
+      const vendor = vendors.find((v) => String(v.id || "") === normalizedVendorId);
+      const resolvedVendorName = String(vendor?.name || vendorName || "Unknown");
       const nowDate = new Date().toISOString().split("T")[0];
       const newDoc: PurchaseOrder = {
         id: getNextPurchaseOrderId(),
@@ -898,9 +897,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     }
     if (String(existing.status || "").toLowerCase() !== "pending") {
       throw new Error("Selected purchase order must be Pending.");
-    }
-    if (String(existing.vendorId || "") !== normalizedVendorId) {
-      throw new Error("Vendor mismatch. You can only move items to same-vendor purchase orders.");
     }
 
     const mergedItems = [...(existing.items || []), ...movedItems];

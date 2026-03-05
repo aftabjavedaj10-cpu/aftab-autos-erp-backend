@@ -24,8 +24,8 @@ interface PurchaseInvoiceFormPageProps {
   onMoveItemsToPurchaseOrder?: (args: {
     targetPurchaseOrderId?: string;
     createNew?: boolean;
-    vendorId: string;
-    vendorName: string;
+    vendorId?: string;
+    vendorName?: string;
     items: SalesInvoiceItem[];
   }) => Promise<void>;
   onNavigateNew?: () => void;
@@ -186,6 +186,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const [formError, setFormError] = useState<string | null>(null);
   const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
   const [moveTargetOrderId, setMoveTargetOrderId] = useState("");
+  const [moveTargetVendorId, setMoveTargetVendorId] = useState("");
   const [isMovingItems, setIsMovingItems] = useState(false);
   const COPY_SEED_KEY = "purchase-invoice-copy-seed";
   const createLineId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -637,13 +638,14 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
   const openMoveModal = () => {
     if (selectedItemIds.size === 0) return;
     setMoveTargetOrderId(pendingPurchaseOrdersForMove[0]?.id || "");
+    setMoveTargetVendorId(String(formData.vendorId || ""));
     setIsMoveModalOpen(true);
   };
 
   const handleMoveSelectedItems = async (createNew: boolean) => {
     if (!onMoveItemsToPurchaseOrder) return;
-    if (!formData.vendorId) {
-      setFormError("Please select a vendor before moving items.");
+    if (createNew && !moveTargetVendorId) {
+      setFormError("Please select a vendor before moving items to a new purchase order.");
       return;
     }
     const selectedItems = formData.items.filter((i) => selectedItemIds.has(rowKeyOf(i)));
@@ -652,14 +654,18 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
       setFormError("Please select a pending purchase order.");
       return;
     }
-    const vendor = vendorsByParty.find((v) => String(v.id) === String(formData.vendorId));
+    const vendor = vendorsByParty.find((v) =>
+      createNew
+        ? String(v.id) === String(moveTargetVendorId)
+        : String(v.id) === String(formData.vendorId)
+    );
     try {
       setIsMovingItems(true);
       await onMoveItemsToPurchaseOrder({
         targetPurchaseOrderId: createNew ? undefined : moveTargetOrderId,
         createNew,
-        vendorId: String(formData.vendorId),
-        vendorName: String(vendor?.name || "Unknown"),
+        vendorId: createNew ? String(moveTargetVendorId) : formData.vendorId ? String(formData.vendorId) : undefined,
+        vendorName: vendor?.name ? String(vendor.name) : undefined,
         items: selectedItems,
       });
       removeSelectedItemsFromCurrentForm();
@@ -2012,6 +2018,25 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
               </select>
             </div>
 
+            <div className="mt-3">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                Vendor For New PO
+              </label>
+              <select
+                value={moveTargetVendorId}
+                onChange={(e) => setMoveTargetVendorId(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white"
+                disabled={isMovingItems}
+              >
+                <option value="">Select vendor</option>
+                {vendorsByParty.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name} {v.vendorCode ? `(${v.vendorCode})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="mt-5 flex items-center justify-end gap-2">
               <button
                 type="button"
@@ -2024,7 +2049,7 @@ const PurchaseInvoiceFormPage: React.FC<PurchaseInvoiceFormPageProps> = ({
               <button
                 type="button"
                 onClick={() => handleMoveSelectedItems(true)}
-                disabled={isMovingItems}
+                disabled={isMovingItems || !moveTargetVendorId}
                 className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
               >
                 Move via New PO
