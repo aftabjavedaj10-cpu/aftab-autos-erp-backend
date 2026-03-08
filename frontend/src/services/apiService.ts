@@ -25,6 +25,7 @@ const FUNCTIONS_BASE_URL = `${SUPABASE_URL}/functions/v1`;
 const GLOBAL_LOADING_EVENT = "app:global-loading";
 
 let inFlightRequestCount = 0;
+let silentGlobalLoadingScopeCount = 0;
 
 const emitGlobalLoading = () => {
   if (typeof window === "undefined") return;
@@ -36,13 +37,26 @@ const emitGlobalLoading = () => {
 };
 
 const startGlobalLoading = () => {
+  if (silentGlobalLoadingScopeCount > 0) return;
   inFlightRequestCount += 1;
   emitGlobalLoading();
 };
 
 const endGlobalLoading = () => {
+  if (silentGlobalLoadingScopeCount > 0) return;
   inFlightRequestCount = Math.max(0, inFlightRequestCount - 1);
   emitGlobalLoading();
+};
+
+export const withSilentGlobalLoading = async <T>(task: () => Promise<T>): Promise<T> => {
+  silentGlobalLoadingScopeCount += 1;
+  emitGlobalLoading();
+  try {
+    return await task();
+  } finally {
+    silentGlobalLoadingScopeCount = Math.max(0, silentGlobalLoadingScopeCount - 1);
+    emitGlobalLoading();
+  }
 };
 
 export const subscribeGlobalLoading = (

@@ -58,7 +58,7 @@ import type {
   UnitMaster,
   WarehouseMaster,
 } from "../types";
-import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, unitAPI, warehouseAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
+import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, unitAPI, warehouseAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI, withSilentGlobalLoading } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -298,8 +298,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   }, []);
 
   const loadModuleData = useCallback(
-    async (module: DataModule, opts?: { force?: boolean }) => {
+    async (module: DataModule, opts?: { force?: boolean; silent?: boolean }) => {
       const force = Boolean(opts?.force);
+      const silent = Boolean(opts?.silent);
       if (!force && loadedModulesRef.current.has(module)) return;
       const inFlight = loadingModulesRef.current.get(module);
       if (inFlight) {
@@ -316,7 +317,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         }
       }
 
-      const task = (async () => {
+      const runModuleLoad = async () => {
         const companyId = getActiveCompanyId();
         switch (module) {
           case "reference": {
@@ -390,7 +391,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             break;
           }
         }
-      })();
+      };
+      const task = silent ? withSilentGlobalLoading(runModuleLoad) : runModuleLoad();
 
       loadingModulesRef.current.set(module, task);
       try {
@@ -507,11 +509,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           const company = await companyAPI.getById(companyId).catch(() => null);
           setActiveCompany(company);
         }
-        // Unblock UI quickly, then hydrate data in background.
+        // Unblock UI quickly, then hydrate all core modules in background
+        // so data is ready across pages without waiting for tab switches.
         setLoading(false);
-        const starterModules = getModulesForTab(activeTab);
-        starterModules.forEach((module) => {
-          void loadModuleData(module).catch((err) => {
+        const allModules: DataModule[] = ["reference", "products", "sales", "purchase"];
+        allModules.forEach((module) => {
+          void loadModuleData(module, { silent: true }).catch((err) => {
             console.error(`Failed to load ${module} module:`, err);
           });
         });
@@ -528,7 +531,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   useEffect(() => {
     const modules = getModulesForTab(activeTab);
     modules.forEach((module) => {
-      void loadModuleData(module).catch((err) => {
+      void loadModuleData(module, { silent: true }).catch((err) => {
         console.error(`Failed to load ${module} module:`, err);
       });
     });
@@ -540,7 +543,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     const timer = window.setInterval(() => {
       const modules = getModulesForTab(activeTab);
       modules.forEach((module) => {
-        void loadModuleData(module, { force: true }).catch((err) => {
+        void loadModuleData(module, { force: true, silent: true }).catch((err) => {
           console.error(`Background refresh failed for ${module}:`, err);
         });
       });
