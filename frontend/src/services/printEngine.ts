@@ -52,15 +52,46 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     margin: 0 !important;
     padding: 0 !important;
     background: #fff !important;
+    height: auto !important;
+    overflow: visible !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
-  body * {
-    visibility: hidden !important;
+  #root {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  #root > * {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  main {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  .invoice-editor-root > :not(.invoice-print-root):not(style) {
+    display: none !important;
+  }
+  .invoice-editor-root {
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
   }
   .invoice-print-root,
   .invoice-print-root * {
     visibility: visible !important;
+  }
+  .invoice-print-root * {
+    overflow: visible !important;
+    max-height: none !important;
   }
   .invoice-print-root {
     position: static !important;
@@ -69,36 +100,78 @@ export const getEmbeddedInvoicePrintCss = (mode: PrintMode) => `
     display: block !important;
     overflow: visible !important;
     height: auto !important;
+    width: 100% !important;
     background: #fff !important;
-    z-index: 999999 !important;
+    z-index: 1 !important;
+  }
+  * {
+    scrollbar-width: none !important;
+  }
+  *::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
   }
   .print-sheet-a4 {
-    width: 210mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
     min-height: auto !important;
     margin: 0 !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
     background: #fff !important;
     page-break-after: auto;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
   .print-sheet-80mm {
-    width: 68mm !important;
-    max-width: 68mm !important;
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0 !important;
+    padding: 0 !important;
     box-sizing: border-box !important;
     background: #fff !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  .receipt-print {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  ${
+    isNarrowPrintMode(mode)
+      ? `
+  .print-sheet-80mm,
+  .receipt-print {
+    margin-left: -1mm !important;
+    width: calc(100% + 1mm) !important;
+    max-width: calc(100% + 1mm) !important;
+  }
+  `
+      : ""
   }
   table {
-    page-break-inside: auto;
-  }
-  tr, td, th {
-    page-break-inside: avoid;
-    break-inside: avoid;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
   thead {
-    display: table-header-group;
+    display: table-row-group !important;
   }
   tfoot {
-    display: table-footer-group;
+    display: table-footer-group !important;
+  }
+  tbody tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid-page !important;
+  }
+  th, td {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    vertical-align: top !important;
   }
 }
 `;

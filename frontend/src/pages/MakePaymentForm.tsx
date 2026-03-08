@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import type { Company, Product, SalesInvoice, Vendor } from "../types";
+import type { Company, Product, PurchaseInvoice, PurchaseReturn, Vendor } from "../types";
 import type { MakePaymentDoc } from "./MakePayment";
 import {
   buildPaymentPrintHtml,
@@ -12,8 +12,8 @@ interface MakePaymentFormPageProps {
   docs: MakePaymentDoc[];
   vendors: Vendor[];
   products: Product[];
-  purchaseInvoices: SalesInvoice[];
-  purchaseReturns: SalesInvoice[];
+  purchaseInvoices: PurchaseInvoice[];
+  purchaseReturns: PurchaseReturn[];
   company?: Company;
   doc?: MakePaymentDoc;
   onBack: () => void;
@@ -204,12 +204,12 @@ const MakePaymentFormPage: React.FC<MakePaymentFormPageProps> = ({
 
     const invoiceDebit = purchaseInvoices
       .filter((inv) => isVisible((inv as any).status))
-      .filter((inv) => matchByVendor(inv.customerId, inv.customerName))
+      .filter((inv) => matchByVendor(inv.vendorId, inv.vendorName))
       .reduce((sum, inv) => sum + parseNumber(inv.totalAmount), 0);
 
     const returnCredit = purchaseReturns
       .filter((ret) => isVisible((ret as any).status))
-      .filter((ret) => matchByVendor(ret.customerId, ret.customerName))
+      .filter((ret) => matchByVendor(ret.vendorId, ret.vendorName))
       .reduce((sum, ret) => sum + parseNumber(ret.totalAmount), 0);
 
     const paymentCredit = visiblePayments

@@ -43,8 +43,22 @@ import ReceivePaymentFormPage from "./ReceivePaymentForm";
 import MakePaymentPage, { type MakePaymentDoc } from "./MakePayment";
 import MakePaymentFormPage from "./MakePaymentForm";
 import { ALL_REPORTS } from "../constants";
-import type { Product, Category, Vendor, Customer, SalesInvoice, StockLedgerEntry, Company, UnitMaster, WarehouseMaster } from "../types";
-import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, unitAPI, warehouseAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI } from "../services/apiService";
+import type {
+  Product,
+  Category,
+  Vendor,
+  Customer,
+  SalesInvoice,
+  SalesInvoiceItem,
+  PurchaseInvoice,
+  PurchaseOrder,
+  PurchaseReturn,
+  StockLedgerEntry,
+  Company,
+  UnitMaster,
+  WarehouseMaster,
+} from "../types";
+import { productAPI, productPackagingAPI, customerAPI, vendorAPI, categoryAPI, unitAPI, warehouseAPI, companyAPI, permissionAPI, purchaseInvoiceAPI, purchaseOrderAPI, purchaseReturnAPI, quotationAPI, receivePaymentAPI, makePaymentAPI, salesInvoiceAPI, salesReturnAPI, stockLedgerAPI, withSilentGlobalLoading } from "../services/apiService";
 import { getActiveCompanyId, getSession, getUserId, setActiveCompanyId, setPermissions } from "../services/supabaseAuth";
 
 interface DashboardProps {
@@ -88,13 +102,13 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesInvoices, setSalesInvoices] = useState<SalesInvoice[]>([]);
-  const [purchaseInvoices, setPurchaseInvoices] = useState<SalesInvoice[]>([]);
-  const [purchaseOrders, setPurchaseOrders] = useState<SalesInvoice[]>([]);
-  const [purchaseReturns, setPurchaseReturns] = useState<SalesInvoice[]>([]);
+  const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<PurchaseOrder[]>([]);
+  const [purchaseReturns, setPurchaseReturns] = useState<PurchaseReturn[]>([]);
   const [editingSalesInvoice, setEditingSalesInvoice] = useState<SalesInvoice | undefined>(undefined);
-  const [editingPurchaseInvoice, setEditingPurchaseInvoice] = useState<SalesInvoice | undefined>(undefined);
-  const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<SalesInvoice | undefined>(undefined);
-  const [editingPurchaseReturn, setEditingPurchaseReturn] = useState<SalesInvoice | undefined>(undefined);
+  const [editingPurchaseInvoice, setEditingPurchaseInvoice] = useState<PurchaseInvoice | undefined>(undefined);
+  const [editingPurchaseOrder, setEditingPurchaseOrder] = useState<PurchaseOrder | undefined>(undefined);
+  const [editingPurchaseReturn, setEditingPurchaseReturn] = useState<PurchaseReturn | undefined>(undefined);
   const [salesInvoiceForceNewMode, setSalesInvoiceForceNewMode] = useState(false);
   const [purchaseInvoiceForceNewMode, setPurchaseInvoiceForceNewMode] = useState(false);
   const [quotationInvoices, setQuotationInvoices] = useState<SalesInvoice[]>([]);
@@ -216,7 +230,247 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     });
   };
 
-  // Fetch initial data from API
+  type DataModule = "reference" | "products" | "sales" | "purchase";
+  const loadedModulesRef = useRef<Set<DataModule>>(new Set());
+  const loadingModulesRef = useRef<Map<DataModule, Promise<void>>>(new Map());
+  const CACHE_MAX_AGE_MS = 2 * 60 * 1000;
+  const REFRESH_INTERVAL_MS = 90 * 1000;
+  const cachePrefixRef = useRef(
+    `dashboard_cache_${getUserId() || "anon"}_${getActiveCompanyId() || "default"}`
+  );
+
+  const getModuleCacheKey = useCallback(
+    (module: DataModule) => `${cachePrefixRef.current}_${module}`,
+    []
+  );
+
+  const writeModuleCache = useCallback((module: DataModule, payload: any) => {
+    try {
+      localStorage.setItem(
+        getModuleCacheKey(module),
+        JSON.stringify({ ts: Date.now(), payload })
+      );
+    } catch {
+      // ignore cache write failures (quota/private mode)
+    }
+  }, [getModuleCacheKey]);
+
+  const readModuleCache = useCallback((module: DataModule) => {
+    try {
+      const raw = localStorage.getItem(getModuleCacheKey(module));
+      if (!raw) return null as null | { ts: number; payload: any };
+      const parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed.ts !== "number") return null;
+      return parsed as { ts: number; payload: any };
+    } catch {
+      return null;
+    }
+  }, [getModuleCacheKey]);
+
+  const applyModulePayload = useCallback((module: DataModule, payload: any) => {
+    switch (module) {
+      case "reference":
+        setCustomers(Array.isArray(payload?.customers) ? payload.customers : []);
+        setVendors(Array.isArray(payload?.vendors) ? payload.vendors : []);
+        setCategories(Array.isArray(payload?.categories) ? payload.categories : []);
+        setUnits(Array.isArray(payload?.units) ? payload.units : []);
+        setWarehouses(Array.isArray(payload?.warehouses) ? payload.warehouses : []);
+        break;
+      case "products":
+        setProducts(Array.isArray(payload?.products) ? payload.products : []);
+        if (Array.isArray(payload?.stockLedger)) {
+          setStockLedger(payload.stockLedger);
+        }
+        break;
+      case "sales":
+        setSalesInvoices(Array.isArray(payload?.salesInvoices) ? payload.salesInvoices : []);
+        setQuotationInvoices(Array.isArray(payload?.quotationInvoices) ? payload.quotationInvoices : []);
+        setSalesReturns(Array.isArray(payload?.salesReturns) ? payload.salesReturns : []);
+        setReceivePayments(Array.isArray(payload?.receivePayments) ? payload.receivePayments : []);
+        break;
+      case "purchase":
+        setPurchaseInvoices(Array.isArray(payload?.purchaseInvoices) ? payload.purchaseInvoices : []);
+        setPurchaseOrders(Array.isArray(payload?.purchaseOrders) ? payload.purchaseOrders : []);
+        setPurchaseReturns(Array.isArray(payload?.purchaseReturns) ? payload.purchaseReturns : []);
+        setMakePayments(Array.isArray(payload?.makePayments) ? payload.makePayments : []);
+        break;
+    }
+  }, []);
+
+  const loadModuleData = useCallback(
+    async (module: DataModule, opts?: { force?: boolean; silent?: boolean }) => {
+      const force = Boolean(opts?.force);
+      const silent = Boolean(opts?.silent);
+      if (!force && loadedModulesRef.current.has(module)) return;
+      const inFlight = loadingModulesRef.current.get(module);
+      if (inFlight) {
+        await inFlight;
+        return;
+      }
+
+      const cached = readModuleCache(module);
+      if (!force && cached?.payload) {
+        applyModulePayload(module, cached.payload);
+        loadedModulesRef.current.add(module);
+        if (Date.now() - cached.ts <= CACHE_MAX_AGE_MS) {
+          return;
+        }
+      }
+
+      const runModuleLoad = async () => {
+        const companyId = getActiveCompanyId();
+        switch (module) {
+          case "reference": {
+            const [customersData, vendorsData, categoriesData, unitsData, warehousesData] =
+              await Promise.all([
+                customerAPI.getAll().catch(() => []),
+                vendorAPI.getAll().catch(() => []),
+                categoryAPI.getAll().catch(() => []),
+                unitAPI.getAll().catch(() => []),
+                warehouseAPI.getAll().catch(() => []),
+              ]);
+            const payload = {
+              customers: Array.isArray(customersData) ? customersData : (customersData as any)?.data || [],
+              vendors: Array.isArray(vendorsData) ? vendorsData : (vendorsData as any)?.data || [],
+              categories: Array.isArray(categoriesData) ? categoriesData : (categoriesData as any)?.data || [],
+              units: Array.isArray(unitsData) ? unitsData : [],
+              warehouses: Array.isArray(warehousesData) ? warehousesData : [],
+            };
+            applyModulePayload(module, payload);
+            writeModuleCache(module, payload);
+            break;
+          }
+          case "products": {
+            const productsData = await productAPI.getAll().catch(() => []);
+            const normalizedProducts = Array.isArray(productsData) ? productsData : (productsData as any)?.data || [];
+            const productOnlyPayload = { products: normalizedProducts, stockLedger: [] as StockLedgerEntry[] };
+            applyModulePayload(module, productOnlyPayload);
+
+            const ledgerData = companyId ? await stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : [];
+            const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : (ledgerData as any)?.data || [];
+            const mergedProducts = mergeStockToProducts(normalizedProducts, normalizedLedger);
+            const payload = { products: mergedProducts, stockLedger: normalizedLedger };
+            applyModulePayload(module, payload);
+            writeModuleCache(module, payload);
+            break;
+          }
+          case "sales": {
+            const [salesInvoicesData, quotationData, salesReturnData, receivePaymentData] =
+              await Promise.all([
+                salesInvoiceAPI.getAll().catch(() => []),
+                quotationAPI.getAll().catch(() => []),
+                salesReturnAPI.getAll().catch(() => []),
+                receivePaymentAPI.getAll().catch(() => []),
+              ]);
+            const payload = {
+              salesInvoices: Array.isArray(salesInvoicesData) ? salesInvoicesData : (salesInvoicesData as any)?.data || [],
+              quotationInvoices: Array.isArray(quotationData) ? quotationData : (quotationData as any)?.data || [],
+              salesReturns: Array.isArray(salesReturnData) ? salesReturnData : (salesReturnData as any)?.data || [],
+              receivePayments: Array.isArray(receivePaymentData) ? receivePaymentData : (receivePaymentData as any)?.data || [],
+            };
+            applyModulePayload(module, payload);
+            writeModuleCache(module, payload);
+            break;
+          }
+          case "purchase": {
+            const [purchaseInvoicesData, purchaseOrdersData, purchaseReturnsData, makePaymentData] =
+              await Promise.all([
+                purchaseInvoiceAPI.getAll().catch(() => []),
+                purchaseOrderAPI.getAll().catch(() => []),
+                purchaseReturnAPI.getAll().catch(() => []),
+                makePaymentAPI.getAll().catch(() => []),
+              ]);
+            const payload = {
+              purchaseInvoices: Array.isArray(purchaseInvoicesData) ? purchaseInvoicesData : (purchaseInvoicesData as any)?.data || [],
+              purchaseOrders: Array.isArray(purchaseOrdersData) ? purchaseOrdersData : (purchaseOrdersData as any)?.data || [],
+              purchaseReturns: Array.isArray(purchaseReturnsData) ? purchaseReturnsData : (purchaseReturnsData as any)?.data || [],
+              makePayments: Array.isArray(makePaymentData) ? makePaymentData : (makePaymentData as any)?.data || [],
+            };
+            applyModulePayload(module, payload);
+            writeModuleCache(module, payload);
+            break;
+          }
+        }
+      };
+      const task = silent ? withSilentGlobalLoading(runModuleLoad) : runModuleLoad();
+
+      loadingModulesRef.current.set(module, task);
+      try {
+        await task;
+        loadedModulesRef.current.add(module);
+      } finally {
+        loadingModulesRef.current.delete(module);
+      }
+    },
+    [applyModulePayload, readModuleCache, writeModuleCache]
+  );
+
+  const getModulesForTab = useCallback((tab: string): DataModule[] => {
+    if (tab === "dashboard" || tab === "reports") return ["reference", "products", "sales", "purchase"];
+
+    if (
+      tab === "products" ||
+      tab === "add_product" ||
+      tab === "report_stock_ledger" ||
+      tab === "stock_adjustment" ||
+      tab === "add_stock_adjustment" ||
+      tab === "report_low_inventory"
+    ) {
+      return ["reference", "products"];
+    }
+
+    if (
+      tab === "customers" ||
+      tab === "add_customer" ||
+      tab === "report_customer_ledger" ||
+      tab === "report_customer_balance" ||
+      tab === "quotation" ||
+      tab === "add_quotation" ||
+      tab === "sales_order" ||
+      tab === "add_sales_order" ||
+      tab === "sales_invoice" ||
+      tab === "add_sales_invoice" ||
+      tab === "sales_return" ||
+      tab === "add_sales_return" ||
+      tab === "receive_payment" ||
+      tab === "add_receive_payment"
+    ) {
+      return ["reference", "products", "sales"];
+    }
+
+    if (
+      tab === "vendors" ||
+      tab === "add_vendor" ||
+      tab === "report_vendor_ledger" ||
+      tab === "report_vendor_balance" ||
+      tab === "purchase_invoice" ||
+      tab === "add_purchase_invoice" ||
+      tab === "purchase_order" ||
+      tab === "add_purchase_order" ||
+      tab === "purchase_return" ||
+      tab === "add_purchase_return" ||
+      tab === "make_payment" ||
+      tab === "add_make_payment"
+    ) {
+      return ["reference", "products", "purchase"];
+    }
+
+    if (
+      tab === "categories" ||
+      tab === "add_category" ||
+      tab === "units" ||
+      tab === "add_unit" ||
+      tab === "warehouses" ||
+      tab === "add_warehouse" ||
+      tab === "settings"
+    ) {
+      return ["reference"];
+    }
+
+    return ["reference"];
+  }, []);
+
+  // Bootstrap: session/company/permissions first, then hydrate all core modules before showing dashboard.
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -250,87 +504,52 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         }
 
         const companyId = getActiveCompanyId();
+        cachePrefixRef.current = `dashboard_cache_${getUserId() || "anon"}_${companyId || "default"}`;
         if (companyId) {
           const company = await companyAPI.getById(companyId).catch(() => null);
           setActiveCompany(company);
         }
-        const [
-          productsData,
-          customersData,
-          vendorsData,
-          categoriesData,
-          unitsData,
-          warehousesData,
-          salesInvoicesData,
-          purchaseInvoicesData,
-          purchaseOrdersData,
-          purchaseReturnsData,
-          quotationData,
-          salesReturnData,
-          receivePaymentData,
-          makePaymentData,
-          ledgerData,
-        ] = await Promise.all([
-          productAPI.getAll().catch(() => []),
-          customerAPI.getAll().catch(() => []),
-          vendorAPI.getAll().catch(() => []),
-          categoryAPI.getAll().catch(() => []),
-          unitAPI.getAll().catch(() => []),
-          warehouseAPI.getAll().catch(() => []),
-          salesInvoiceAPI.getAll().catch(() => []),
-          purchaseInvoiceAPI.getAll().catch(() => []),
-          purchaseOrderAPI.getAll().catch(() => []),
-          purchaseReturnAPI.getAll().catch(() => []),
-          quotationAPI.getAll().catch(() => []),
-          salesReturnAPI.getAll().catch(() => []),
-          receivePaymentAPI.getAll().catch(() => []),
-          makePaymentAPI.getAll().catch(() => []),
-          companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
-        ]);
-
-        const normalizedProducts = Array.isArray(productsData) ? productsData : (productsData as any)?.data || [];
-        const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : ledgerData.data || [];
-        setStockLedger(normalizedLedger);
-        setProducts(mergeStockToProducts(normalizedProducts, normalizedLedger));
-        setCustomers(Array.isArray(customersData) ? customersData : customersData.data || []);
-        setVendors(Array.isArray(vendorsData) ? vendorsData : vendorsData.data || []);
-        setCategories(Array.isArray(categoriesData) ? categoriesData : categoriesData.data || []);
-        setUnits(Array.isArray(unitsData) ? unitsData : []);
-        setWarehouses(Array.isArray(warehousesData) ? warehousesData : []);
-        setSalesInvoices(
-          Array.isArray(salesInvoicesData) ? salesInvoicesData : salesInvoicesData.data || []
+        const allModules: DataModule[] = ["reference", "products", "sales", "purchase"];
+        const results = await Promise.allSettled(
+          allModules.map((module) => loadModuleData(module, { force: true }))
         );
-        setPurchaseInvoices(
-          Array.isArray(purchaseInvoicesData) ? purchaseInvoicesData : purchaseInvoicesData.data || []
-        );
-        setPurchaseOrders(
-          Array.isArray(purchaseOrdersData) ? purchaseOrdersData : purchaseOrdersData.data || []
-        );
-        setPurchaseReturns(
-          Array.isArray(purchaseReturnsData) ? purchaseReturnsData : purchaseReturnsData.data || []
-        );
-        setQuotationInvoices(
-          Array.isArray(quotationData) ? quotationData : quotationData.data || []
-        );
-        setSalesReturns(
-          Array.isArray(salesReturnData) ? salesReturnData : salesReturnData.data || []
-        );
-        setReceivePayments(
-          Array.isArray(receivePaymentData) ? receivePaymentData : receivePaymentData.data || []
-        );
-        setMakePayments(
-          Array.isArray(makePaymentData) ? makePaymentData : makePaymentData.data || []
-        );
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed > 0) {
+          console.error(`Failed to load ${failed}/${allModules.length} startup modules.`);
+        }
+        setLoading(false);
       } catch (err) {
         console.error("Failed to fetch data:", err);
         setError("Failed to load data from server. Please refresh the page.");
-      } finally {
         setLoading(false);
       }
     };
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const modules = getModulesForTab(activeTab);
+    modules.forEach((module) => {
+      void loadModuleData(module, { silent: true }).catch((err) => {
+        console.error(`Failed to load ${module} module:`, err);
+      });
+    });
+  }, [activeTab, getModulesForTab, loadModuleData]);
+
+  // SWR-style background refresh for currently active modules.
+  useEffect(() => {
+    if (loading || noCompany) return;
+    const timer = window.setInterval(() => {
+      const modules = getModulesForTab(activeTab);
+      modules.forEach((module) => {
+        void loadModuleData(module, { force: true, silent: true }).catch((err) => {
+          console.error(`Background refresh failed for ${module}:`, err);
+        });
+      });
+    }, REFRESH_INTERVAL_MS);
+    return () => window.clearInterval(timer);
+  }, [activeTab, getModulesForTab, loadModuleData, loading, noCompany]);
 
   useEffect(() => {
     if (!error) return;
@@ -571,7 +790,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_invoice");
   };
 
-  const handleEditPurchaseInvoice = (invoice: SalesInvoice) => {
+  const handleEditPurchaseInvoice = (invoice: PurchaseInvoice) => {
     setEditingPurchaseInvoice(invoice);
     setPurchaseInvoiceForceNewMode(false);
     setActiveTab("add_purchase_invoice");
@@ -582,7 +801,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_order");
   };
 
-  const handleEditPurchaseOrder = (invoice: SalesInvoice) => {
+  const handleEditPurchaseOrder = (invoice: PurchaseOrder) => {
     setEditingPurchaseOrder(invoice);
     setActiveTab("add_purchase_order");
   };
@@ -590,6 +809,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const parseCurrencyNumber = (value: unknown) => {
     const numeric = Number(String(value ?? "").replace(/[^0-9.-]/g, ""));
     return Number.isFinite(numeric) ? numeric : 0;
+  };
+
+  const computeLineNet = (item: SalesInvoiceItem) => {
+    const qty = Number(item.quantity || 0);
+    const unitPrice = Number(item.unitPrice || 0);
+    const gross = qty * unitPrice;
+    const discountValue = Number(item.discountValue || 0);
+    const isPercent = String(item.discountType || "").toLowerCase() === "percent";
+    const discount = isPercent ? (gross * discountValue) / 100 : discountValue;
+    return Math.max(0, gross - discount);
   };
 
   const getNextPurchaseOrderId = () => {
@@ -608,6 +837,79 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       return value > max ? value : max;
     }, 0);
     return `PI-${String(maxNo + 1).padStart(6, "0")}`;
+  };
+
+  const handleMoveItemsToPurchaseOrder = async ({
+    targetPurchaseOrderId,
+    createNew,
+    vendorId,
+    vendorName,
+    items,
+  }: {
+    targetPurchaseOrderId?: string;
+    createNew?: boolean;
+    vendorId?: string;
+    vendorName?: string;
+    items: SalesInvoiceItem[];
+  }) => {
+    const normalizedVendorId = String(vendorId || "").trim();
+    const movedItems = (Array.isArray(items) ? items : []).map((item) => ({
+      ...item,
+      id: undefined,
+      total: Number(item.total || computeLineNet(item)),
+    }));
+    if (movedItems.length === 0) {
+      throw new Error("No items selected to move.");
+    }
+
+    if (createNew) {
+      if (!normalizedVendorId) {
+        throw new Error("Vendor is required to move items to a new purchase order.");
+      }
+      const vendor = vendors.find((v) => String(v.id || "") === normalizedVendorId);
+      const resolvedVendorName = String(vendor?.name || vendorName || "Unknown");
+      const nowDate = new Date().toISOString().split("T")[0];
+      const newDoc: PurchaseOrder = {
+        id: getNextPurchaseOrderId(),
+        vendorId: normalizedVendorId,
+        vendorName: resolvedVendorName,
+        reference: "",
+        vehicleNumber: "",
+        date: nowDate,
+        dueDate: nowDate,
+        status: "Pending",
+        paymentStatus: "Unpaid",
+        notes: "Created by Move To action",
+        overallDiscount: 0,
+        amountReceived: 0,
+        items: movedItems,
+        totalAmount: movedItems.reduce((sum, i) => sum + Number(i.total || 0), 0),
+      };
+      const saved = await purchaseOrderAPI.create(newDoc);
+      setPurchaseOrders((prev) => [saved, ...prev.filter((po) => po.id !== saved.id)]);
+      return;
+    }
+
+    const targetId = String(targetPurchaseOrderId || "").trim();
+    if (!targetId) {
+      throw new Error("Please select a pending purchase order.");
+    }
+    const existing = purchaseOrders.find((po) => String(po.id) === targetId);
+    if (!existing) {
+      throw new Error("Selected purchase order not found.");
+    }
+    if (String(existing.status || "").toLowerCase() !== "pending") {
+      throw new Error("Selected purchase order must be Pending.");
+    }
+
+    const mergedItems = [...(existing.items || []), ...movedItems];
+    const updatedDoc: PurchaseOrder = {
+      ...existing,
+      items: mergedItems,
+      totalAmount: mergedItems.reduce((sum, i) => sum + Number(i.total || computeLineNet(i)), 0),
+    };
+    const saved = await purchaseOrderAPI.update(existing.id, updatedDoc);
+    setPurchaseOrders((prev) => prev.map((po) => (po.id === saved.id ? saved : po)));
   };
 
   const handleLowInventoryBulkAddToPurchaseOrder = async ({
@@ -661,7 +963,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     if (purchaseOrderId) {
       const existing = purchaseOrders.find((po) => String(po.id) === String(purchaseOrderId));
       if (!existing) throw new Error("Selected purchase order not found.");
-      if (String(existing.customerId || "") !== vendorId) {
+      if (String(existing.vendorId || "") !== vendorId) {
         throw new Error("Selected purchase order vendor does not match selected products.");
       }
 
@@ -680,10 +982,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         }
       });
       const totalAmount = merged.reduce((sum, i) => sum + Number(i.total || 0), 0);
-      const updatedDoc: SalesInvoice = {
+      const updatedDoc: PurchaseOrder = {
         id: existing.id,
-        customerId: vendorId,
-        customerName: String(vendor.name || ""),
+        vendorId: vendorId,
+        vendorName: String(vendor.name || ""),
         reference: existing.reference || "",
         vehicleNumber: existing.vehicleNumber || "",
         date: existing.date,
@@ -704,10 +1006,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     }
 
     const totalAmount = newItems.reduce((sum, i) => sum + Number(i.total || 0), 0);
-    const newDoc: SalesInvoice = {
+    const newDoc: PurchaseOrder = {
       id: getNextPurchaseOrderId(),
-      customerId: vendorId,
-      customerName: String(vendor.name || ""),
+      vendorId: vendorId,
+      vendorName: String(vendor.name || ""),
       reference: "",
       vehicleNumber: "",
       date: nowDate,
@@ -731,7 +1033,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_return");
   };
 
-  const handleEditPurchaseReturn = (invoice: SalesInvoice) => {
+  const handleEditPurchaseReturn = (invoice: PurchaseReturn) => {
     setEditingPurchaseReturn(invoice);
     setActiveTab("add_purchase_return");
   };
@@ -944,11 +1246,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         onMobileClose={() => setIsMobileOpen(false)}
       />
 
-      <div className="relative flex-1 min-w-0">
+      <div className="relative flex-1 min-w-0 print:bg-white">
       <main
         ref={mainScrollRef}
         onScroll={updateMainThumb}
-        className="flex-1 h-screen overflow-y-auto sidebar-native-scroll-hidden"
+        className="flex-1 h-screen overflow-y-auto sidebar-native-scroll-hidden print:h-auto print:overflow-visible print:bg-white"
       >
         <TopBar
           onMenuClick={() => setIsMobileOpen(true)}
@@ -2099,7 +2401,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             invoices={purchaseInvoices}
             products={products}
             vendors={vendors}
+            purchaseOrders={purchaseOrders}
             company={activeCompany || undefined}
+            onMoveItemsToPurchaseOrder={handleMoveItemsToPurchaseOrder}
             onBack={() => {
               setEditingPurchaseInvoice(undefined);
               setPurchaseInvoiceForceNewMode(false);
@@ -2243,8 +2547,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 if (paidAmount > 0) {
                   const paymentPayload: MakePaymentDoc = {
                     id: linkedPayment?.id || getNextMakePaymentId(makePayments),
-                    vendorId: saved.customerId,
-                    vendorName: saved.customerName,
+                    vendorId: saved.vendorId,
+                    vendorName: saved.vendorName,
                     invoiceId: saved.id,
                     reference: saved.reference || "",
                     date: saved.date,
@@ -2305,8 +2609,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             products={products}
             vendors={vendors}
             company={activeCompany || undefined}
+            onMoveItemsToPurchaseOrder={handleMoveItemsToPurchaseOrder}
             onConvertToPurchaseInvoice={(purchaseOrder) => {
-              const converted: SalesInvoice = {
+              const converted: PurchaseInvoice = {
                 ...purchaseOrder,
                 id: getNextPurchaseInvoiceId(),
                 status: "Draft",
@@ -2411,7 +2716,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         </div>
       </main>
       {mainThumb.visible && (
-        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-1.5">
+        <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-1.5 print:hidden">
           <div
             className="absolute left-0 right-0 rounded-full bg-[#CBD5E1] dark:bg-[#334155]"
             style={{ top: `${mainThumb.top}px`, height: `${mainThumb.height}px` }}

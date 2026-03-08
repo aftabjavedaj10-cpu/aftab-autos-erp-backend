@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
-import type { Category, Product, SalesInvoice, Vendor } from "../types";
+import type { Category, Product, PurchaseOrder, Vendor } from "../types";
 
 interface LowInventoryReportPageProps {
   onBack: () => void;
   products: Product[];
   categories: Category[];
   vendors: Vendor[];
-  purchaseOrders: SalesInvoice[];
+  purchaseOrders: PurchaseOrder[];
   onBulkAddToPurchaseOrder: (payload: { productIds: string[]; purchaseOrderId?: string }) => Promise<void>;
 }
 
@@ -92,7 +92,7 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
     const base = purchaseOrders
       .filter((po) => {
         if (vendorFilter === "All") return true;
-        return String(po.customerId || "").trim() === vendorFilter;
+        return String(po.vendorId || "").trim() === vendorFilter;
       })
       .filter((po) => allowedStatuses.has(String(po.status || "").trim().toLowerCase()))
       .sort((a, b) => String(b.id).localeCompare(String(a.id)));
@@ -286,7 +286,7 @@ const LowInventoryReportPage: React.FC<LowInventoryReportPageProps> = ({
             <option value="">Select Purchase Order #</option>
             {purchaseOrderOptions.map((po) => (
               <option key={String(po.id)} value={String(po.id)}>
-                {String(po.id)} - {String(po.customerName || "")} [{String(po.status || "-")}]
+                {String(po.id)} - {String(po.vendorName || "")} [{String(po.status || "-")}]
               </option>
             ))}
           </select>

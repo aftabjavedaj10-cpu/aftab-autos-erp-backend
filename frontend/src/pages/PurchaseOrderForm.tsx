@@ -1,26 +1,33 @@
 ﻿
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { FiArrowLeft, FiChevronDown, FiMove } from "react-icons/fi";
-import type { Company, Customer, Product, SalesInvoice, SalesInvoiceItem, Vendor } from "../types";
+import { FiArrowLeft, FiCheck, FiChevronDown, FiMove } from "react-icons/fi";
+import type { Company, Product, PurchaseInvoice, PurchaseOrder, SalesInvoiceItem, Vendor } from "../types";
 import { getPrintTemplateSettings } from "../services/printSettings";
 import { getEmbeddedInvoicePrintCss, normalizePrintMode } from "../services/printEngine";
 
 interface PurchaseOrderFormPageProps {
-  invoice?: SalesInvoice;
+  invoice?: PurchaseOrder;
   forceNewMode?: boolean;
-  invoices: SalesInvoice[];
+  invoices: PurchaseOrder[];
   products: Product[];
   vendors: Vendor[];
   company?: Company;
   onBack: () => void;
   onSave: (
-    invoice: SalesInvoice,
+    invoice: PurchaseOrder,
     stayOnPage: boolean,
     savePrices: boolean,
     salesPriceUpdates?: Record<string, number>
   ) => void;
-  onConvertToPurchaseInvoice?: (invoice: SalesInvoice) => void;
-  onNavigate?: (invoice: SalesInvoice) => void;
+  onConvertToPurchaseInvoice?: (invoice: PurchaseInvoice) => void;
+  onMoveItemsToPurchaseOrder?: (args: {
+    targetPurchaseOrderId?: string;
+    createNew?: boolean;
+    vendorId?: string;
+    vendorName?: string;
+    items: SalesInvoiceItem[];
+  }) => Promise<void>;
+  onNavigate?: (invoice: PurchaseOrder) => void;
   onNavigateNew?: () => void;
   formTitleNew?: string;
   formTitleEdit?: string;
@@ -77,6 +84,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   onBack,
   onSave,
   onConvertToPurchaseInvoice,
+  onMoveItemsToPurchaseOrder,
   onNavigate,
   onNavigateNew,
   formTitleNew = "New Purchase Order",
@@ -90,14 +98,17 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   const isEdit = !!invoice && !forceNewMode;
   const isPurchaseMode = true;
 
-  const customers = useMemo<Customer[]>(
+  const vendorsByParty = useMemo(
     () =>
       vendors.map((v) => ({
         id: String(v.id),
         name: v.name,
-        customerCode: v.vendorCode || "",
+        vendorCode: v.vendorCode || "",
         phone: v.phone || "",
         email: v.email || "",
+        balance: v.balance,
+        category: v.category || "",
+        address: v.address || "",
       })),
     [vendors]
   );
@@ -130,7 +141,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 
   const [formData, setFormData] = useState({
     id: invoice?.id || nextInvoiceId,
-    customerId: invoice?.customerId ? String(invoice.customerId) : "",
+    vendorId: invoice?.vendorId ? String(invoice.vendorId) : "",
     reference: invoice?.reference || "",
     vehicleNumber: invoice?.vehicleNumber || "",
     date: invoice?.date || new Date().toISOString().split("T")[0],
@@ -154,10 +165,10 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [customerSearchTerm, setCustomerSearchTerm] = useState("");
-  const [isCustomerSearching, setIsCustomerSearching] = useState(false);
+  const [vendorSearchTerm, setVendorSearchTerm] = useState("");
+  const [isVendorSearching, setIsVendorSearching] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [customerSelectedIndex, setCustomerSelectedIndex] = useState(0);
+  const [vendorSelectedIndex, setVendorSelectedIndex] = useState(0);
   const [selectedItemIds, setSelectedItemIds] = useState<Set<string>>(new Set());
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -171,11 +182,16 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   const [previewImage, setPreviewImage] = useState<{ src: string; name: string } | null>(null);
   const [salesPriceByProductId, setSalesPriceByProductId] = useState<Record<string, number>>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const [isMoveModalOpen, setIsMoveModalOpen] = useState(false);
+  const [moveTargetOrderId, setMoveTargetOrderId] = useState("");
+  const [moveTargetVendorId, setMoveTargetVendorId] = useState("");
+  const [isMovingItems, setIsMovingItems] = useState(false);
+  const [bulkActionType, setBulkActionType] = useState<"move" | "copy">("move");
   const COPY_SEED_KEY = "purchase-order-copy-seed";
   const createLineId = () => `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const rowKeyOf = (item: SalesInvoiceItem) => String((item as any).id ?? item.productId);
 
-  const customerInputRef = useRef<HTMLInputElement>(null);
+  const vendorInputRef = useRef<HTMLInputElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const dueDateInputRef = useRef<HTMLInputElement>(null);
   const datePickerProxyRef = useRef<HTMLInputElement>(null);
@@ -188,7 +204,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const productListContainerRef = useRef<HTMLDivElement>(null);
   const productItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const customerSearchContainerRef = useRef<HTMLDivElement>(null);
+  const vendorSearchContainerRef = useRef<HTMLDivElement>(null);
   const saveMenuRef = useRef<HTMLDivElement>(null);
   const printMenuRef = useRef<HTMLDivElement>(null);
 
@@ -241,8 +257,8 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
       if (searchContainerRef.current && !searchContainerRef.current.contains(target)) {
         setIsSearching(false);
       }
-      if (customerSearchContainerRef.current && !customerSearchContainerRef.current.contains(target)) {
-        setIsCustomerSearching(false);
+      if (vendorSearchContainerRef.current && !vendorSearchContainerRef.current.contains(target)) {
+        setIsVendorSearching(false);
       }
       if (saveMenuRef.current && !saveMenuRef.current.contains(target)) {
         setIsSaveMenuOpen(false);
@@ -338,15 +354,15 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
       .slice(0, 30);
   }, [searchTerm, searchableProducts]);
 
-  const availableCustomers = useMemo(() => {
-    const query = customerSearchTerm.toLowerCase().trim();
-    if (!query) return customers;
+  const availableVendors = useMemo(() => {
+    const query = vendorSearchTerm.toLowerCase().trim();
+    if (!query) return vendorsByParty;
     const keywords = query.split(/\s+/);
-    return customers.filter((c) => {
-      const searchableText = `${c.name} ${c.customerCode || ""} ${c.phone || ""} ${c.email || ""}`.toLowerCase();
+    return vendorsByParty.filter((c) => {
+      const searchableText = `${c.name} ${c.vendorCode || ""} ${c.phone || ""} ${c.email || ""}`.toLowerCase();
       return keywords.every((kw) => searchableText.includes(kw));
     });
-  }, [customerSearchTerm, customers]);
+  }, [vendorSearchTerm, vendorsByParty]);
 
   useEffect(() => {
     setSelectedIndex(0);
@@ -362,8 +378,8 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   }, [selectedIndex, isSearching]);
 
   useEffect(() => {
-    setCustomerSelectedIndex(0);
-  }, [availableCustomers]);
+    setVendorSelectedIndex(0);
+  }, [availableVendors]);
 
   const totals = useMemo(() => {
     const itemsSubtotal = formData.items.reduce((sum, item) => {
@@ -441,8 +457,8 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
     });
   };
 
-  const handleCustomerKeyDown = (e: React.KeyboardEvent) => {
-    if (!isCustomerSearching || availableCustomers.length === 0) {
+  const handleVendorKeyDown = (e: React.KeyboardEvent) => {
+    if (!isVendorSearching || availableVendors.length === 0) {
       if (e.key === "Enter") {
         e.preventDefault();
         dateInputRef.current?.focus();
@@ -452,21 +468,21 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setCustomerSelectedIndex((prev) => (prev < availableCustomers.length - 1 ? prev + 1 : prev));
+      setVendorSelectedIndex((prev) => (prev < availableVendors.length - 1 ? prev + 1 : prev));
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setCustomerSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
+      setVendorSelectedIndex((prev) => (prev > 0 ? prev - 1 : prev));
     } else if (e.key === "Enter") {
       e.preventDefault();
-      const selected = availableCustomers[customerSelectedIndex];
+      const selected = availableVendors[vendorSelectedIndex];
       const selectedId = selected.id || "";
       if (!selectedId) return;
-      setFormData({ ...formData, customerId: selectedId });
-      setCustomerSearchTerm(selected.name);
-      setIsCustomerSearching(false);
+      setFormData({ ...formData, vendorId: selectedId });
+      setVendorSearchTerm(selected.name);
+      setIsVendorSearching(false);
       setTimeout(() => dateInputRef.current?.focus(), 10);
     } else if (e.key === "Escape") {
-      setIsCustomerSearching(false);
+      setIsVendorSearching(false);
     }
   };
 
@@ -594,6 +610,86 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
     setSelectedItemIds(new Set());
   };
 
+  const removeSelectedItemsFromCurrentForm = () => {
+    setFormData((prev) => ({
+      ...prev,
+      items: prev.items.filter((i) => !selectedItemIds.has(rowKeyOf(i))),
+    }));
+    if (isPurchaseMode) {
+      setSalesPriceByProductId((prev) => {
+        const next = { ...prev };
+        selectedItemIds.forEach((id) => {
+          delete next[id];
+        });
+        return next;
+      });
+    }
+    setSelectedItemIds(new Set());
+  };
+
+  const pendingPurchaseOrdersForMove = useMemo(
+    () =>
+      invoices.filter(
+        (po) =>
+          String(po.status || "").toLowerCase() === "pending" &&
+          String(po.id || "") !== String(formData.id || "")
+      ),
+    [invoices, formData.id]
+  );
+
+  const openMoveModal = (action: "move" | "copy") => {
+    if (selectedItemIds.size === 0) return;
+    setBulkActionType(action);
+    setMoveTargetOrderId(pendingPurchaseOrdersForMove[0]?.id || "");
+    setMoveTargetVendorId(String(formData.vendorId || ""));
+    setIsMoveModalOpen(true);
+  };
+
+  const handleMoveSelectedItems = async (createNew: boolean) => {
+    if (!onMoveItemsToPurchaseOrder) return;
+    if (createNew && !moveTargetVendorId) {
+      setFormError("Please select a vendor before moving items to a new purchase order.");
+      return;
+    }
+    const selectedItems = formData.items.filter((i) => selectedItemIds.has(rowKeyOf(i)));
+    if (selectedItems.length === 0) return;
+    if (!createNew && !moveTargetOrderId) {
+      setFormError("Please select a pending purchase order.");
+      return;
+    }
+    const vendor = vendorsByParty.find((v) =>
+      createNew
+        ? String(v.id) === String(moveTargetVendorId)
+        : String(v.id) === String(formData.vendorId)
+    );
+    try {
+      setIsMovingItems(true);
+      await onMoveItemsToPurchaseOrder({
+        targetPurchaseOrderId: createNew ? undefined : moveTargetOrderId,
+        createNew,
+        vendorId: createNew ? String(moveTargetVendorId) : formData.vendorId ? String(formData.vendorId) : undefined,
+        vendorName: vendor?.name ? String(vendor.name) : undefined,
+        items: selectedItems,
+      });
+      if (bulkActionType === "move") {
+        removeSelectedItemsFromCurrentForm();
+      } else {
+        setSelectedItemIds(new Set());
+      }
+      setIsMoveModalOpen(false);
+      setMoveTargetOrderId("");
+    } catch (err: any) {
+      setFormError(
+        err?.message ||
+          (bulkActionType === "copy"
+            ? "Failed to copy selected items."
+            : "Failed to move selected items.")
+      );
+    } finally {
+      setIsMovingItems(false);
+    }
+  };
+
   const handlePrintSelected = () => {
     if (selectedItemIds.size === 0) return;
     const selected = formData.items.filter((i) => selectedItemIds.has(rowKeyOf(i)));
@@ -623,9 +719,9 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
   const canCopy = isEdit && (isVoid || isDeleted);
 
   const handleSubmit = (status: string, stayOnPage: boolean = false) => {
-    if (!formData.customerId) {
+    if (!formData.vendorId) {
       setFormError(`Required: Please select a ${partyLabel}.`);
-      customerInputRef.current?.focus();
+      vendorInputRef.current?.focus();
       return;
     }
 
@@ -647,15 +743,15 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
       return;
     }
 
-    const customer = customers.find((c) => String(c.id) === String(formData.customerId));
+    const vendor = vendorsByParty.find((c) => String(c.id) === String(formData.vendorId));
     const finalPaymentStatus = computePaymentStatus();
     const finalStatus = status === "Draft" ? "Draft" : status;
-    const invoiceData: SalesInvoice = {
+    const invoiceData: PurchaseOrder = {
       ...formData,
       amountReceived: 0,
       status: finalStatus,
       paymentStatus: finalPaymentStatus,
-      customerName: customer?.name || "Unknown",
+      vendorName: vendor?.name || "Unknown",
       totalAmount: totals.netTotal,
     };
     onSave(invoiceData, stayOnPage, false, isPurchaseMode ? salesPriceByProductId : undefined);
@@ -702,33 +798,33 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 
   const handleConvertToPurchaseInvoice = () => {
     if (!isApproved) return;
-    const customer = customers.find((c) => String(c.id) === String(formData.customerId));
-    const draftInvoice: SalesInvoice = {
+    const vendor = vendorsByParty.find((c) => String(c.id) === String(formData.vendorId));
+    const draftInvoice: PurchaseInvoice = {
       ...formData,
       status: "Draft",
       paymentStatus: "Unpaid",
       amountReceived: 0,
-      customerName: customer?.name || "Unknown",
+      vendorName: vendor?.name || "Unknown",
       totalAmount: totals.netTotal,
     };
     onConvertToPurchaseInvoice?.(draftInvoice);
   };
 
-  const currentCustomer = useMemo(() => {
-    return customers.find((c) => String(c.id) === String(formData.customerId));
-  }, [formData.customerId, customers]);
+  const currentVendor = useMemo(() => {
+    return vendorsByParty.find((c) => String(c.id) === String(formData.vendorId));
+  }, [formData.vendorId, vendorsByParty]);
 
   useEffect(() => {
-    if (currentCustomer) {
-      setCustomerSearchTerm(currentCustomer.name);
+    if (currentVendor) {
+      setVendorSearchTerm(currentVendor.name);
     }
-  }, [formData.customerId, currentCustomer]);
+  }, [formData.vendorId, currentVendor]);
 
   useEffect(() => {
     if (invoice) {
       setFormData({
         id: invoice.id,
-        customerId: invoice.customerId ? String(invoice.customerId) : "",
+        vendorId: invoice.vendorId ? String(invoice.vendorId) : "",
         reference: invoice.reference || "",
         vehicleNumber: invoice.vehicleNumber || "",
         date: invoice.date || new Date().toISOString().split("T")[0],
@@ -768,15 +864,24 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 
   useEffect(() => {
     if (!isPurchaseMode) return;
-    const nextSalesPriceMap: Record<string, number> = {};
-    formData.items.forEach((item) => {
-      const product = products.find((p) => String(p.id) === String(item.productId));
-      if (!product) return;
-      const rawSalesPrice = typeof product.price === "string" ? product.price : `${product.price ?? 0}`;
-      const cleanSalesPrice = rawSalesPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
-      nextSalesPriceMap[String(item.productId)] = parseFloat(cleanSalesPrice) || 0;
+    setSalesPriceByProductId((prev) => {
+      const activeProductIds = new Set(formData.items.map((item) => String(item.productId)));
+      const next: Record<string, number> = {};
+
+      activeProductIds.forEach((productId) => {
+        if (Object.prototype.hasOwnProperty.call(prev, productId)) {
+          next[productId] = prev[productId];
+          return;
+        }
+        const product = products.find((p) => String(p.id) === productId);
+        if (!product) return;
+        const rawSalesPrice = typeof product.price === "string" ? product.price : `${product.price ?? 0}`;
+        const cleanSalesPrice = rawSalesPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
+        next[productId] = parseFloat(cleanSalesPrice) || 0;
+      });
+
+      return next;
     });
-    setSalesPriceByProductId(nextSalesPriceMap);
   }, [isPurchaseMode, formData.items, products]);
 
   useEffect(() => {
@@ -985,32 +1090,32 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
               <span className="text-[8px] font-bold uppercase text-emerald-500 mt-1 block">Auto-ID</span>
             </div>
 
-            <div className="md:col-span-5 relative" ref={customerSearchContainerRef}>
+            <div className="md:col-span-5 relative" ref={vendorSearchContainerRef}>
               <label className="block text-[10px] font-black text-slate-900 dark:text-slate-100 tracking-tight mb-2">
                 {partyLabel}
               </label>
               <div className="relative group">
               <input
-                ref={customerInputRef}
+                ref={vendorInputRef}
                 type="text"
                 disabled={isLocked}
                 className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all placeholder:text-slate-400 ${
                   isLocked ? "opacity-60 cursor-not-allowed" : ""
                 }`}
                 placeholder={partySearchPlaceholder}
-                value={customerSearchTerm}
+                value={vendorSearchTerm}
                 onChange={(e) => {
-                  setCustomerSearchTerm(e.target.value);
-                  setIsCustomerSearching(true);
+                  setVendorSearchTerm(e.target.value);
+                  setIsVendorSearching(true);
                 }}
-                onFocus={() => setIsCustomerSearching(true)}
-                onKeyDown={handleCustomerKeyDown}
+                onFocus={() => setIsVendorSearching(true)}
+                onKeyDown={handleVendorKeyDown}
               />
-                {formData.customerId && !isLocked && (
+                {formData.vendorId && !isLocked && (
                   <button
                     onClick={() => {
-                      setFormData({ ...formData, customerId: "" });
-                      setCustomerSearchTerm("");
+                      setFormData({ ...formData, vendorId: "" });
+                      setVendorSearchTerm("");
                     }}
                     className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-rose-500 p-1"
                   >
@@ -1019,51 +1124,51 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 )}
               </div>
 
-              {formData.customerId && currentCustomer && (
+              {formData.vendorId && currentVendor && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
                     Account Ledger Balance:
                   </span>
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                    {currentCustomer.balance || "Rs. 0.00"}
+                    {currentVendor.balance || "Rs. 0.00"}
                   </span>
                 </div>
               )}
 
-              {isCustomerSearching && !isLocked && (
+              {isVendorSearching && !isLocked && (
                 <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl z-[60] overflow-hidden">
                   <div className="max-h-[250px] overflow-y-auto">
-                    {availableCustomers.length > 0 ? (
-                      availableCustomers.map((c, idx) => (
+                    {availableVendors.length > 0 ? (
+                      availableVendors.map((c, idx) => (
                         <button
                           key={c.id || idx}
                           onClick={() => {
                             const selectedId = c.id || "";
                             if (!selectedId) return;
-                            setFormData({ ...formData, customerId: selectedId });
-                            setCustomerSearchTerm(c.name);
-                            setIsCustomerSearching(false);
+                            setFormData({ ...formData, vendorId: selectedId });
+                            setVendorSearchTerm(c.name);
+                            setIsVendorSearching(false);
                             setTimeout(() => dateInputRef.current?.focus(), 10);
                           }}
-                          onMouseEnter={() => setCustomerSelectedIndex(idx)}
+                          onMouseEnter={() => setVendorSelectedIndex(idx)}
                           className={`w-full text-left p-2.5 flex justify-between items-center transition-colors border-b last:border-0 dark:border-slate-800 ${
-                            customerSelectedIndex === idx
+                            vendorSelectedIndex === idx
                               ? "bg-orange-600 text-white"
                               : "hover:bg-orange-50 dark:hover:bg-slate-800"
                           }`}
                         >
                           <div>
-                            <p className={`text-[10px] font-black ${customerSelectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"}`}>{c.name}</p>
+                            <p className={`text-[10px] font-black ${vendorSelectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"}`}>{c.name}</p>
                             <div className="flex gap-2 mt-0.5">
-                              <span className={`text-[7px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
-                                {partyCodeLabel}: {c.customerCode || "N/A"}
+                              <span className={`text-[7px] font-bold ${vendorSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
+                                {partyCodeLabel}: {c.vendorCode || "N/A"}
                               </span>
-                              <span className={`text-[7px] font-bold ${customerSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
+                              <span className={`text-[7px] font-bold ${vendorSelectedIndex === idx ? "text-orange-100" : "text-slate-400"}`}>
                                 • {c.category || "General"}
                               </span>
                             </div>
                           </div>
-                          <span className={`text-[8px] font-bold ${customerSelectedIndex === idx ? "text-orange-200" : "text-slate-400"}`}>{c.phone || ""}</span>
+                          <span className={`text-[8px] font-bold ${vendorSelectedIndex === idx ? "text-orange-200" : "text-slate-400"}`}>{c.phone || ""}</span>
                         </button>
                       ))
                     ) : (
@@ -1202,7 +1307,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
               <input
                 ref={refInputRef}
                 type="text"
-                placeholder="Customer Reference or PO ID..."
+                placeholder="Vendor Reference or PO ID..."
                 disabled={isLocked}
                 className={`w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white outline-none focus:ring-4 focus:ring-orange-500/10 transition-all ${
                   isLocked ? "opacity-60 cursor-not-allowed" : ""
@@ -1233,7 +1338,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                       }`}
                     >
                       {selectedItemIds.size === formData.items.length && formData.items.length > 0 && (
-                        <span className="text-white text-[8px]">✓</span>
+                        <FiCheck size={10} className="text-white" />
                       )}
                     </button>
                   </th>
@@ -1298,7 +1403,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                           }`}
                         >
                           {selectedItemIds.has(rowKeyOf(item)) && (
-                            <span className="text-white text-[8px]">✓</span>
+                            <FiCheck size={10} className="text-white" />
                           )}
                         </button>
                       </td>
@@ -1843,10 +1948,101 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
                 Delete Selected
               </button>
               <button
+                onClick={() => openMoveModal("move")}
+                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
+              >
+                Move To
+              </button>
+              <button
+                onClick={() => openMoveModal("copy")}
+                className="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all"
+              >
+                Copy To
+              </button>
+              <button
                 onClick={() => setSelectedItemIds(new Set())}
                 className="text-slate-300 hover:text-white font-black text-[9px] uppercase tracking-widest transition-colors"
               >
                 Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isMoveModalOpen && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" onClick={() => !isMovingItems && setIsMoveModalOpen(false)} />
+          <div className="relative w-full max-w-xl rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-5">
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-900 dark:text-white">
+              {bulkActionType === "copy" ? "Copy Selected Items" : "Move Selected Items"}
+            </h3>
+            <p className="mt-1 text-[11px] font-bold text-slate-500">
+              {selectedItemIds.size} item(s) selected. Choose a pending purchase order or create a new one.
+            </p>
+
+            <div className="mt-4">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                Pending Purchase Orders
+              </label>
+              <select
+                value={moveTargetOrderId}
+                onChange={(e) => setMoveTargetOrderId(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white"
+                disabled={isMovingItems || pendingPurchaseOrdersForMove.length === 0}
+              >
+                <option value="">Select pending purchase order</option>
+                {pendingPurchaseOrdersForMove.map((po) => (
+                  <option key={po.id} value={po.id}>
+                    {po.id} - {po.vendorName || "Unknown Vendor"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-3">
+              <label className="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">
+                Vendor For New PO
+              </label>
+              <select
+                value={moveTargetVendorId}
+                onChange={(e) => setMoveTargetVendorId(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-[11px] font-bold dark:text-white"
+                disabled={isMovingItems}
+              >
+                <option value="">Select vendor</option>
+                {vendorsByParty.map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.name} {v.vendorCode ? `(${v.vendorCode})` : ""}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsMoveModalOpen(false)}
+                disabled={isMovingItems}
+                className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMoveSelectedItems(true)}
+                disabled={isMovingItems || !moveTargetVendorId}
+                className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
+              >
+                {bulkActionType === "copy" ? "Copy via New PO" : "Move via New PO"}
+              </button>
+              <button
+                type="button"
+                onClick={() => handleMoveSelectedItems(false)}
+                disabled={isMovingItems || !moveTargetOrderId}
+                className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-700 text-white text-[10px] font-black uppercase tracking-widest disabled:opacity-60"
+              >
+                {bulkActionType === "copy" ? "Copy To Selected" : "Move To Selected"}
               </button>
             </div>
           </div>
@@ -1904,8 +2100,8 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
             <div className="grid grid-cols-4 gap-4 border-b border-black/30 pb-3 mb-4">
               <div>
                 <p className="text-[12px] font-semibold">Issued to:</p>
-                <p className="text-[11px] mt-1">{currentCustomer?.name || "-"}</p>
-                <p className="text-[11px]">{currentCustomer?.address || "-"}</p>
+                <p className="text-[11px] mt-1">{currentVendor?.name || "-"}</p>
+                <p className="text-[11px]">{currentVendor?.address || "-"}</p>
               </div>
               <div>
                 <p className="text-[12px] font-semibold">Invoice No.</p>
@@ -1997,7 +2193,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
               <p><span className="font-semibold">Date :</span> <span className="font-black">{formatDateDdMmYyyy(formData.date)}</span></p>
               <p><span className="font-semibold">Time :</span> <span className="font-black">{new Date().toLocaleTimeString()}</span></p>
               <p><span className="font-semibold">Operator Name :</span> <span className="font-black">Administrator</span></p>
-              <p><span className="font-semibold">Customer Name :</span> <span className="font-black">{currentCustomer?.name || "-"}</span></p>
+              <p><span className="font-semibold">Vendor Name :</span> <span className="font-black">{currentVendor?.name || "-"}</span></p>
             </div>
 
             <table className="w-full text-[10px] border-y border-black mb-2">
@@ -2073,7 +2269,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
               <h1 className="font-black">A5 Invoice</h1>
               <span>{formData.id}</span>
             </div>
-            <p>Customer: {currentCustomer?.name || "-"}</p>
+            <p>Vendor: {currentVendor?.name || "-"}</p>
             <p>Date: {formatDateDdMmYyyy(formData.date)}</p>
             <table className="w-full mt-3 text-[11px]">
               <thead>
@@ -2131,7 +2327,7 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
               <div className="mt-2 text-[12px] flex flex-wrap gap-x-6 gap-y-1">
                 <p><span className="font-semibold">PO No:</span> {formData.id}</p>
                 <p><span className="font-semibold">Date:</span> {formatDateDdMmYyyy(formData.date)}</p>
-                <p><span className="font-semibold">Vendor:</span> {currentCustomer?.name || "-"}</p>
+                <p><span className="font-semibold">Vendor:</span> {currentVendor?.name || "-"}</p>
               </div>
             </div>
             <table className="w-full border-collapse text-[12px]">
@@ -2161,6 +2357,10 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 };
 
 export default PurchaseOrderFormPage;
+
+
+
+
 
 
 

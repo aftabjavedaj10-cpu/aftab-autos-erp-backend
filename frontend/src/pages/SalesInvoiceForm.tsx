@@ -36,7 +36,7 @@ interface SalesInvoiceFormPageProps {
   formTitleEdit?: string;
 }
 
-type PrintMode = "invoice" | "receipt" | "a5" | "token";
+type PrintMode = "invoice" | "receipt" | "receipt_urdu" | "a5" | "token";
 type ProductPackagingOption = {
   id: string;
   name: string;
@@ -227,17 +227,18 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const getPrintableProductLabel = (item: SalesInvoiceItem) => {
+  const getPrintableProductLabel = (item: SalesInvoiceItem, forceUrdu: boolean = false) => {
     const english = String(item.productName || "").trim();
     const matched = products.find((p) => String(p.id) === String(item.productId));
     const description = String(item.description ?? (matched as any)?.description ?? "").trim();
-    if (!printSettings.showUrduName && !description) return english;
+    const shouldShowUrdu = forceUrdu || printSettings.showUrduName;
+    if (!shouldShowUrdu && !description) return english;
     const matchedPack = Array.isArray((matched as any)?.packagings)
       ? (matched as any).packagings.find(
           (pk: any) => String(pk?.id ?? "") === String((item as any)?.packagingId ?? "")
         )
       : null;
-    const urdu = printSettings.showUrduName
+    const urdu = shouldShowUrdu
       ? String((matchedPack as any)?.urduName || (matched as any)?.urduName || "").trim()
       : "";
     if (!urdu && !description) return english;
@@ -1827,6 +1828,15 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                 <button
                   onClick={() => {
                     setIsPrintMenuOpen(false);
+                    handlePrintMode("receipt_urdu");
+                  }}
+                  className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                >
+                  Receipt + Urdu
+                </button>
+                <button
+                  onClick={() => {
+                    setIsPrintMenuOpen(false);
                     handlePrintMode("a5");
                   }}
                   className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
@@ -2063,7 +2073,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
             </div>
           </div>
         )}
-        {printMode === "receipt" && (
+        {(printMode === "receipt" || printMode === "receipt_urdu") && (
           <div className="receipt-print print-sheet-80mm px-0 py-2 text-[11px] leading-tight flex flex-col min-h-[250mm]">
             <div className="text-center border-b border-black pb-2 mb-2">
               {company?.logoUrl ? (
@@ -2111,7 +2121,9 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                   return (
                     <React.Fragment key={item.productId}>
                       <tr className="border-b border-black/20">
-                        <td className="py-1 font-semibold" colSpan={5}>{getPrintableProductLabel(item)}</td>
+                        <td className="py-1 font-semibold" colSpan={5}>
+                          {getPrintableProductLabel(item, printMode === "receipt_urdu")}
+                        </td>
                       </tr>
                       <tr className="border-b border-black/20">
                         <td className="py-1" />
@@ -2218,7 +2230,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
           </div>
         )}
       </div>
-      <style>{getEmbeddedInvoicePrintCss(printMode)}</style>
+      <style>{getEmbeddedInvoicePrintCss(printMode === "receipt_urdu" ? "receipt" : printMode)}</style>
     </div>
   );
 };
