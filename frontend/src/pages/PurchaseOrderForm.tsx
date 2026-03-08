@@ -864,15 +864,24 @@ const PurchaseOrderFormPage: React.FC<PurchaseOrderFormPageProps> = ({
 
   useEffect(() => {
     if (!isPurchaseMode) return;
-    const nextSalesPriceMap: Record<string, number> = {};
-    formData.items.forEach((item) => {
-      const product = products.find((p) => String(p.id) === String(item.productId));
-      if (!product) return;
-      const rawSalesPrice = typeof product.price === "string" ? product.price : `${product.price ?? 0}`;
-      const cleanSalesPrice = rawSalesPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
-      nextSalesPriceMap[String(item.productId)] = parseFloat(cleanSalesPrice) || 0;
+    setSalesPriceByProductId((prev) => {
+      const activeProductIds = new Set(formData.items.map((item) => String(item.productId)));
+      const next: Record<string, number> = {};
+
+      activeProductIds.forEach((productId) => {
+        if (Object.prototype.hasOwnProperty.call(prev, productId)) {
+          next[productId] = prev[productId];
+          return;
+        }
+        const product = products.find((p) => String(p.id) === productId);
+        if (!product) return;
+        const rawSalesPrice = typeof product.price === "string" ? product.price : `${product.price ?? 0}`;
+        const cleanSalesPrice = rawSalesPrice.replace(/Rs\./i, "").replace(/,/g, "").trim();
+        next[productId] = parseFloat(cleanSalesPrice) || 0;
+      });
+
+      return next;
     });
-    setSalesPriceByProductId(nextSalesPriceMap);
   }, [isPurchaseMode, formData.items, products]);
 
   useEffect(() => {
