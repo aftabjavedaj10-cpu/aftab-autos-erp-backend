@@ -37,13 +37,14 @@ const emitGlobalLoading = () => {
 };
 
 const startGlobalLoading = () => {
-  if (silentGlobalLoadingScopeCount > 0) return;
+  if (silentGlobalLoadingScopeCount > 0) return false;
   inFlightRequestCount += 1;
   emitGlobalLoading();
+  return true;
 };
 
-const endGlobalLoading = () => {
-  if (silentGlobalLoadingScopeCount > 0) return;
+const endGlobalLoading = (tracked = true) => {
+  if (!tracked) return;
   inFlightRequestCount = Math.max(0, inFlightRequestCount - 1);
   emitGlobalLoading();
 };
@@ -85,7 +86,7 @@ const apiCall = async (
   preferReturn = false,
   extraHeaders?: Record<string, string>
 ) => {
-  startGlobalLoading();
+  const tracked = startGlobalLoading();
   try {
     const token = await getAccessToken();
     const headers: Record<string, string> = {
@@ -142,12 +143,12 @@ const apiCall = async (
       return null;
     }
   } finally {
-    endGlobalLoading();
+    endGlobalLoading(tracked);
   }
 };
 
 const functionCall = async (path: string, body: any) => {
-  startGlobalLoading();
+  const tracked = startGlobalLoading();
   try {
     const token = await getAccessToken();
     const response = await fetch(buildFunctionUrl(path), {
@@ -166,12 +167,12 @@ const functionCall = async (path: string, body: any) => {
     }
     return data;
   } finally {
-    endGlobalLoading();
+    endGlobalLoading(tracked);
   }
 };
 
 const uploadToStorage = async (bucket: string, path: string, file: File) => {
-  startGlobalLoading();
+  const tracked = startGlobalLoading();
   try {
     const token = await getAccessToken();
     const response = await fetch(
@@ -194,7 +195,7 @@ const uploadToStorage = async (bucket: string, path: string, file: File) => {
     }
     return data;
   } finally {
-    endGlobalLoading();
+    endGlobalLoading(tracked);
   }
 };
 
