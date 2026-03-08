@@ -511,7 +511,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         }
         const allModules: DataModule[] = ["reference", "products", "sales", "purchase"];
         const results = await Promise.allSettled(
-          allModules.map((module) => loadModuleData(module, { silent: true, force: true }))
+          allModules.map((module) => loadModuleData(module, { force: true }))
         );
         const failed = results.filter((r) => r.status === "rejected").length;
         if (failed > 0) {
