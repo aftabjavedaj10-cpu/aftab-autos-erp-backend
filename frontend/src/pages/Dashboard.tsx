@@ -470,7 +470,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     return ["reference"];
   }, []);
 
-  // Fast initial bootstrap: session/company/permissions first, data modules lazy-load after paint.
+  // Bootstrap: session/company/permissions first, then hydrate all core modules before showing dashboard.
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -509,15 +509,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           const company = await companyAPI.getById(companyId).catch(() => null);
           setActiveCompany(company);
         }
-        // Unblock UI quickly, then hydrate all core modules in background
-        // so data is ready across pages without waiting for tab switches.
-        setLoading(false);
         const allModules: DataModule[] = ["reference", "products", "sales", "purchase"];
-        allModules.forEach((module) => {
-          void loadModuleData(module, { silent: true }).catch((err) => {
-            console.error(`Failed to load ${module} module:`, err);
-          });
-        });
+        const results = await Promise.allSettled(
+          allModules.map((module) => loadModuleData(module, { silent: true, force: true }))
+        );
+        const failed = results.filter((r) => r.status === "rejected").length;
+        if (failed > 0) {
+          console.error(`Failed to load ${failed}/${allModules.length} startup modules.`);
+        }
+        setLoading(false);
       } catch (err) {
         console.error("Failed to fetch data:", err);
         setError("Failed to load data from server. Please refresh the page.");
