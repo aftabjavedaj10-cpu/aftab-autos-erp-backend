@@ -118,6 +118,8 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   const productCategories = categories.filter(c => c.type === 'product');
 
@@ -157,6 +159,14 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
   }, []);
 
   const validate = () => {
@@ -205,7 +215,16 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
           isActive: (p.isActive ?? true) !== false,
         }))
       : [];
-    onSave({ ...product, ...formData, packagingEnabled, packagings: sanitizedPackagings }, stayOnPage);
+    onSave(
+      {
+        ...product,
+        ...formData,
+        imageFile: selectedImageFile,
+        packagingEnabled,
+        packagings: sanitizedPackagings,
+      },
+      stayOnPage
+    );
     if (stayOnPage && !isEdit) {
       setFormData({ 
         name: '', urduName: '', productCode: nextProductCode, brandName: '', productType: 'Product', warehouse: warehouseOptions[0] || 'Main',
@@ -215,6 +234,7 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
       });
       setPackagingEnabled(false);
       setPackagings([createVariantPackaging({ unit: "pc", price: 0, costPrice: 0 })]);
+      setSelectedImageFile(null);
       setIsProductCodeTouched(false);
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
@@ -281,11 +301,13 @@ const AddProducts: React.FC<ProductFormPageProps> = ({
         alert("Image size must be under 1MB.");
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormData({ ...formData, image: event.target?.result as string });
-      };
-      reader.readAsDataURL(file);
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+      const previewUrl = URL.createObjectURL(file);
+      previewUrlRef.current = previewUrl;
+      setSelectedImageFile(file);
+      setFormData({ ...formData, image: previewUrl });
     }
   };
 

@@ -199,6 +199,141 @@ const uploadToStorage = async (bucket: string, path: string, file: File) => {
   }
 };
 
+const PRODUCT_LIST_SELECT =
+  "id,name,product_code,urdu_name,brand_name,product_type,vendor_id,category,price,cost_price,barcode,unit,warehouse,stock,reorder_point,reorder_qty,description,is_active,company_id,owner_id,created_at,updated_at";
+const CUSTOMER_LIST_SELECT =
+  "id,name,customer_code,email,phone,address,city,state,country,category,opening_balance,balance,notes,company_id,owner_id,created_at,updated_at";
+const VENDOR_LIST_SELECT =
+  "id,name,vendor_code,email,phone,address,city,state,country,category,opening_balance,balance,payable_balance,notes,company_id,owner_id,created_at,updated_at";
+const ENTITY_IMAGES_BUCKET = "entity-images";
+const LEGACY_IMAGES_BUCKET = "company-logos";
+
+const isDataUrl = (value: unknown) =>
+  typeof value === "string" && value.trim().toLowerCase().startsWith("data:");
+
+const sanitizeFileNameSegment = (value: unknown, fallback: string) => {
+  const normalized = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return normalized || fallback;
+};
+
+const dataUrlToFile = async (dataUrl: string, fallbackName: string) => {
+  const response = await fetch(dataUrl);
+  const blob = await response.blob();
+  const mime = blob.type || "image/png";
+  const ext = mime.split("/")[1]?.replace(/[^a-z0-9]/gi, "") || "png";
+  return new File([blob], `${fallbackName}.${ext}`, { type: mime });
+};
+
+const uploadEntityImage = async (
+  entityType: "products" | "customers" | "vendors",
+  source: File | string,
+  nameHint?: string,
+  companyId?: string | null
+) => {
+  if (!SUPABASE_URL) throw new Error("Missing Supabase URL");
+  const file =
+    source instanceof File
+      ? source
+      : await dataUrlToFile(source, sanitizeFileNameSegment(nameHint, entityType));
+  const extension = file.name.split(".").pop()?.toLowerCase() || "png";
+  const safeExt = ["png", "jpg", "jpeg", "webp"].includes(extension) ? extension : "png";
+  const companySegment = sanitizeFileNameSegment(companyId, "default");
+  const fileSegment = sanitizeFileNameSegment(nameHint, entityType);
+  const path = `${entityType}/${companySegment}/${fileSegment}-${Date.now()}.${safeExt}`;
+  const candidateBuckets = [ENTITY_IMAGES_BUCKET, LEGACY_IMAGES_BUCKET];
+  let lastError: unknown = null;
+  for (const bucket of candidateBuckets) {
+    try {
+      await uploadToStorage(bucket, path, file);
+      return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error("Image upload failed");
+};
+
+const resolveEntityImage = async (
+  entityType: "products" | "customers" | "vendors",
+  record: any,
+  nameField: string
+) => {
+  const next = { ...(record || {}) };
+  const imageFile = next.imageFile;
+  delete next.imageFile;
+
+  if (imageFile instanceof File) {
+    next.image = await uploadEntityImage(
+      entityType,
+      imageFile,
+      next?.[nameField],
+      next?.company_id ?? next?.companyId ?? getActiveCompanyId()
+    );
+    return next;
+  }
+
+  if (isDataUrl(next.image)) {
+    next.image = await uploadEntityImage(
+      entityType,
+      next.image,
+      next?.[nameField],
+      next?.company_id ?? next?.companyId ?? getActiveCompanyId()
+    );
+    return next;
+  }
+
+  if (typeof next.image === "string") {
+    next.image = next.image.trim() || null;
+  }
+
+  return next;
+};
+
+const patchEntityImage = async (
+  entityType: "products" | "customers" | "vendors",
+  id: string | number,
+  imageUrl: string | null
+) => {
+  const table =
+    entityType === "products" ? "products" : entityType === "customers" ? "customers" : "vendors";
+  return apiCall(`/${table}?id=eq.${id}`, "PATCH", { image: imageUrl }, true).then(firstRow);
+};
+
+const getEntityImageCandidates = async (
+  entityType: "products" | "customers" | "vendors",
+  limit = 20
+) => {
+  const table =
+    entityType === "products" ? "products" : entityType === "customers" ? "customers" : "vendors";
+  const rows = await apiCall(
+    `/${table}?select=id,name,image,company_id&image=not.is.null&order=updated_at.asc.nullslast,created_at.asc&limit=${limit}`
+  ).catch(() => []);
+  return (Array.isArray(rows) ? rows : []).filter((row) => isDataUrl(row?.image));
+};
+
+const migrateEntityImages = async (
+  entityType: "products" | "customers" | "vendors",
+  limit = 20
+) => {
+  const rows = await getEntityImageCandidates(entityType, limit);
+  let migrated = 0;
+  for (const row of rows) {
+    const imageUrl = await uploadEntityImage(
+      entityType,
+      row.image,
+      row.name,
+      row.company_id ?? getActiveCompanyId()
+    );
+    await patchEntityImage(entityType, row.id, imageUrl);
+    migrated += 1;
+  }
+  return { migrated, remainingLikely: rows.length === limit };
+};
+
 const getFirst = async (path: string) => {
   const rows = await apiCall(path, "GET");
   if (!Array.isArray(rows) || rows.length === 0) {
@@ -1355,7 +1490,7 @@ export const productAPI = {
     let allRows: any[] = [];
     while (true) {
       const rows = await apiCall(
-        `/products?select=*&order=id.desc&limit=${pageSize}&offset=${offset}`
+        `/products?select=${PRODUCT_LIST_SELECT}&order=id.desc&limit=${pageSize}&offset=${offset}`
       );
       const batch = Array.isArray(rows) ? rows : [];
       allRows = allRows.concat(batch);
@@ -1415,8 +1550,9 @@ export const productAPI = {
   },
   create: async (product: any) => {
     await ensurePermission("products.write");
+    const productWithImage = await resolveEntityImage("products", attachOwnership(product), "name");
     const productPayload = sanitizeProductPayload(
-      mapProductToDb(attachOwnership(product))
+      mapProductToDb(productWithImage)
     );
     const created = await apiCall(
       "/products",
@@ -1448,7 +1584,8 @@ export const productAPI = {
   },
   update: async (id: string, product: any) => {
     await ensurePermission("products.write");
-    const productPayload = sanitizeProductPayload(mapProductToDb(product));
+    const productWithImage = await resolveEntityImage("products", product, "name");
+    const productPayload = sanitizeProductPayload(mapProductToDb(productWithImage));
     // Opening stock is create-only. Ignore stock fields on product updates.
     if ("stock" in productPayload) delete productPayload.stock;
     if ("stock_on_hand" in productPayload) delete productPayload.stock_on_hand;
@@ -1755,7 +1892,7 @@ export const productPackagingAPI = {
 export const customerAPI = {
   getAll: async () => {
     await ensurePermission("customers.read");
-    return apiCall("/customers?select=*&order=id.desc").then((rows) =>
+    return apiCall(`/customers?select=${CUSTOMER_LIST_SELECT}&order=id.desc`).then((rows) =>
       Array.isArray(rows) ? rows.map(mapCustomerFromDb) : rows
     );
   },
@@ -1763,13 +1900,19 @@ export const customerAPI = {
     getFirst(`/customers?select=*&id=eq.${id}`).then(mapCustomerFromDb),
   create: async (customer: any) => {
     await ensurePermission("customers.write");
-    return apiCall("/customers", "POST", mapCustomerToDb(attachOwnership(customer)), true)
+    const customerWithImage = await resolveEntityImage(
+      "customers",
+      attachOwnership(customer),
+      "name"
+    );
+    return apiCall("/customers", "POST", mapCustomerToDb(customerWithImage), true)
       .then(firstRow)
       .then(mapCustomerFromDb);
   },
   update: async (id: string, customer: any) => {
     await ensurePermission("customers.write");
-    return apiCall(`/customers?id=eq.${id}`, "PATCH", mapCustomerToDb(customer), true)
+    const customerWithImage = await resolveEntityImage("customers", customer, "name");
+    return apiCall(`/customers?id=eq.${id}`, "PATCH", mapCustomerToDb(customerWithImage), true)
       .then(firstRow)
       .then(mapCustomerFromDb);
   },
@@ -1797,7 +1940,7 @@ export const customerAPI = {
 export const vendorAPI = {
   getAll: async () => {
     await ensurePermission("vendors.read");
-    return apiCall("/vendors?select=*&order=id.desc").then((rows) =>
+    return apiCall(`/vendors?select=${VENDOR_LIST_SELECT}&order=id.desc`).then((rows) =>
       Array.isArray(rows) ? rows.map(mapVendorFromDb) : rows
     );
   },
@@ -1805,13 +1948,15 @@ export const vendorAPI = {
     getFirst(`/vendors?select=*&id=eq.${id}`).then(mapVendorFromDb),
   create: async (vendor: any) => {
     await ensurePermission("vendors.write");
-    return apiCall("/vendors", "POST", mapVendorToDb(attachOwnership(vendor)), true)
+    const vendorWithImage = await resolveEntityImage("vendors", attachOwnership(vendor), "name");
+    return apiCall("/vendors", "POST", mapVendorToDb(vendorWithImage), true)
       .then(firstRow)
       .then(mapVendorFromDb);
   },
   update: async (id: string, vendor: any) => {
     await ensurePermission("vendors.write");
-    return apiCall(`/vendors?id=eq.${id}`, "PATCH", mapVendorToDb(vendor), true)
+    const vendorWithImage = await resolveEntityImage("vendors", vendor, "name");
+    return apiCall(`/vendors?id=eq.${id}`, "PATCH", mapVendorToDb(vendorWithImage), true)
       .then(firstRow)
       .then(mapVendorFromDb);
   },
@@ -2808,9 +2953,44 @@ export const storageAPI = {
       ? extension
       : "png";
     const path = `${companyId}/logo-${Date.now()}.${safeExt}`;
-    await uploadToStorage("company-logos", path, file);
-    return `${SUPABASE_URL}/storage/v1/object/public/company-logos/${path}`;
+    await uploadToStorage(LEGACY_IMAGES_BUCKET, path, file);
+    return `${SUPABASE_URL}/storage/v1/object/public/${LEGACY_IMAGES_BUCKET}/${path}`;
   },
+};
+
+export const imageMigrationAPI = {
+  runForActiveCompany: async (limitPerEntity = 20) =>
+    withSilentGlobalLoading(async () => {
+      const companyId = getActiveCompanyId();
+      if (!companyId || !getUserId()) {
+        return {
+          migrated: 0,
+          completed: false,
+          details: [],
+        };
+      }
+
+      const details = await Promise.all([
+        migrateEntityImages("products", limitPerEntity).then((result) => ({
+          entityType: "products" as const,
+          ...result,
+        })),
+        migrateEntityImages("customers", limitPerEntity).then((result) => ({
+          entityType: "customers" as const,
+          ...result,
+        })),
+        migrateEntityImages("vendors", limitPerEntity).then((result) => ({
+          entityType: "vendors" as const,
+          ...result,
+        })),
+      ]);
+
+      return {
+        migrated: details.reduce((sum, item) => sum + item.migrated, 0),
+        completed: details.every((item) => !item.remainingLikely),
+        details,
+      };
+    }),
 };
 
 export const companyAdminAPI = {
@@ -2902,6 +3082,7 @@ export default {
   companyMemberAPI,
   companyInviteAPI,
   storageAPI,
+  imageMigrationAPI,
   companyAdminAPI,
   roleAPI,
   permissionAPI,

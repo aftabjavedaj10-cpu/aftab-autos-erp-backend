@@ -35,6 +35,8 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   const customerCategories = categories.filter(c => c.type === 'customer');
 
@@ -46,6 +48,14 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -66,6 +76,7 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
     const payload: Customer = {
       ...customer,
       ...formData,
+      imageFile: selectedImageFile,
       balance: isEdit ? customer?.balance : formData.openingBalance
     } as Customer;
     onSave(payload, stayOnPage);
@@ -75,6 +86,7 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
         city: '', state: '', country: 'Pakistan', category: '', 
         openingBalance: 'Rs. 0.00', notes: '', image: '' 
       });
+      setSelectedImageFile(null);
       setIsCustomerCodeTouched(false);
       setIsDropdownOpen(false);
     } else if (stayOnPage && isEdit) {
@@ -106,11 +118,13 @@ const AddCustomerPage: React.FC<AddCustomerPageProps> = ({ customer, categories,
         alert("Image size must be under 1MB.");
         return;
       }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setFormData({ ...formData, image: event.target?.result as string });
-      };
-      reader.readAsDataURL(file);
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+      const previewUrl = URL.createObjectURL(file);
+      previewUrlRef.current = previewUrl;
+      setSelectedImageFile(file);
+      setFormData({ ...formData, image: previewUrl });
     }
   };
 

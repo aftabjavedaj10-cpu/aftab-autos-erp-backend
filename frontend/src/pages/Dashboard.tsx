@@ -234,7 +234,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const loadedModulesRef = useRef<Set<DataModule>>(new Set());
   const loadingModulesRef = useRef<Map<DataModule, Promise<void>>>(new Map());
   const CACHE_MAX_AGE_MS = 2 * 60 * 1000;
-  const REFRESH_INTERVAL_MS = 90 * 1000;
+  const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
   const cachePrefixRef = useRef(
     `dashboard_cache_${getUserId() || "anon"}_${getActiveCompanyId() || "default"}`
   );
@@ -509,7 +509,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           const company = await companyAPI.getById(companyId).catch(() => null);
           setActiveCompany(company);
         }
-        const allModules: DataModule[] = ["reference", "products", "sales", "purchase"];
+        const allModules = Array.from(new Set(getModulesForTab(activeTab)));
         const results = await Promise.allSettled(
           allModules.map((module) => loadModuleData(module, { force: true }))
         );
@@ -540,7 +540,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   // SWR-style background refresh for currently active modules.
   useEffect(() => {
     if (loading || noCompany) return;
+    if (activeTab !== "dashboard" && activeTab !== "reports") return;
     const timer = window.setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
       const modules = getModulesForTab(activeTab);
       modules.forEach((module) => {
         void loadModuleData(module, { force: true, silent: true }).catch((err) => {
@@ -567,13 +571,25 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab('add_customer');
   };
 
-  const handleEditCustomer = (customer: Customer) => {
-    setEditingCustomer(customer);
+  const handleEditCustomer = async (customer: Customer) => {
+    if (!customer.id) {
+      setEditingCustomer(customer);
+      setActiveTab('add_customer');
+      return;
+    }
+    try {
+      const fullCustomer = await customerAPI.getById(customer.id);
+      setEditingCustomer(fullCustomer);
+    } catch (err) {
+      console.error("Failed to load customer details", err);
+      setEditingCustomer(customer);
+    }
     setActiveTab('add_customer');
   };
 
   const handleEditProduct = async (product: Product) => {
     try {
+      const fullProduct = await productAPI.getById(String(product.id));
       const packagings = await productPackagingAPI.getByProductId(product.id);
       const preferredDefault =
         packagings.find((p: any) => Boolean(p?.isDefault) && Number(p?.factor) === 1) ||
@@ -584,7 +600,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
         (p: any) => String(p?.id ?? "") !== String(preferredDefault?.id ?? "")
       );
       setEditingProduct({
-        ...product,
+        ...fullProduct,
         packagings: variantPackagings,
         packagingEnabled: variantPackagings.length > 0,
       });
@@ -600,8 +616,19 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab('add_vendor');
   };
 
-  const handleEditVendor = (vendor: Vendor) => {
-    setEditingVendor(vendor);
+  const handleEditVendor = async (vendor: Vendor) => {
+    if (!vendor.id) {
+      setEditingVendor(vendor);
+      setActiveTab('add_vendor');
+      return;
+    }
+    try {
+      const fullVendor = await vendorAPI.getById(vendor.id);
+      setEditingVendor(fullVendor);
+    } catch (err) {
+      console.error("Failed to load vendor details", err);
+      setEditingVendor(vendor);
+    }
     setActiveTab('add_vendor');
   };
 
@@ -1438,12 +1465,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onSave={(customer, stayOnPage) => {
               const saveCustomer = () => {
                 if (customer.id && editingCustomer?.id === customer.id) {
-                  return customerAPI.update(customer.id, customer).then(() => {
-                    setCustomers(customers.map(c => c.id === customer.id ? customer : c));
+                  return customerAPI.update(customer.id, customer).then((updated: any) => {
+                    setCustomers(customers.map(c => c.id === customer.id ? updated : c));
                   });
                 } else {
                   return customerAPI.create(customer).then((res: any) => {
-                    const newCustomer = { ...customer, id: res.id || `cust_${Date.now()}` };
+                    const newCustomer = { ...customer, ...res, id: res.id || `cust_${Date.now()}` };
                     setCustomers((prev) => [newCustomer, ...prev]);
                   });
                 }
@@ -1483,12 +1510,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onSave={(vendor, stayOnPage) => {
               const saveVendor = () => {
                 if (vendor.id && editingVendor?.id === vendor.id) {
-                  return vendorAPI.update(vendor.id, vendor).then(() => {
-                    setVendors(vendors.map(v => v.id === vendor.id ? vendor : v));
+                  return vendorAPI.update(vendor.id, vendor).then((updated: any) => {
+                    setVendors(vendors.map(v => v.id === vendor.id ? updated : v));
                   });
                 } else {
                   return vendorAPI.create(vendor).then((res: any) => {
-                    const newVendor = { ...vendor, id: res.id || `ven_${Date.now()}` };
+                    const newVendor = { ...vendor, ...res, id: res.id || `ven_${Date.now()}` };
                     setVendors((prev) => [newVendor, ...prev]);
                   });
                 }
