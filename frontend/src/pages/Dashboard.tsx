@@ -546,7 +546,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           setActiveCompany(company);
         }
         const allModules = Array.from(new Set(getModulesForTab(activeTab)));
-        const results = await Promise.allSettled(allModules.map((module) => loadModuleData(module)));
+        const results = await Promise.allSettled(
+          allModules.map((module) => loadModuleData(module, { force: true }))
+        );
         const failed = results.filter((r) => r.status === "rejected").length;
         if (failed > 0) {
           console.error(`Failed to load ${failed}/${allModules.length} startup modules.`);
