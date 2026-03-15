@@ -205,6 +205,10 @@ const CUSTOMER_LIST_SELECT =
   "id,name,customer_code,email,phone,address,city,state,country,category,opening_balance,balance,notes,company_id,owner_id,created_at,updated_at";
 const VENDOR_LIST_SELECT =
   "id,name,vendor_code,email,phone,address,city,state,country,category,opening_balance,balance,payable_balance,notes,company_id,owner_id,created_at,updated_at";
+const SALES_DOC_LIST_SELECT =
+  "id,customer_id,customer_name,reference,vehicle_number,date,due_date,status,payment_status,notes,overall_discount,amount_received,total_amount,company_id,owner_id,created_at,updated_at";
+const PURCHASE_DOC_LIST_SELECT =
+  "id,vendor_id,vendor_name,reference,vehicle_number,date,due_date,status,payment_status,notes,overall_discount,amount_received,total_amount,company_id,owner_id,created_at,updated_at";
 const ENTITY_IMAGES_BUCKET = "entity-images";
 const LEGACY_IMAGES_BUCKET = "company-logos";
 
@@ -2097,10 +2101,10 @@ export const warehouseAPI = {
 export const salesInvoiceAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(
-      "/sales_invoices?select=*,items:sales_invoice_items(*)&order=created_at.desc"
-    );
-    return Array.isArray(rows) ? rows.map(mapSalesInvoiceFromDb) : rows;
+    const rows = await apiCall(`/sales_invoices?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc`);
+    return Array.isArray(rows)
+      ? rows.map((row) => mapSalesInvoiceFromDb({ ...row, items: [] }))
+      : rows;
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2147,17 +2151,19 @@ export const salesInvoiceAPI = {
   },
   update: async (id: string, invoice: any) => {
     await ensurePermission("sales_invoices.write");
-    await apiCall(`/sales_invoice_items?invoice_id=eq.${id}`, "DELETE");
-    const items = Array.isArray(invoice.items) ? invoice.items : [];
-    if (items.length > 0) {
-      await apiCall(
-        "/sales_invoice_items",
-        "POST",
-        items.map((item: any) =>
-          attachCompanyId(mapSalesInvoiceItemToDb(item, id))
-        ),
-        true
-      );
+    if (Array.isArray(invoice.items)) {
+      await apiCall(`/sales_invoice_items?invoice_id=eq.${id}`, "DELETE");
+      const items = invoice.items;
+      if (items.length > 0) {
+        await apiCall(
+          "/sales_invoice_items",
+          "POST",
+          items.map((item: any) =>
+            attachCompanyId(mapSalesInvoiceItemToDb(item, id))
+          ),
+          true
+        );
+      }
     }
 
     // Patch header last (with forced updated_at) so stock trigger rebuilds from latest items.
@@ -2180,10 +2186,10 @@ export const salesInvoiceAPI = {
 export const quotationAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(
-      "/quotations?select=*,items:quotation_items(*)&order=created_at.desc"
-    );
-    return Array.isArray(rows) ? rows.map(mapQuotationFromDb) : rows;
+    const rows = await apiCall(`/quotations?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc`);
+    return Array.isArray(rows)
+      ? rows.map((row) => mapQuotationFromDb({ ...row, items: [] }))
+      : rows;
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2227,15 +2233,17 @@ export const quotationAPI = {
   update: async (id: string, quotation: any) => {
     await ensurePermission("sales_invoices.write");
     await apiCall(`/quotations?id=eq.${id}`, "PATCH", mapQuotationToDb(quotation), true);
-    await apiCall(`/quotation_items?quotation_id=eq.${id}`, "DELETE");
-    const items = Array.isArray(quotation.items) ? quotation.items : [];
-    if (items.length > 0) {
-      await apiCall(
-        "/quotation_items",
-        "POST",
-        items.map((item: any) => attachCompanyId(mapQuotationItemToDb(item, id))),
-        true
-      );
+    if (Array.isArray(quotation.items)) {
+      await apiCall(`/quotation_items?quotation_id=eq.${id}`, "DELETE");
+      const items = quotation.items;
+      if (items.length > 0) {
+        await apiCall(
+          "/quotation_items",
+          "POST",
+          items.map((item: any) => attachCompanyId(mapQuotationItemToDb(item, id))),
+          true
+        );
+      }
     }
     return quotationAPI.getById(id);
   },
@@ -2249,10 +2257,10 @@ export const quotationAPI = {
 export const salesReturnAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(
-      "/sales_returns?select=*,items:sales_return_items(*)&order=created_at.desc"
-    );
-    return Array.isArray(rows) ? rows.map(mapSalesReturnFromDb) : rows;
+    const rows = await apiCall(`/sales_returns?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc`);
+    return Array.isArray(rows)
+      ? rows.map((row) => mapSalesReturnFromDb({ ...row, items: [] }))
+      : rows;
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2306,17 +2314,19 @@ export const salesReturnAPI = {
   },
   update: async (id: string, salesReturn: any) => {
     await ensurePermission("sales_invoices.write");
-    await apiCall(`/sales_return_items?sales_return_id=eq.${id}`, "DELETE");
-    const items = Array.isArray(salesReturn.items) ? salesReturn.items : [];
-    if (items.length > 0) {
-      await apiCall(
-        "/sales_return_items",
-        "POST",
-        items.map((item: any) =>
-          attachCompanyId(mapSalesReturnItemToDb(item, id))
-        ),
-        true
-      );
+    if (Array.isArray(salesReturn.items)) {
+      await apiCall(`/sales_return_items?sales_return_id=eq.${id}`, "DELETE");
+      const items = salesReturn.items;
+      if (items.length > 0) {
+        await apiCall(
+          "/sales_return_items",
+          "POST",
+          items.map((item: any) =>
+            attachCompanyId(mapSalesReturnItemToDb(item, id))
+          ),
+          true
+        );
+      }
     }
 
     // Patch header last so stock trigger rebuilds from the latest item rows.
@@ -2439,10 +2449,10 @@ export const makePaymentAPI = {
 export const purchaseInvoiceAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(
-      "/purchase_invoices?select=*,items:purchase_invoice_items(*)&order=created_at.desc&items.order=id.asc"
-    );
-    return Array.isArray(rows) ? rows.map(mapPurchaseInvoiceFromDb) : rows;
+    const rows = await apiCall(`/purchase_invoices?select=${PURCHASE_DOC_LIST_SELECT}&order=created_at.desc`);
+    return Array.isArray(rows)
+      ? rows.map((row) => mapPurchaseInvoiceFromDb({ ...row, items: [] }))
+      : rows;
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2498,18 +2508,20 @@ export const purchaseInvoiceAPI = {
   },
   update: async (id: string, invoice: any) => {
     await ensurePermission("sales_invoices.write");
-    await apiCall(`/purchase_invoice_items?purchase_invoice_id=eq.${id}`, "DELETE");
+    if (Array.isArray(invoice.items)) {
+      await apiCall(`/purchase_invoice_items?purchase_invoice_id=eq.${id}`, "DELETE");
 
-    const items = Array.isArray(invoice.items) ? invoice.items : [];
-    if (items.length > 0) {
-      await apiCall(
-        "/purchase_invoice_items",
-        "POST",
-        items.map((item: any) =>
-          attachCompanyId(mapPurchaseInvoiceItemToDb(item, id))
-        ),
-        true
-      );
+      const items = invoice.items;
+      if (items.length > 0) {
+        await apiCall(
+          "/purchase_invoice_items",
+          "POST",
+          items.map((item: any) =>
+            attachCompanyId(mapPurchaseInvoiceItemToDb(item, id))
+          ),
+          true
+        );
+      }
     }
     // Patch header last so stock trigger rebuilds from the latest item rows.
     await apiCall(
@@ -2531,10 +2543,10 @@ export const purchaseInvoiceAPI = {
 export const purchaseOrderAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(
-      "/purchase_orders?select=*,items:purchase_order_items(*)&order=created_at.desc"
-    );
-    return Array.isArray(rows) ? rows.map(mapPurchaseOrderFromDb) : rows;
+    const rows = await apiCall(`/purchase_orders?select=${PURCHASE_DOC_LIST_SELECT}&order=created_at.desc`);
+    return Array.isArray(rows)
+      ? rows.map((row) => mapPurchaseOrderFromDb({ ...row, items: [] }))
+      : rows;
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2580,16 +2592,18 @@ export const purchaseOrderAPI = {
   update: async (id: string, order: any) => {
     await ensurePermission("sales_invoices.write");
     await apiCall(`/purchase_orders?id=eq.${id}`, "PATCH", mapPurchaseOrderToDb(order), true);
-    await apiCall(`/purchase_order_items?purchase_order_id=eq.${id}`, "DELETE");
+    if (Array.isArray(order.items)) {
+      await apiCall(`/purchase_order_items?purchase_order_id=eq.${id}`, "DELETE");
 
-    const items = Array.isArray(order.items) ? order.items : [];
-    if (items.length > 0) {
-      await apiCall(
-        "/purchase_order_items",
-        "POST",
-        items.map((item: any) => attachCompanyId(mapPurchaseOrderItemToDb(item, id))),
-        true
-      );
+      const items = order.items;
+      if (items.length > 0) {
+        await apiCall(
+          "/purchase_order_items",
+          "POST",
+          items.map((item: any) => attachCompanyId(mapPurchaseOrderItemToDb(item, id))),
+          true
+        );
+      }
     }
 
     return purchaseOrderAPI.getById(id);
@@ -2604,10 +2618,10 @@ export const purchaseOrderAPI = {
 export const purchaseReturnAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(
-      "/purchase_returns?select=*,items:purchase_return_items(*)&order=created_at.desc"
-    );
-    return Array.isArray(rows) ? rows.map(mapPurchaseReturnFromDb) : rows;
+    const rows = await apiCall(`/purchase_returns?select=${PURCHASE_DOC_LIST_SELECT}&order=created_at.desc`);
+    return Array.isArray(rows)
+      ? rows.map((row) => mapPurchaseReturnFromDb({ ...row, items: [] }))
+      : rows;
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2661,17 +2675,19 @@ export const purchaseReturnAPI = {
   },
   update: async (id: string, invoice: any) => {
     await ensurePermission("sales_invoices.write");
-    await apiCall(`/purchase_return_items?purchase_return_id=eq.${id}`, "DELETE");
-    const items = Array.isArray(invoice.items) ? invoice.items : [];
-    if (items.length > 0) {
-      await apiCall(
-        "/purchase_return_items",
-        "POST",
-        items.map((item: any) =>
-          attachCompanyId(mapPurchaseReturnItemToDb(item, id))
-        ),
-        true
-      );
+    if (Array.isArray(invoice.items)) {
+      await apiCall(`/purchase_return_items?purchase_return_id=eq.${id}`, "DELETE");
+      const items = invoice.items;
+      if (items.length > 0) {
+        await apiCall(
+          "/purchase_return_items",
+          "POST",
+          items.map((item: any) =>
+            attachCompanyId(mapPurchaseReturnItemToDb(item, id))
+          ),
+          true
+        );
+      }
     }
 
     await apiCall(`/purchase_returns?id=eq.${id}`, "PATCH", mapPurchaseReturnToDb(invoice), true);

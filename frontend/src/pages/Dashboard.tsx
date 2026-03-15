@@ -234,7 +234,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   const loadedModulesRef = useRef<Set<DataModule>>(new Set());
   const loadingModulesRef = useRef<Map<DataModule, Promise<void>>>(new Map());
   const CACHE_MAX_AGE_MS = 2 * 60 * 1000;
-  const REFRESH_INTERVAL_MS = 10 * 60 * 1000;
   const cachePrefixRef = useRef(
     `dashboard_cache_${getUserId() || "anon"}_${getActiveCompanyId() || "default"}`
   );
@@ -266,6 +265,50 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       return null;
     }
   }, [getModuleCacheKey]);
+
+  const needsLedgerRows = useCallback(
+    (tab: string) =>
+      tab === "report_stock_ledger" ||
+      tab === "stock_adjustment" ||
+      tab === "add_stock_adjustment",
+    []
+  );
+
+  const refreshProductsSnapshot = useCallback(async () => {
+    const productsData = await productAPI.getAll().catch(() => []);
+    const normalizedProducts = Array.isArray(productsData)
+      ? productsData
+      : (productsData as any)?.data || [];
+    setProducts(normalizedProducts);
+    return normalizedProducts;
+  }, []);
+
+  const refreshLedgerSnapshot = useCallback(
+    async (tab = activeTab) => {
+      if (!needsLedgerRows(tab)) return [] as StockLedgerEntry[];
+      const companyId = getActiveCompanyId();
+      if (!companyId) return [] as StockLedgerEntry[];
+      const ledgerData = await stockLedgerAPI.listByCompany(companyId, 2000).catch(() => []);
+      const normalizedLedger = Array.isArray(ledgerData)
+        ? ledgerData
+        : (ledgerData as any)?.data || [];
+      setStockLedger(normalizedLedger);
+      return normalizedLedger;
+    },
+    [activeTab, needsLedgerRows]
+  );
+
+  const refreshInventoryViews = useCallback(
+    async (tab = activeTab) => {
+      const refreshedProducts = await refreshProductsSnapshot();
+      if (!needsLedgerRows(tab)) return;
+      const ledgerRows = await refreshLedgerSnapshot(tab);
+      if (ledgerRows.length > 0) {
+        setProducts(mergeStockToProducts(refreshedProducts, ledgerRows));
+      }
+    },
+    [activeTab, needsLedgerRows, refreshLedgerSnapshot, refreshProductsSnapshot]
+  );
 
   const applyModulePayload = useCallback((module: DataModule, payload: any) => {
     switch (module) {
@@ -318,7 +361,6 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       }
 
       const runModuleLoad = async () => {
-        const companyId = getActiveCompanyId();
         switch (module) {
           case "reference": {
             const [customersData, vendorsData, categoriesData, unitsData, warehousesData] =
@@ -343,13 +385,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           case "products": {
             const productsData = await productAPI.getAll().catch(() => []);
             const normalizedProducts = Array.isArray(productsData) ? productsData : (productsData as any)?.data || [];
-            const productOnlyPayload = { products: normalizedProducts, stockLedger: [] as StockLedgerEntry[] };
-            applyModulePayload(module, productOnlyPayload);
-
-            const ledgerData = companyId ? await stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : [];
-            const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : (ledgerData as any)?.data || [];
-            const mergedProducts = mergeStockToProducts(normalizedProducts, normalizedLedger);
-            const payload = { products: mergedProducts, stockLedger: normalizedLedger };
+            const payload = { products: normalizedProducts, stockLedger: [] as StockLedgerEntry[] };
             applyModulePayload(module, payload);
             writeModuleCache(module, payload);
             break;
@@ -510,9 +546,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
           setActiveCompany(company);
         }
         const allModules = Array.from(new Set(getModulesForTab(activeTab)));
-        const results = await Promise.allSettled(
-          allModules.map((module) => loadModuleData(module, { force: true }))
-        );
+        const results = await Promise.allSettled(allModules.map((module) => loadModuleData(module)));
         const failed = results.filter((r) => r.status === "rejected").length;
         if (failed > 0) {
           console.error(`Failed to load ${failed}/${allModules.length} startup modules.`);
@@ -537,23 +571,16 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     });
   }, [activeTab, getModulesForTab, loadModuleData]);
 
-  // SWR-style background refresh for currently active modules.
   useEffect(() => {
-    if (loading || noCompany) return;
-    if (activeTab !== "dashboard" && activeTab !== "reports") return;
-    const timer = window.setInterval(() => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
-        return;
+    if (!needsLedgerRows(activeTab)) return;
+    void refreshLedgerSnapshot(activeTab).then((ledgerRows) => {
+      if (ledgerRows.length > 0) {
+        setProducts((prev) => mergeStockToProducts(prev, ledgerRows));
       }
-      const modules = getModulesForTab(activeTab);
-      modules.forEach((module) => {
-        void loadModuleData(module, { force: true, silent: true }).catch((err) => {
-          console.error(`Background refresh failed for ${module}:`, err);
-        });
-      });
-    }, REFRESH_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [activeTab, getModulesForTab, loadModuleData, loading, noCompany]);
+    }).catch((err) => {
+      console.error("Failed to load stock ledger rows:", err);
+    });
+  }, [activeTab, needsLedgerRows, refreshLedgerSnapshot]);
 
   useEffect(() => {
     if (!error) return;
@@ -736,19 +763,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
 
   const handleImportProducts = (newProducts: Product[]) => {
     productAPI.import(newProducts).then(async () => {
-      const companyId = getActiveCompanyId();
-      const [productsData, ledgerData] = await Promise.all([
-        productAPI.getAll().catch(() => []),
-        companyId ? stockLedgerAPI.listRecent(companyId, 5000).catch(() => []) : Promise.resolve([]),
-      ]);
-      const normalizedProducts = Array.isArray(productsData)
-        ? productsData
-        : (productsData as any)?.data || [];
-      const normalizedLedger = Array.isArray(ledgerData)
-        ? ledgerData
-        : (ledgerData as any)?.data || [];
-      setStockLedger(normalizedLedger);
-      setProducts(mergeStockToProducts(normalizedProducts, normalizedLedger));
+      await refreshInventoryViews("products");
     }).catch(err => {
       setError(err instanceof Error ? err.message : "Failed to import products");
       console.error(err);
@@ -792,21 +807,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     if (!ok) return;
     try {
       await stockLedgerAPI.deleteAdjustment(row.id);
-      const companyId = getActiveCompanyId();
-      const ledgerData = companyId
-        ? await stockLedgerAPI.listRecent(companyId, 5000)
-        : [];
-      const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
-      setStockLedger(normalizedLedger);
-      setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+      await refreshInventoryViews("stock_adjustment");
     } catch (err: any) {
       setError(err?.message || "Failed to delete stock adjustment");
       console.error(err);
     }
   };
 
-  const handleEditSalesInvoice = (invoice: SalesInvoice) => {
-    setEditingSalesInvoice(invoice);
+  const handleEditSalesInvoice = async (invoice: SalesInvoice) => {
+    try {
+      const fullInvoice = await salesInvoiceAPI.getById(invoice.id);
+      setEditingSalesInvoice(fullInvoice);
+    } catch (err) {
+      console.error("Failed to load sales invoice details", err);
+      setEditingSalesInvoice(invoice);
+    }
     setSalesInvoiceForceNewMode(false);
     setActiveTab("add_sales_invoice");
   };
@@ -817,8 +832,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_invoice");
   };
 
-  const handleEditPurchaseInvoice = (invoice: PurchaseInvoice) => {
-    setEditingPurchaseInvoice(invoice);
+  const handleEditPurchaseInvoice = async (invoice: PurchaseInvoice) => {
+    try {
+      const fullInvoice = await purchaseInvoiceAPI.getById(invoice.id);
+      setEditingPurchaseInvoice(fullInvoice);
+    } catch (err) {
+      console.error("Failed to load purchase invoice details", err);
+      setEditingPurchaseInvoice(invoice);
+    }
     setPurchaseInvoiceForceNewMode(false);
     setActiveTab("add_purchase_invoice");
   };
@@ -828,8 +849,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_order");
   };
 
-  const handleEditPurchaseOrder = (invoice: PurchaseOrder) => {
-    setEditingPurchaseOrder(invoice);
+  const handleEditPurchaseOrder = async (invoice: PurchaseOrder) => {
+    try {
+      const fullInvoice = await purchaseOrderAPI.getById(invoice.id);
+      setEditingPurchaseOrder(fullInvoice);
+    } catch (err) {
+      console.error("Failed to load purchase order details", err);
+      setEditingPurchaseOrder(invoice);
+    }
     setActiveTab("add_purchase_order");
   };
 
@@ -921,7 +948,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     if (!targetId) {
       throw new Error("Please select a pending purchase order.");
     }
-    const existing = purchaseOrders.find((po) => String(po.id) === targetId);
+    const existingHeader = purchaseOrders.find((po) => String(po.id) === targetId);
+    const existing = await purchaseOrderAPI.getById(targetId).catch(() => existingHeader);
     if (!existing) {
       throw new Error("Selected purchase order not found.");
     }
@@ -988,7 +1016,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     });
 
     if (purchaseOrderId) {
-      const existing = purchaseOrders.find((po) => String(po.id) === String(purchaseOrderId));
+      const existingHeader = purchaseOrders.find((po) => String(po.id) === String(purchaseOrderId));
+      const existing = await purchaseOrderAPI.getById(String(purchaseOrderId)).catch(() => existingHeader);
       if (!existing) throw new Error("Selected purchase order not found.");
       if (String(existing.vendorId || "") !== vendorId) {
         throw new Error("Selected purchase order vendor does not match selected products.");
@@ -1060,8 +1089,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_purchase_return");
   };
 
-  const handleEditPurchaseReturn = (invoice: PurchaseReturn) => {
-    setEditingPurchaseReturn(invoice);
+  const handleEditPurchaseReturn = async (invoice: PurchaseReturn) => {
+    try {
+      const fullInvoice = await purchaseReturnAPI.getById(invoice.id);
+      setEditingPurchaseReturn(fullInvoice);
+    } catch (err) {
+      console.error("Failed to load purchase return details", err);
+      setEditingPurchaseReturn(invoice);
+    }
     setActiveTab("add_purchase_return");
   };
 
@@ -1128,8 +1163,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_quotation");
   };
 
-  const handleEditQuotation = (invoice: SalesInvoice) => {
-    setEditingQuotationInvoice(invoice);
+  const handleEditQuotation = async (invoice: SalesInvoice) => {
+    try {
+      const fullInvoice = await quotationAPI.getById(invoice.id);
+      setEditingQuotationInvoice(fullInvoice);
+    } catch (err) {
+      console.error("Failed to load quotation details", err);
+      setEditingQuotationInvoice(invoice);
+    }
     setActiveTab("add_quotation");
   };
 
@@ -1148,8 +1189,14 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
     setActiveTab("add_sales_return");
   };
 
-  const handleEditSalesReturn = (invoice: SalesInvoice) => {
-    setEditingSalesReturn(invoice);
+  const handleEditSalesReturn = async (invoice: SalesInvoice) => {
+    try {
+      const fullInvoice = await salesReturnAPI.getById(invoice.id);
+      setEditingSalesReturn(fullInvoice);
+    } catch (err) {
+      console.error("Failed to load sales return details", err);
+      setEditingSalesReturn(invoice);
+    }
     setActiveTab("add_sales_return");
   };
 
@@ -1226,11 +1273,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
   useEffect(() => {
     const refreshStockLedgerOnOpen = async () => {
       if (activeTab !== "report_stock_ledger") return;
-      const companyId = getActiveCompanyId();
-      if (!companyId) return;
       try {
-        const ledgerData = await stockLedgerAPI.listRecent(companyId, 5000);
-        const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
+        const normalizedLedger = await refreshLedgerSnapshot(activeTab);
         setStockLedger(normalizedLedger);
         setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
       } catch (err) {
@@ -1238,7 +1282,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       }
     };
     refreshStockLedgerOnOpen();
-  }, [activeTab]);
+  }, [activeTab, refreshLedgerSnapshot]);
 
   useEffect(() => {
     updateMainThumb();
@@ -1688,8 +1732,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setActiveTab("quotation");
             }}
             onNavigate={(inv) => {
-              setEditingQuotationInvoice(inv);
-              setActiveTab("add_quotation");
+              void handleEditQuotation(inv);
             }}
             onNavigateNew={() => {
               setEditingQuotationInvoice(undefined);
@@ -1801,13 +1844,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               try {
                 await salesReturnAPI.delete(id);
                 setSalesReturns((prev) => prev.filter((d) => d.id !== id));
-                const companyId = getActiveCompanyId();
-                const ledgerData = companyId
-                  ? await stockLedgerAPI.listRecent(companyId, 5000)
-                  : [];
-                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
-                setStockLedger(normalizedLedger);
-                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                await refreshInventoryViews("sales_return");
               } catch (err: any) {
                 setError(err?.message || "Failed to delete sales return");
               }
@@ -1838,13 +1875,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   }
                   return [saved, ...prev];
                 });
-                const companyId = getActiveCompanyId();
-                const ledgerData = companyId
-                  ? await stockLedgerAPI.listRecent(companyId, 5000)
-                  : [];
-                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
-                setStockLedger(normalizedLedger);
-                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                await refreshInventoryViews("sales_return");
                 setEditingSalesReturn(undefined);
                 setActiveTab("sales_return");
               } catch (err: any) {
@@ -1990,13 +2021,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   );
                 }
 
-                const companyId = getActiveCompanyId();
-                const ledgerData = companyId
-                  ? await stockLedgerAPI.listRecent(companyId, 5000)
-                  : [];
-                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
-                setStockLedger(normalizedLedger);
-                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                await refreshInventoryViews("sales_invoice");
               } catch (err: any) {
                 setError(err?.message || "Failed to set sales invoice as deleted");
                 console.error(err);
@@ -2039,13 +2064,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   );
                 }
 
-                const companyId = getActiveCompanyId();
-                const ledgerData = companyId
-                  ? await stockLedgerAPI.listRecent(companyId, 5000)
-                  : [];
-                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
-                setStockLedger(normalizedLedger);
-                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                await refreshInventoryViews("purchase_invoice");
               } catch (err: any) {
                 setError(err?.message || "Failed to set purchase invoice as deleted");
                 console.error(err);
@@ -2095,13 +2114,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 }
                 const updated = await purchaseReturnAPI.update(id, { ...current, status: "Deleted" as const });
                 setPurchaseReturns((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
-                const companyId = getActiveCompanyId();
-                const ledgerData = companyId
-                  ? await stockLedgerAPI.listRecent(companyId, 5000)
-                  : [];
-                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
-                setStockLedger(normalizedLedger);
-                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                await refreshInventoryViews("purchase_return");
               } catch (err: any) {
                 setError(err?.message || "Failed to set purchase return as deleted");
               }
@@ -2164,13 +2177,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                 } else {
                   await stockLedgerAPI.createAdjustment(payload);
                 }
-                const companyId = getActiveCompanyId();
-                const ledgerData = companyId
-                  ? await stockLedgerAPI.listRecent(companyId, 5000)
-                  : [];
-                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
-                setStockLedger(normalizedLedger);
-                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                await refreshInventoryViews("purchase_invoice");
                 setEditingStockAdjustment(undefined);
                 setActiveTab("stock_adjustment");
               } catch (err: any) {
@@ -2192,15 +2199,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onViewSalesInvoice={(id) => {
               const invoice = salesInvoices.find((inv) => String(inv.id) === String(id));
               if (!invoice) return;
-              setEditingSalesInvoice(invoice);
-              setSalesInvoiceForceNewMode(false);
-              setActiveTab("add_sales_invoice");
+              void handleEditSalesInvoice(invoice);
             }}
             onViewSalesReturn={(id) => {
               const invoice = salesReturns.find((inv) => String(inv.id) === String(id));
               if (!invoice) return;
-              setEditingSalesReturn(invoice);
-              setActiveTab("add_sales_return");
+              void handleEditSalesReturn(invoice);
             }}
             onViewReceivePayment={(id) => {
               const doc = receivePayments.find((row) => String(row.id) === String(id));
@@ -2222,8 +2226,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
             onViewPurchaseInvoice={(id) => {
               const invoice = purchaseInvoices.find((inv) => String(inv.id) === String(id));
               if (!invoice) return;
-              setEditingPurchaseInvoice(invoice);
-              setActiveTab("add_purchase_invoice");
+              void handleEditPurchaseInvoice(invoice);
             }}
           />
         )}
@@ -2277,9 +2280,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setActiveTab("sales_invoice");
             }}
             onNavigate={(inv) => {
-              setEditingSalesInvoice(inv);
-              setSalesInvoiceForceNewMode(false);
-              setActiveTab("add_sales_invoice");
+              void handleEditSalesInvoice(inv);
             }}
             onNavigateNew={() => {
               setEditingSalesInvoice(undefined);
@@ -2437,9 +2438,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setActiveTab("purchase_invoice");
             }}
             onNavigate={(inv) => {
-              setEditingPurchaseInvoice(inv);
-              setPurchaseInvoiceForceNewMode(false);
-              setActiveTab("add_purchase_invoice");
+              void handleEditPurchaseInvoice(inv);
             }}
             onNavigateNew={() => {
               setEditingPurchaseInvoice(undefined);
@@ -2606,13 +2605,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setMakePayments((prev) => prev.filter((doc) => !idsToDelete.has(doc.id)));
                 }
 
-                const companyId = getActiveCompanyId();
-                const ledgerData = companyId
-                  ? await stockLedgerAPI.listRecent(companyId, 5000)
-                  : [];
-                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
-                setStockLedger(normalizedLedger);
-                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                await refreshInventoryViews("purchase_invoice");
 
                 if (stayOnPage) {
                   setEditingPurchaseInvoice(saved);
@@ -2655,8 +2648,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setActiveTab("purchase_order");
             }}
             onNavigate={(inv) => {
-              setEditingPurchaseOrder(inv);
-              setActiveTab("add_purchase_order");
+              void handleEditPurchaseOrder(inv);
             }}
             onNavigateNew={() => {
               setEditingPurchaseOrder(undefined);
@@ -2700,8 +2692,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
               setActiveTab("purchase_return");
             }}
             onNavigate={(inv) => {
-              setEditingPurchaseReturn(inv);
-              setActiveTab("add_purchase_return");
+              void handleEditPurchaseReturn(inv);
             }}
             onNavigateNew={() => {
               setEditingPurchaseReturn(undefined);
@@ -2720,13 +2711,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   return [saved, ...prev];
                 });
 
-                const companyId = getActiveCompanyId();
-                const ledgerData = companyId
-                  ? await stockLedgerAPI.listRecent(companyId, 5000)
-                  : [];
-                const normalizedLedger = Array.isArray(ledgerData) ? ledgerData : [];
-                setStockLedger(normalizedLedger);
-                setProducts((prev) => mergeStockToProducts(prev, normalizedLedger));
+                await refreshInventoryViews("purchase_return");
 
                 if (stayOnPage) {
                   setEditingPurchaseReturn(saved);

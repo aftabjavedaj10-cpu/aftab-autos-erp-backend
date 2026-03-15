@@ -105,6 +105,8 @@ const PurchaseReturnPage: React.FC<PurchaseReturnPageProps> = ({
       const matchesEnd = !endDateObj || invDate <= endDateObj;
       const matchesProduct =
         !productSearch ||
+        !Array.isArray(inv.items) ||
+        inv.items.length === 0 ||
         inv.items.some(
           (item) =>
             item.productName.toLowerCase().includes(productSearch.toLowerCase()) ||
