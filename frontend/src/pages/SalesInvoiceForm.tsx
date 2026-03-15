@@ -1551,16 +1551,16 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                     <div className={`relative group/image w-9 h-9 rounded-lg flex items-center justify-center text-xs font-black ${
                                       selectedIndex === idx ? "bg-white/20" : "bg-slate-100 dark:bg-slate-800"
                                     }`}>
-                                      {p.image ? (
+                                      {(p.imageThumb || p.image) ? (
                                         <>
                                           <img
-                                            src={p.image}
+                                            src={p.imageThumb || p.image}
                                             alt={option.searchLabel}
                                             className="w-full h-full object-cover rounded-lg cursor-pointer transition-transform duration-200 group-hover/image:scale-105"
                                             onClick={(e) => {
                                               e.preventDefault();
                                               e.stopPropagation();
-                                              setPreviewImage({ src: p.image || "", name: option.searchLabel });
+                                              setPreviewImage({ src: p.image || p.imageThumb || "", name: option.searchLabel });
                                             }}
                                           />
                                           <button
@@ -1568,7 +1568,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                             onClick={(e) => {
                                               e.preventDefault();
                                               e.stopPropagation();
-                                              setPreviewImage({ src: p.image || "", name: option.searchLabel });
+                                              setPreviewImage({ src: p.image || p.imageThumb || "", name: option.searchLabel });
                                             }}
                                             className="absolute bottom-0.5 right-0.5 w-5 h-5 rounded-md bg-white/90 text-slate-800 border border-slate-200 shadow-sm opacity-0 group-hover/image:opacity-100 transition-all flex items-center justify-center"
                                             title="View image"

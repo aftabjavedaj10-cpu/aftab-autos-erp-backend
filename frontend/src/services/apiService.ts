@@ -200,7 +200,7 @@ const uploadToStorage = async (bucket: string, path: string, file: File) => {
 };
 
 const PRODUCT_LIST_SELECT =
-  "id,name,product_code,urdu_name,brand_name,product_type,vendor_id,category,price,cost_price,barcode,unit,warehouse,stock,reorder_point,reorder_qty,description,is_active,company_id,owner_id,created_at,updated_at";
+  "id,name,product_code,urdu_name,brand_name,product_type,vendor_id,category,price,cost_price,barcode,unit,warehouse,stock,reorder_point,reorder_qty,description,image_thumb,is_active,company_id,owner_id,created_at,updated_at";
 const CUSTOMER_LIST_SELECT =
   "id,name,customer_code,email,phone,address,city,state,country,category,opening_balance,notes,company_id,owner_id,created_at,updated_at";
 const VENDOR_LIST_SELECT =
@@ -230,6 +230,47 @@ const dataUrlToFile = async (dataUrl: string, fallbackName: string) => {
   const mime = blob.type || "image/png";
   const ext = mime.split("/")[1]?.replace(/[^a-z0-9]/gi, "") || "png";
   return new File([blob], `${fallbackName}.${ext}`, { type: mime });
+};
+
+const createImageThumbnail = async (
+  source: File | string,
+  fallbackName: string,
+  maxSize = 160
+) => {
+  const file =
+    source instanceof File ? source : await dataUrlToFile(source, fallbackName);
+
+  if (typeof document === "undefined") {
+    return file;
+  }
+
+  const imageUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("Failed to load image for thumbnail"));
+      el.src = imageUrl;
+    });
+
+    const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(image, 0, 0, width, height);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/webp", 0.82)
+    );
+    if (!blob) return file;
+    return new File([blob], `${fallbackName}.webp`, { type: "image/webp" });
+  } finally {
+    URL.revokeObjectURL(imageUrl);
+  }
 };
 
 const uploadEntityImage = async (
@@ -292,6 +333,52 @@ const resolveEntityImage = async (
 
   if (typeof next.image === "string") {
     next.image = next.image.trim() || null;
+  }
+
+  return next;
+};
+
+const resolveProductImages = async (record: any) => {
+  const next = { ...(record || {}) };
+  const imageFile = next.imageFile;
+  delete next.imageFile;
+
+  if (imageFile instanceof File) {
+    const companyId = next?.company_id ?? next?.companyId ?? getActiveCompanyId();
+    const baseName = sanitizeFileNameSegment(next?.name, "product");
+    const thumbFile = await createImageThumbnail(imageFile, `${baseName}-thumb`).catch(() => imageFile);
+    next.image = await uploadEntityImage("products", imageFile, baseName, companyId);
+    next.imageThumb = await uploadEntityImage("products", thumbFile, `${baseName}-thumb`, companyId);
+    return next;
+  }
+
+  if (isDataUrl(next.image)) {
+    const companyId = next?.company_id ?? next?.companyId ?? getActiveCompanyId();
+    const baseName = sanitizeFileNameSegment(next?.name, "product");
+    const thumbFile = await createImageThumbnail(next.image, `${baseName}-thumb`).catch(async () =>
+      dataUrlToFile(next.image, `${baseName}-thumb`)
+    );
+    next.image = await uploadEntityImage("products", next.image, baseName, companyId);
+    next.imageThumb = await uploadEntityImage(
+      "products",
+      await thumbFile,
+      `${baseName}-thumb`,
+      companyId
+    );
+    return next;
+  }
+
+  if (typeof next.image === "string") {
+    const trimmed = next.image.trim();
+    next.image = trimmed || null;
+    if (!trimmed) {
+      next.imageThumb = null;
+    } else {
+      next.imageThumb =
+        typeof next.imageThumb === "string" && next.imageThumb.trim()
+          ? next.imageThumb.trim()
+          : trimmed;
+    }
   }
 
   return next;
@@ -416,6 +503,7 @@ const mapProductFromDb = (row: any) => ({
   reorderQty: row.reorder_qty ?? row.reorderQty ?? 1,
   brandName: row.brand_name ?? row.brandName,
   productType: row.product_type ?? row.productType,
+  imageThumb: row.image_thumb ?? row.imageThumb,
   isActive: row.is_active ?? row.isActive ?? true,
 });
 
@@ -452,6 +540,7 @@ const mapProductToDb = (product: any) =>
         reorder_qty: toNumberOr(product.reorderQty ?? product.reorder_qty, 1),
         brand_name: product.brandName ?? product.brand_name,
         product_type: product.productType ?? product.product_type,
+        image_thumb: product.imageThumb ?? product.image_thumb ?? null,
         is_active: product.isActive ?? product.is_active ?? true,
       },
       [
@@ -463,6 +552,7 @@ const mapProductToDb = (product: any) =>
         "reorderQty",
         "brandName",
         "productType",
+        "imageThumb",
         "packagingEnabled",
         "packagings",
         "stockAvailable",
@@ -1554,7 +1644,7 @@ export const productAPI = {
   },
   create: async (product: any) => {
     await ensurePermission("products.write");
-    const productWithImage = await resolveEntityImage("products", attachOwnership(product), "name");
+    const productWithImage = await resolveProductImages(attachOwnership(product));
     const productPayload = sanitizeProductPayload(
       mapProductToDb(productWithImage)
     );
@@ -1588,7 +1678,7 @@ export const productAPI = {
   },
   update: async (id: string, product: any) => {
     await ensurePermission("products.write");
-    const productWithImage = await resolveEntityImage("products", product, "name");
+    const productWithImage = await resolveProductImages(product);
     const productPayload = sanitizeProductPayload(mapProductToDb(productWithImage));
     // Opening stock is create-only. Ignore stock fields on product updates.
     if ("stock" in productPayload) delete productPayload.stock;

@@ -262,10 +262,10 @@ const ProductsPage: React.FC<ProductsPageProps> = ({ products, categories, vendo
                   <td className="px-4 py-5">
                     <div className="flex items-center space-x-3">
                       <div className="relative group/image w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-950/40 flex items-center justify-center text-lg shadow-inner border border-orange-100 dark:border-orange-900/30 overflow-hidden shrink-0">
-                        {product.image ? (
+                        {(product.imageThumb || product.image) ? (
                           <>
                             <img
-                              src={product.image}
+                              src={product.imageThumb || product.image}
                               alt={product.name}
                               className="w-full h-full object-cover cursor-pointer transition-transform duration-200 group-hover/image:scale-105"
                               onClick={(e) => {

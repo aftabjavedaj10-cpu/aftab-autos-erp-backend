@@ -18,6 +18,7 @@ export interface Product {
   reorderQty?: number;
   unit: string;
   image?: string;
+  imageThumb?: string;
   warehouse?: string;
   productType?: 'Product' | 'Service';
   description?: string;
