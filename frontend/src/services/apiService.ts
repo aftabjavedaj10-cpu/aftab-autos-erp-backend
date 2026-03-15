@@ -202,9 +202,9 @@ const uploadToStorage = async (bucket: string, path: string, file: File) => {
 const PRODUCT_LIST_SELECT =
   "id,name,product_code,urdu_name,brand_name,product_type,vendor_id,category,price,cost_price,barcode,unit,warehouse,stock,reorder_point,reorder_qty,description,is_active,company_id,owner_id,created_at,updated_at";
 const CUSTOMER_LIST_SELECT =
-  "id,name,customer_code,email,phone,address,city,state,country,category,opening_balance,balance,notes,company_id,owner_id,created_at,updated_at";
+  "id,name,customer_code,email,phone,address,city,state,country,category,opening_balance,notes,company_id,owner_id,created_at,updated_at";
 const VENDOR_LIST_SELECT =
-  "id,name,vendor_code,email,phone,address,city,state,country,category,opening_balance,balance,payable_balance,notes,company_id,owner_id,created_at,updated_at";
+  "id,name,vendor_code,email,phone,address,city,state,country,category,opening_balance,notes,company_id,owner_id,created_at,updated_at";
 const SALES_DOC_LIST_SELECT =
   "id,customer_id,customer_name,reference,vehicle_number,date,due_date,status,payment_status,notes,overall_discount,amount_received,total_amount,company_id,owner_id,created_at,updated_at";
 const PURCHASE_DOC_LIST_SELECT =
