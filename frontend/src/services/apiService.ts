@@ -208,7 +208,7 @@ const VENDOR_LIST_SELECT =
 const SALES_DOC_LIST_SELECT =
   "id,customer_id,customer_name,reference,vehicle_number,date,due_date,status,payment_status,notes,overall_discount,amount_received,total_amount,company_id,owner_id,created_at,updated_at";
 const PURCHASE_DOC_LIST_SELECT =
-  "id,vendor_id,vendor_name,reference,vehicle_number,date,due_date,status,payment_status,notes,overall_discount,amount_received,total_amount,company_id,owner_id,created_at,updated_at";
+  "id,vendor_id,vendor_name,reference,vehicle_number,date,due_date,status,payment_status,notes,overall_discount,amount_paid,total_amount,company_id,owner_id,created_at,updated_at";
 const ENTITY_IMAGES_BUCKET = "entity-images";
 const LEGACY_IMAGES_BUCKET = "company-logos";
 
