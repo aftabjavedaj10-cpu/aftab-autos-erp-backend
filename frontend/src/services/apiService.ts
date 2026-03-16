@@ -698,6 +698,17 @@ const normalizeQtyBase = (row: any, qtyPack: number, packFactor: number) => {
   return Number.isFinite(value) && value > 0 ? value : qtyPack * packFactor;
 };
 const normalizePackagingId = (row: any) => row?.packagingId ?? row?.packaging_id ?? null;
+const sortDetailItems = (rows: any[]) =>
+  [...rows].sort((a: any, b: any) => {
+    const aId = Number(a?.id);
+    const bId = Number(b?.id);
+    const aNum = Number.isFinite(aId);
+    const bNum = Number.isFinite(bId);
+    if (aNum && bNum) return aId - bId;
+    if (aNum) return -1;
+    if (bNum) return 1;
+    return String(a?.id ?? "").localeCompare(String(b?.id ?? ""));
+  });
 
 const mapSalesInvoiceFromDb = (row: any) => ({
   id: row.id,
@@ -715,7 +726,7 @@ const mapSalesInvoiceFromDb = (row: any) => ({
   totalAmount: row.total_amount ?? row.totalAmount ?? 0,
   createdAt: row.created_at ?? row.createdAt,
   updatedAt: row.updated_at ?? row.updatedAt,
-  items: Array.isArray(row.items) ? row.items.map(mapSalesInvoiceItemFromDb) : [],
+  items: Array.isArray(row.items) ? sortDetailItems(row.items).map(mapSalesInvoiceItemFromDb) : [],
 });
 
 const mapSalesInvoiceItemFromDb = (row: any) => {
@@ -757,7 +768,7 @@ const mapQuotationFromDb = (row: any) => ({
   overallDiscount: row.overall_discount ?? row.overallDiscount ?? 0,
   amountReceived: row.amount_received ?? row.amountReceived ?? 0,
   totalAmount: row.total_amount ?? row.totalAmount ?? 0,
-  items: Array.isArray(row.items) ? row.items.map(mapQuotationItemFromDb) : [],
+  items: Array.isArray(row.items) ? sortDetailItems(row.items).map(mapQuotationItemFromDb) : [],
 });
 
 const mapQuotationItemFromDb = (row: any) => {
@@ -891,7 +902,7 @@ const mapSalesReturnFromDb = (row: any) => ({
   totalAmount: row.total_amount ?? row.totalAmount ?? 0,
   createdAt: row.created_at ?? row.createdAt,
   updatedAt: row.updated_at ?? row.updatedAt,
-  items: Array.isArray(row.items) ? row.items.map(mapSalesReturnItemFromDb) : [],
+  items: Array.isArray(row.items) ? sortDetailItems(row.items).map(mapSalesReturnItemFromDb) : [],
 });
 
 const mapSalesReturnItemFromDb = (row: any) => {
@@ -1138,7 +1149,7 @@ const mapPurchaseOrderFromDb = (row: any) => ({
   totalAmount: row.total_amount ?? row.totalAmount ?? 0,
   createdAt: row.created_at ?? row.createdAt,
   updatedAt: row.updated_at ?? row.updatedAt,
-  items: Array.isArray(row.items) ? row.items.map(mapPurchaseOrderItemFromDb) : [],
+  items: Array.isArray(row.items) ? sortDetailItems(row.items).map(mapPurchaseOrderItemFromDb) : [],
 });
 
 const mapPurchaseOrderItemFromDb = (row: any) => {
@@ -1234,7 +1245,7 @@ const mapPurchaseReturnFromDb = (row: any) => ({
   totalAmount: row.total_amount ?? row.totalAmount ?? 0,
   createdAt: row.created_at ?? row.createdAt,
   updatedAt: row.updated_at ?? row.updatedAt,
-  items: Array.isArray(row.items) ? row.items.map(mapPurchaseReturnItemFromDb) : [],
+  items: Array.isArray(row.items) ? sortDetailItems(row.items).map(mapPurchaseReturnItemFromDb) : [],
 });
 
 const mapPurchaseReturnItemFromDb = (row: any) => {
