@@ -698,8 +698,19 @@ const normalizeQtyBase = (row: any, qtyPack: number, packFactor: number) => {
   return Number.isFinite(value) && value > 0 ? value : qtyPack * packFactor;
 };
 const normalizePackagingId = (row: any) => row?.packagingId ?? row?.packaging_id ?? null;
+const normalizeLineOrder = (row: any) => {
+  const value = Number(row?.lineOrder ?? row?.line_order ?? 0);
+  return Number.isFinite(value) && value > 0 ? value : 0;
+};
 const sortDetailItems = (rows: any[]) =>
   [...rows].sort((a: any, b: any) => {
+    const aOrder = normalizeLineOrder(a);
+    const bOrder = normalizeLineOrder(b);
+    if (aOrder !== bOrder) {
+      if (aOrder === 0) return 1;
+      if (bOrder === 0) return -1;
+      return aOrder - bOrder;
+    }
     const aId = Number(a?.id);
     const bId = Number(b?.id);
     const aNum = Number.isFinite(aId);
@@ -735,6 +746,7 @@ const mapSalesInvoiceItemFromDb = (row: any) => {
   const qtyBase = normalizeQtyBase(row, quantity, packFactor);
   return {
   id: row.id,
+  lineOrder: normalizeLineOrder(row) || undefined,
   invoiceId: row.invoice_id ?? row.invoiceId,
   productId: row.product_id ?? row.productId,
   productCode: row.product_code ?? row.productCode,
@@ -812,12 +824,13 @@ const mapSalesInvoiceToDb = (invoice: any) =>
     ["items", "customerId", "customerName", "vehicleNumber", "dueDate", "paymentStatus", "overallDiscount", "amountReceived", "totalAmount"]
   );
 
-const mapSalesInvoiceItemToDb = (item: any, invoiceId: string) => {
+const mapSalesInvoiceItemToDb = (item: any, invoiceId: string, lineOrder?: number) => {
   const qtyPack = normalizeLineQuantity(item);
   const packFactor = normalizePackFactor(item);
   const qtyBase = normalizeQtyBase(item, qtyPack, packFactor);
   return {
     invoice_id: invoiceId,
+    line_order: Number(lineOrder ?? item.lineOrder ?? item.line_order ?? 0) || 0,
     product_id: item.productId ?? item.product_id ?? null,
     product_code: item.productCode ?? item.product_code ?? "",
     product_name: item.productName ?? item.product_name ?? "",
@@ -2241,8 +2254,8 @@ export const salesInvoiceAPI = {
       await apiCall(
         "/sales_invoice_items",
         "POST",
-        items.map((item: any) =>
-          attachCompanyId(mapSalesInvoiceItemToDb(item, header.id))
+        items.map((item: any, index: number) =>
+          attachCompanyId(mapSalesInvoiceItemToDb(item, header.id, index + 1))
         ),
         true
       );
@@ -2259,8 +2272,8 @@ export const salesInvoiceAPI = {
         await apiCall(
           "/sales_invoice_items",
           "POST",
-          items.map((item: any) =>
-            attachCompanyId(mapSalesInvoiceItemToDb(item, id))
+          items.map((item: any, index: number) =>
+            attachCompanyId(mapSalesInvoiceItemToDb(item, id, index + 1))
           ),
           true
         );

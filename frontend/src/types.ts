@@ -100,6 +100,7 @@ export interface Customer {
 
 export interface SalesInvoiceItem {
   id?: string | number;
+  lineOrder?: number;
   productId: string;
   productName: string;
   description?: string;
