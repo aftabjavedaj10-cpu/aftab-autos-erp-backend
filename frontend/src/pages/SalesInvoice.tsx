@@ -80,6 +80,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [refSearch, setRefSearch] = useState("");
+  const [vehicleSearch, setVehicleSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [startDate, setStartDate] = useState("");
@@ -110,6 +111,9 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
       const matchesRef =
         !refSearch ||
         (inv.reference?.toLowerCase() || "").includes(refSearch.toLowerCase());
+      const matchesVehicle =
+        !vehicleSearch ||
+        (inv.vehicleNumber?.toLowerCase() || "").includes(vehicleSearch.toLowerCase());
       const matchesStatus =
         statusFilter === "All Status" ||
         (["Draft", "Pending", "Approved", "Void", "Deleted"].includes(statusFilter) &&
@@ -134,18 +138,19 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
       return (
         matchesSearch &&
         matchesRef &&
+        matchesVehicle &&
         matchesStatus &&
         matchesStart &&
         matchesEnd &&
         matchesProduct
       );
     });
-  }, [invoices, searchQuery, refSearch, productSearch, statusFilter, startDate, endDate]);
+  }, [invoices, searchQuery, refSearch, vehicleSearch, productSearch, statusFilter, startDate, endDate]);
 
   useEffect(() => {
     setCurrentPage(1);
     setSelectedIds(new Set());
-  }, [searchQuery, refSearch, productSearch, statusFilter, startDate, endDate]);
+  }, [searchQuery, refSearch, vehicleSearch, productSearch, statusFilter, startDate, endDate]);
 
   useEffect(() => {
     if (!statusFilterPreset) return;
@@ -186,6 +191,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
   const resetFilters = () => {
     setSearchQuery("");
     setRefSearch("");
+    setVehicleSearch("");
     setProductSearch("");
     setStatusFilter("All Status");
     setStartDate("");
@@ -262,6 +268,18 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                 className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-11 pr-3 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-[11px] dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
                 value={refSearch}
                 onChange={(e) => setRefSearch(e.target.value)}
+              />
+            </div>
+            <div className="md:col-span-3 relative">
+              <span className="absolute inset-y-0 left-4 flex items-center text-slate-400 text-[9px] font-black uppercase tracking-widest">
+                VH
+              </span>
+              <input
+                type="text"
+                placeholder="Search Vehicle Number..."
+                className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl py-2 pl-11 pr-3 focus:outline-none focus:ring-4 focus:ring-orange-500/10 transition-all text-[11px] dark:text-white font-bold placeholder:text-slate-400 placeholder:font-medium"
+                value={vehicleSearch}
+                onChange={(e) => setVehicleSearch(e.target.value)}
               />
             </div>
             <div className="md:col-span-3 relative">
@@ -382,6 +400,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                   <th className="px-4 py-3">{againstInvoiceColumnLabel}</th>
                 )}
                 <th className="px-4 py-3">{referenceColumnLabel}</th>
+                <th className="px-4 py-3">Vehicle #</th>
                 <th className="px-4 py-3">Date / Due</th>
                 <th className="px-4 py-3">Total Amount</th>
                 {showBalanceColumn && <th className="px-4 py-3">Balance Amount</th>}
@@ -438,6 +457,11 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                   <td className="px-4 py-3">
                     <span className="text-[9px] font-black uppercase bg-slate-50 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded border border-slate-100 dark:border-slate-700">
                       {inv.reference || "No Ref"}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="text-[9px] font-black uppercase bg-slate-50 dark:bg-slate-800 text-slate-500 px-2 py-1 rounded border border-slate-100 dark:border-slate-700">
+                      {inv.vehicleNumber || "-"}
                     </span>
                   </td>
                   <td className="px-4 py-3">
@@ -507,7 +531,7 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
                 <tr>
                   <td
                     colSpan={
-                      8 +
+                      9 +
                       (showAgainstInvoiceColumn ? 1 : 0) +
                       (showBalanceColumn ? 1 : 0)
                     }
