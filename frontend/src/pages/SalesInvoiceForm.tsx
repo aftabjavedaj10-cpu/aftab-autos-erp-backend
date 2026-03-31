@@ -2100,6 +2100,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               <p><span className="font-semibold">Customer Name :</span> <span className="font-black">{currentCustomer?.name || "-"}</span></p>
               <p><span className="font-semibold">Payment Type :</span> <span className="font-black">{(formData.amountReceived || 0) > 0 ? "Cash/Card" : "-"}</span></p>
             </div>
+            {String(formData.vehicleNumber || "").trim() ? (
+              <div className="mb-2 text-center">
+                <p className="text-[11px] font-semibold">Vehicle Number</p>
+                <p className="text-[12px] font-black uppercase tracking-wide">
+                  {String(formData.vehicleNumber || "").trim()}
+                </p>
+              </div>
+            ) : null}
 
             <table className="w-full text-[10px] border-y border-black mb-2">
               <thead>
