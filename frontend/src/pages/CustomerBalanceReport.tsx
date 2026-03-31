@@ -29,6 +29,12 @@ const inDateRange = (dateValue: unknown, startDate: string, endDate: string) => 
   return date >= startDate && date <= endDate;
 };
 
+const isBeforeDate = (dateValue: unknown, startDate: string) => {
+  const date = String(dateValue || "").slice(0, 10);
+  if (!date) return false;
+  return date < startDate;
+};
+
 const CustomerBalanceReportPage: React.FC<CustomerBalanceReportPageProps> = ({
   onBack,
   onOpenCustomerLedger,
@@ -60,27 +66,47 @@ const CustomerBalanceReportPage: React.FC<CustomerBalanceReportPageProps> = ({
       .map((customer) => {
         const customerId = String(customer.id || "");
         const customerName = String(customer.name || "");
+        const normalizedCustomerName = customerName.trim().toLowerCase();
         const opening = toNumber(customer.openingBalance);
+
+        const matchesCustomer = (rowCustomerId?: unknown, rowCustomerName?: unknown) =>
+          String(rowCustomerId || "") === customerId ||
+          String(rowCustomerName || "").trim().toLowerCase() === normalizedCustomerName;
+
+        const salesBeforeStart = salesInvoices
+          .filter((inv) => isVisibleStatus((inv as any).status))
+          .filter((inv) => isBeforeDate(inv.date, startDate))
+          .filter((inv) => matchesCustomer(inv.customerId, inv.customerName))
+          .reduce((sum, inv) => sum + toNumber(inv.totalAmount), 0);
 
         const sales = salesInvoices
           .filter((inv) => isVisibleStatus((inv as any).status))
           .filter((inv) => inDateRange(inv.date, startDate, endDate))
-          .filter(
-            (inv) =>
-              String(inv.customerId || "") === customerId ||
-              String(inv.customerName || "").trim().toLowerCase() === customerName.trim().toLowerCase()
-          )
+          .filter((inv) => matchesCustomer(inv.customerId, inv.customerName))
+          .reduce((sum, inv) => sum + toNumber(inv.totalAmount), 0);
+
+        const returnsBeforeStart = salesReturns
+          .filter((inv) => isVisibleStatus((inv as any).status))
+          .filter((inv) => isBeforeDate(inv.date, startDate))
+          .filter((inv) => matchesCustomer(inv.customerId, inv.customerName))
           .reduce((sum, inv) => sum + toNumber(inv.totalAmount), 0);
 
         const returns = salesReturns
           .filter((inv) => isVisibleStatus((inv as any).status))
           .filter((inv) => inDateRange(inv.date, startDate, endDate))
-          .filter(
-            (inv) =>
-              String(inv.customerId || "") === customerId ||
-              String(inv.customerName || "").trim().toLowerCase() === customerName.trim().toLowerCase()
-          )
+          .filter((inv) => matchesCustomer(inv.customerId, inv.customerName))
           .reduce((sum, inv) => sum + toNumber(inv.totalAmount), 0);
+
+        const receiptsBeforeStart = receivePayments
+          .filter((pay) => isVisibleStatus((pay as any).status))
+          .filter((pay) => isBeforeDate(pay.date, startDate))
+          .filter((pay) => {
+            const byId = customerId && String(pay.customerId || "") === customerId;
+            const byName = String(pay.customerName || "").trim().toLowerCase() === normalizedCustomerName;
+            const fallbackIdByName = customerByName.get(String(pay.customerName || "").trim().toLowerCase()) || "";
+            return byId || byName || (customerId && fallbackIdByName === customerId);
+          })
+          .reduce((sum, pay) => sum + toNumber(pay.totalAmount), 0);
 
         const receipts = receivePayments
           .filter((pay) => isVisibleStatus((pay as any).status))
@@ -93,14 +119,15 @@ const CustomerBalanceReportPage: React.FC<CustomerBalanceReportPageProps> = ({
           })
           .reduce((sum, pay) => sum + toNumber(pay.totalAmount), 0);
 
-        const closing = opening + sales - returns - receipts;
+        const periodOpening = opening + salesBeforeStart - returnsBeforeStart - receiptsBeforeStart;
+        const closing = periodOpening + sales - returns - receipts;
         const side = closing > 0 ? "DR" : closing < 0 ? "CR" : "Zero";
 
         return {
           id: customerId,
           name: customerName,
           customerCode: String(customer.customerCode || ""),
-          opening,
+          opening: periodOpening,
           sales,
           returns,
           receipts,
