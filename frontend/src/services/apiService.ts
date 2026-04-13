@@ -171,6 +171,23 @@ const functionCall = async (path: string, body: any) => {
   }
 };
 
+const fetchAllPaged = async (pathBuilder: (limit: number, offset: number) => string) => {
+  const pageSize = 1000;
+  let offset = 0;
+  let allRows: any[] = [];
+
+  while (true) {
+    const rows = await apiCall(pathBuilder(pageSize, offset));
+    const batch = Array.isArray(rows) ? rows : [];
+    allRows = allRows.concat(batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+    if (offset > 1000000) break;
+  }
+
+  return allRows;
+};
+
 const uploadToStorage = async (bucket: string, path: string, file: File) => {
   const tracked = startGlobalLoading();
   try {
@@ -2215,21 +2232,10 @@ export const warehouseAPI = {
 export const salesInvoiceAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const pageSize = 1000;
-    let offset = 0;
-    let allRows: any[] = [];
-
-    while (true) {
-      const rows = await apiCall(
-        `/sales_invoices?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc&limit=${pageSize}&offset=${offset}`
-      );
-      const batch = Array.isArray(rows) ? rows : [];
-      allRows = allRows.concat(batch);
-      if (batch.length < pageSize) break;
-      offset += pageSize;
-      if (offset > 1000000) break;
-    }
-
+    const allRows = await fetchAllPaged(
+      (limit, offset) =>
+        `/sales_invoices?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc&limit=${limit}&offset=${offset}`
+    );
     return allRows.map((row) => mapSalesInvoiceFromDb({ ...row, items: [] }));
   },
   getById: async (id: string) => {
@@ -2312,10 +2318,11 @@ export const salesInvoiceAPI = {
 export const quotationAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(`/quotations?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc`);
-    return Array.isArray(rows)
-      ? rows.map((row) => mapQuotationFromDb({ ...row, items: [] }))
-      : rows;
+    const rows = await fetchAllPaged(
+      (limit, offset) =>
+        `/quotations?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc&limit=${limit}&offset=${offset}`
+    );
+    return rows.map((row) => mapQuotationFromDb({ ...row, items: [] }));
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2383,10 +2390,11 @@ export const quotationAPI = {
 export const salesReturnAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(`/sales_returns?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc`);
-    return Array.isArray(rows)
-      ? rows.map((row) => mapSalesReturnFromDb({ ...row, items: [] }))
-      : rows;
+    const rows = await fetchAllPaged(
+      (limit, offset) =>
+        `/sales_returns?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc&limit=${limit}&offset=${offset}`
+    );
+    return rows.map((row) => mapSalesReturnFromDb({ ...row, items: [] }));
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2475,8 +2483,11 @@ export const salesReturnAPI = {
 export const receivePaymentAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall("/receive_payments?select=*&order=created_at.desc");
-    return Array.isArray(rows) ? rows.map(mapReceivePaymentFromDb) : rows;
+    const rows = await fetchAllPaged(
+      (limit, offset) =>
+        `/receive_payments?select=*&order=created_at.desc&limit=${limit}&offset=${offset}`
+    );
+    return rows.map(mapReceivePaymentFromDb);
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2525,8 +2536,11 @@ export const receivePaymentAPI = {
 export const makePaymentAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall("/make_payments?select=*&order=created_at.desc");
-    return Array.isArray(rows) ? rows.map(mapMakePaymentFromDb) : rows;
+    const rows = await fetchAllPaged(
+      (limit, offset) =>
+        `/make_payments?select=*&order=created_at.desc&limit=${limit}&offset=${offset}`
+    );
+    return rows.map(mapMakePaymentFromDb);
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2575,10 +2589,11 @@ export const makePaymentAPI = {
 export const purchaseInvoiceAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(`/purchase_invoices?select=${PURCHASE_DOC_LIST_SELECT}&order=created_at.desc`);
-    return Array.isArray(rows)
-      ? rows.map((row) => mapPurchaseInvoiceFromDb({ ...row, items: [] }))
-      : rows;
+    const rows = await fetchAllPaged(
+      (limit, offset) =>
+        `/purchase_invoices?select=${PURCHASE_DOC_LIST_SELECT}&order=created_at.desc&limit=${limit}&offset=${offset}`
+    );
+    return rows.map((row) => mapPurchaseInvoiceFromDb({ ...row, items: [] }));
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2669,10 +2684,11 @@ export const purchaseInvoiceAPI = {
 export const purchaseOrderAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(`/purchase_orders?select=${PURCHASE_DOC_LIST_SELECT}&order=created_at.desc`);
-    return Array.isArray(rows)
-      ? rows.map((row) => mapPurchaseOrderFromDb({ ...row, items: [] }))
-      : rows;
+    const rows = await fetchAllPaged(
+      (limit, offset) =>
+        `/purchase_orders?select=${PURCHASE_DOC_LIST_SELECT}&order=created_at.desc&limit=${limit}&offset=${offset}`
+    );
+    return rows.map((row) => mapPurchaseOrderFromDb({ ...row, items: [] }));
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
@@ -2744,10 +2760,11 @@ export const purchaseOrderAPI = {
 export const purchaseReturnAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(`/purchase_returns?select=${PURCHASE_DOC_LIST_SELECT}&order=created_at.desc`);
-    return Array.isArray(rows)
-      ? rows.map((row) => mapPurchaseReturnFromDb({ ...row, items: [] }))
-      : rows;
+    const rows = await fetchAllPaged(
+      (limit, offset) =>
+        `/purchase_returns?select=${PURCHASE_DOC_LIST_SELECT}&order=created_at.desc&limit=${limit}&offset=${offset}`
+    );
+    return rows.map((row) => mapPurchaseReturnFromDb({ ...row, items: [] }));
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
