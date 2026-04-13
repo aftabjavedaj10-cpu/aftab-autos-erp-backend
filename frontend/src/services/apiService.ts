@@ -2215,10 +2215,22 @@ export const warehouseAPI = {
 export const salesInvoiceAPI = {
   getAll: async () => {
     await ensurePermission("sales_invoices.read");
-    const rows = await apiCall(`/sales_invoices?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc`);
-    return Array.isArray(rows)
-      ? rows.map((row) => mapSalesInvoiceFromDb({ ...row, items: [] }))
-      : rows;
+    const pageSize = 1000;
+    let offset = 0;
+    let allRows: any[] = [];
+
+    while (true) {
+      const rows = await apiCall(
+        `/sales_invoices?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc&limit=${pageSize}&offset=${offset}`
+      );
+      const batch = Array.isArray(rows) ? rows : [];
+      allRows = allRows.concat(batch);
+      if (batch.length < pageSize) break;
+      offset += pageSize;
+      if (offset > 1000000) break;
+    }
+
+    return allRows.map((row) => mapSalesInvoiceFromDb({ ...row, items: [] }));
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
