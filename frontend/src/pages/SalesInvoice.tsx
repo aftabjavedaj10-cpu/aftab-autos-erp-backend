@@ -128,13 +128,12 @@ const SalesInvoicePage: React.FC<SalesInvoicePageProps> = ({
       const matchesEnd = !endDateObj || invDate <= endDateObj;
       const matchesProduct =
         !productSearch ||
-        !Array.isArray(inv.items) ||
-        inv.items.length === 0 ||
-        inv.items.some(
+        (Array.isArray(inv.items) &&
+          inv.items.some(
           (item) =>
-            item.productName.toLowerCase().includes(productSearch.toLowerCase()) ||
+            String(item.productName || "").toLowerCase().includes(productSearch.toLowerCase()) ||
             (item.productCode?.toLowerCase() || "").includes(productSearch.toLowerCase())
-        );
+        ));
       return (
         matchesSearch &&
         matchesRef &&

@@ -2234,9 +2234,9 @@ export const salesInvoiceAPI = {
     await ensurePermission("sales_invoices.read");
     const allRows = await fetchAllPaged(
       (limit, offset) =>
-        `/sales_invoices?select=${SALES_DOC_LIST_SELECT}&order=created_at.desc&limit=${limit}&offset=${offset}`
+        `/sales_invoices?select=${SALES_DOC_LIST_SELECT},items:sales_invoice_items(id,invoice_id,line_order,product_id,product_code,product_name)&order=created_at.desc&items.order=line_order.asc&limit=${limit}&offset=${offset}`
     );
-    return allRows.map((row) => mapSalesInvoiceFromDb({ ...row, items: [] }));
+    return allRows.map(mapSalesInvoiceFromDb);
   },
   getById: async (id: string) => {
     await ensurePermission("sales_invoices.read");
