@@ -524,6 +524,56 @@ const mapProductFromDb = (row: any) => ({
   isActive: row.is_active ?? row.isActive ?? true,
 });
 
+const hydrateProductsWithCurrentStock = async (products: any[]) => {
+  if (!Array.isArray(products) || products.length === 0) return products;
+  const companyId = getActiveCompanyId();
+  if (!companyId) return products;
+
+  const pageSize = 1000;
+  let offset = 0;
+  let ledgerRows: any[] = [];
+  while (true) {
+    const rows = await apiCall(
+      `/stock_ledger?select=product_id,qty,direction,reason&company_id=eq.${companyId}&order=created_at.desc&limit=${pageSize}&offset=${offset}`
+    ).catch(() => []);
+    const batch = Array.isArray(rows) ? rows : [];
+    ledgerRows = ledgerRows.concat(batch);
+    if (batch.length < pageSize) break;
+    offset += pageSize;
+    if (offset > 1000000) break;
+  }
+
+  if (ledgerRows.length === 0) return products;
+
+  const stockByProduct = new Map<string, { onHand: number; reserved: number; entries: number }>();
+  ledgerRows.forEach((row) => {
+    const productId = String(row?.product_id ?? row?.productId ?? "");
+    if (!productId) return;
+    const entry = stockByProduct.get(productId) || { onHand: 0, reserved: 0, entries: 0 };
+    const qty = Number(row?.qty ?? 0);
+    const direction = String(row?.direction ?? "").toUpperCase();
+    entry.onHand += direction === "OUT" ? -qty : qty;
+    if (direction === "OUT" && String(row?.reason ?? "").toLowerCase() === "invoice_pending") {
+      entry.reserved += qty;
+    }
+    entry.entries += 1;
+    stockByProduct.set(productId, entry);
+  });
+
+  return products.map((product) => {
+    const entry = stockByProduct.get(String(product.id));
+    if (!entry?.entries) return product;
+    const available = Math.max(0, entry.onHand - entry.reserved);
+    return {
+      ...product,
+      stock: entry.onHand,
+      stockOnHand: entry.onHand,
+      stockReserved: entry.reserved,
+      stockAvailable: available,
+    };
+  });
+};
+
 const mapProductToDb = (product: any) =>
   (() => {
     const toNumberOr = (value: any, fallback: number) => {
@@ -1633,7 +1683,7 @@ export const productAPI = {
       offset += pageSize;
       if (offset > 1000000) break;
     }
-    const mappedProducts = allRows.map(mapProductFromDb);
+    const mappedProducts = await hydrateProductsWithCurrentStock(allRows.map(mapProductFromDb));
     if (mappedProducts.length === 0) return mappedProducts;
 
     // Hydrate packaging rows with pagination so search lists don't miss variants on large datasets.

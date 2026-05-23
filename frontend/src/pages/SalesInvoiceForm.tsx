@@ -306,6 +306,27 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
     return options.find((x) => x.isDefault) || options[0];
   };
 
+  const formatQuantity = (value: number) =>
+    Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, "");
+
+  const formatSearchStock = (product: Product, packaging: ProductPackagingOption) => {
+    const onHandBase = Number(product.stockOnHand ?? product.stock ?? 0);
+    const availableBase = Number(product.stockAvailable ?? product.stock ?? 0);
+    const factor = Number(packaging.factor || 1);
+    if (factor > 1) {
+      return {
+        onHand: `${formatQuantity(onHandBase / factor)} ${packaging.name}`,
+        available: `${formatQuantity(availableBase / factor)} ${packaging.name}`,
+        base: `${formatQuantity(onHandBase)} ${product.unit}`,
+      };
+    }
+    return {
+      onHand: `${formatQuantity(onHandBase)} ${product.unit}`,
+      available: `${formatQuantity(availableBase)} ${product.unit}`,
+      base: "",
+    };
+  };
+
   const searchableProducts = useMemo(() => {
     const rows: ProductSearchOption[] = [];
     products.forEach((product) => {
@@ -1535,6 +1556,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                               availableProducts.map((option, idx) => {
                                 const p = option.product;
                                 const pack = option.packaging;
+                                const stock = formatSearchStock(p, pack);
                                 return (
                                 <button
                                   key={`${p.id}-${pack.id || pack.name}-${idx}`}
@@ -1605,7 +1627,7 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                     <div className={`text-[9px] ${
                                       selectedIndex === idx ? "text-orange-100" : "text-slate-400"
                                     }`}>
-                                      Stock: {p.stockOnHand ?? p.stock} {p.unit} (Avail: {p.stockAvailable ?? p.stock})
+                                      Stock: {stock.onHand} (Avail: {stock.available}){stock.base ? ` • ${stock.base}` : ""}
                                     </div>
                                   </div>
                                 </button>
