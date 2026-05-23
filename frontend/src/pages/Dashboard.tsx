@@ -2407,6 +2407,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
                   setReceivePayments((prev) => prev.filter((doc) => !idsToDelete.has(doc.id)));
                 }
 
+                await refreshInventoryViews("sales_invoice");
+
                 if (stayOnPage) {
                   setEditingSalesInvoice(saved);
                   setSalesInvoiceForceNewMode(false);
