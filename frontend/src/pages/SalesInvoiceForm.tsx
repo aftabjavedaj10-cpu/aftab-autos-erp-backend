@@ -1611,15 +1611,15 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                       <div className={`text-[11px] font-black uppercase tracking-tight ${
                                         selectedIndex === idx ? "text-white" : "text-slate-900 dark:text-white"
                                       }`}>{option.searchLabel}</div>
-                                      <div className={`text-[9px] ${
-                                        selectedIndex === idx ? "text-orange-100" : "text-slate-400"
+                                      <div className={`text-[11px] font-bold leading-tight mt-0.5 ${
+                                        selectedIndex === idx ? "text-orange-50" : "text-slate-600 dark:text-slate-300"
                                       }`}>
                                         SKU: {option.searchCode || p.id} • Unit: {pack.name || p.unit}
                                       </div>
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <div className={`text-[10px] font-black ${
+                                    <div className={`text-[13px] font-black leading-tight ${
                                       selectedIndex === idx ? "text-white" : "text-orange-600"
                                     }`}>
                                       {pack.salePrice ?? p.price}
