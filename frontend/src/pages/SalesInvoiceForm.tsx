@@ -1624,8 +1624,8 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
                                     }`}>
                                       {pack.salePrice ?? p.price}
                                     </div>
-                                    <div className={`text-[9px] ${
-                                      selectedIndex === idx ? "text-orange-100" : "text-slate-400"
+                                    <div className={`text-[12px] font-black leading-tight mt-1 ${
+                                      selectedIndex === idx ? "text-white" : "text-emerald-700 dark:text-emerald-300"
                                     }`}>
                                       Stock: {stock.onHand} (Avail: {stock.available}){stock.base ? ` • ${stock.base}` : ""}
                                     </div>
