@@ -1904,12 +1904,14 @@ const SalesInvoiceFormPage: React.FC<SalesInvoiceFormPageProps> = ({
               </div>
               {isSaveMenuOpen && (
                 <div className="absolute bottom-full right-0 mb-2 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-lg overflow-hidden z-[300]">
-                  <button
-                    onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Draft", true); }}
-                    className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
-                  >
-                    Save & Edit
-                  </button>
+                  {!isPending && (
+                    <button
+                      onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Draft", true); }}
+                      className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"
+                    >
+                      Save & Edit
+                    </button>
+                  )}
                   <button
                     onClick={() => { setIsSaveMenuOpen(false); handleSubmit("Pending", false); }}
                     className="w-full text-left px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:bg-orange-50 dark:hover:bg-slate-800"

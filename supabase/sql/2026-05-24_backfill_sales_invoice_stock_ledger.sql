@@ -19,7 +19,8 @@ insert into public.stock_ledger (
   reason,
   source,
   source_id,
-  source_ref
+  source_ref,
+  created_at
 )
 select
   coalesce(si.company_id, p.company_id),
@@ -29,7 +30,8 @@ select
   case when lower(trim(coalesce(si.status, ''))) = 'pending' then 'invoice_pending' else 'invoice_approved' end as reason,
   'sales_invoices' as source,
   si.id as source_id,
-  si.id as source_ref
+  si.id as source_ref,
+  coalesce(si.date::timestamptz, si.created_at, now()) as created_at
 from public.sales_invoices si
 join public.sales_invoice_items sii on sii.invoice_id = si.id
 join public.products p on p.id = sii.product_id
@@ -37,7 +39,7 @@ where lower(trim(coalesce(si.status, ''))) in ('pending', 'approved')
   and sii.product_id is not null
   and coalesce(si.company_id, p.company_id) is not null
   and lower(coalesce(p.product_type, 'product')) <> 'service'
-group by coalesce(si.company_id, p.company_id), si.id, si.status, sii.product_id
+group by coalesce(si.company_id, p.company_id), si.id, si.status, si.date, si.created_at, sii.product_id
 having sum(coalesce(sii.qty_base, sii.quantity::numeric)) > 0
 on conflict (source, source_id, product_id, direction)
 do update set
@@ -45,7 +47,7 @@ do update set
   qty = excluded.qty,
   reason = excluded.reason,
   source_ref = excluded.source_ref,
-  created_at = now();
+  created_at = excluded.created_at;
 
 insert into public.schema_migrations (filename, note)
 select
