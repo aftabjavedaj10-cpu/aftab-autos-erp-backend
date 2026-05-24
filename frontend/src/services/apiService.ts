@@ -2907,12 +2907,13 @@ export const stockLedgerAPI = {
       throw new Error("Service products are not stock-tracked");
     }
   },
-  listByCompany: async (companyId: string, limit = 2000) => {
+  listByCompany: async (companyId: string, maxRows = 100000) => {
     if (!companyId) return [];
-    const rows = await apiCall(
-      `/stock_ledger?select=*&company_id=eq.${companyId}&order=created_at.desc&limit=${limit}`
+    const rows = await fetchAllPaged(
+      (limit, offset) =>
+        `/stock_ledger?select=*&company_id=eq.${companyId}&order=created_at.desc&limit=${limit}&offset=${offset}`
     );
-    return Array.isArray(rows) ? rows.map(mapStockLedgerFromDb) : rows;
+    return rows.slice(0, maxRows).map(mapStockLedgerFromDb);
   },
   listRecent: async (companyId: string, limit = 50) => {
     if (!companyId) return [];

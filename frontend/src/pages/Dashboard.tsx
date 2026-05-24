@@ -288,7 +288,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onLogout, isDarkMode, onThemeTogg
       if (!needsLedgerRows(tab)) return [] as StockLedgerEntry[];
       const companyId = getActiveCompanyId();
       if (!companyId) return [] as StockLedgerEntry[];
-      const ledgerData = await stockLedgerAPI.listByCompany(companyId, 2000).catch(() => []);
+      const ledgerData = await stockLedgerAPI.listByCompany(companyId).catch(() => []);
       const normalizedLedger = Array.isArray(ledgerData)
         ? ledgerData
         : (ledgerData as any)?.data || [];
