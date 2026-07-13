@@ -46,7 +46,7 @@ begin
   )
   values (
     v_id,
-    nullif(p_invoice->>'customer_id', ''),
+    nullif(p_invoice->>'customer_id', '')::integer,
     coalesce(nullif(p_invoice->>'customer_name', ''), 'Unknown'),
     nullif(p_invoice->>'reference', ''),
     nullif(p_invoice->>'vehicle_number', ''),
