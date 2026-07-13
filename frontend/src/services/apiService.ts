@@ -1546,6 +1546,21 @@ const getLatestSalesInvoiceId = async () => {
   return rows[0]?.id ?? null;
 };
 
+const saveSalesInvoiceViaRpc = async (
+  invoicePayload: any,
+  items: any[],
+  isUpdate: boolean
+) => {
+  const invoiceId = String(invoicePayload?.id ?? "");
+  return apiCall("/rpc/save_sales_invoice", "POST", {
+    p_invoice: invoicePayload,
+    p_items: items.map((item: any, index: number) =>
+      attachCompanyId(mapSalesInvoiceItemToDb(item, invoiceId, index + 1))
+    ),
+    p_is_update: isUpdate,
+  });
+};
+
 const getLatestQuotationId = async () => {
   const rows = await apiCall("/quotations?select=id&order=created_at.desc&limit=1");
   if (!Array.isArray(rows) || rows.length === 0) return null;
@@ -2298,13 +2313,13 @@ export const salesInvoiceAPI = {
   create: async (invoice: any) => {
     await ensurePermission("sales_invoices.write");
     const withCompany = attachOwnership(invoice);
-    let header: any = null;
     let createPayload = mapSalesInvoiceToDb(withCompany);
+    const items = Array.isArray(invoice.items) ? invoice.items : [];
 
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
-        header = await apiCall("/sales_invoices", "POST", createPayload, true).then(firstRow);
-        break;
+        const saved = await saveSalesInvoiceViaRpc(createPayload, items, false);
+        return mapSalesInvoiceFromDb(saved);
       } catch (err) {
         if (!isSalesInvoiceDuplicateKeyError(err) || attempt === 2) {
           throw err;
@@ -2317,46 +2332,17 @@ export const salesInvoiceAPI = {
       }
     }
 
-    const items = Array.isArray(invoice.items) ? invoice.items : [];
-    if (items.length > 0) {
-      await apiCall(
-        "/sales_invoice_items",
-        "POST",
-        items.map((item: any, index: number) =>
-          attachCompanyId(mapSalesInvoiceItemToDb(item, header.id, index + 1))
-        ),
-        true
-      );
-    }
-
-    return salesInvoiceAPI.getById(header.id);
+    throw new Error("Failed to save sales invoice");
   },
   update: async (id: string, invoice: any) => {
     await ensurePermission("sales_invoices.write");
-    if (Array.isArray(invoice.items)) {
-      await apiCall(`/sales_invoice_items?invoice_id=eq.${id}`, "DELETE");
-      const items = invoice.items;
-      if (items.length > 0) {
-        await apiCall(
-          "/sales_invoice_items",
-          "POST",
-          items.map((item: any, index: number) =>
-            attachCompanyId(mapSalesInvoiceItemToDb(item, id, index + 1))
-          ),
-          true
-        );
-      }
-    }
-
-    // Patch header last (with forced updated_at) so stock trigger rebuilds from latest items.
-    await apiCall(
-      `/sales_invoices?id=eq.${id}`,
-      "PATCH",
-      { ...mapSalesInvoiceToDb(invoice), updated_at: new Date().toISOString() },
+    const withCompany = attachOwnership({ ...invoice, id });
+    const saved = await saveSalesInvoiceViaRpc(
+      mapSalesInvoiceToDb(withCompany),
+      Array.isArray(invoice.items) ? invoice.items : [],
       true
     );
-
-    return salesInvoiceAPI.getById(id);
+    return mapSalesInvoiceFromDb(saved);
   },
   delete: async (id: string) => {
     await ensurePermission("sales_invoices.delete");
