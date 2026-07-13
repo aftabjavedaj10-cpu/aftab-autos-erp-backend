@@ -58,8 +58,8 @@ begin
     coalesce(nullif(p_invoice->>'overall_discount', '')::numeric, 0),
     coalesce(nullif(p_invoice->>'amount_received', '')::numeric, 0),
     coalesce(nullif(p_invoice->>'total_amount', '')::numeric, 0),
-    nullif(p_invoice->>'company_id', ''),
-    nullif(p_invoice->>'owner_id', ''),
+    nullif(p_invoice->>'company_id', '')::uuid,
+    nullif(p_invoice->>'owner_id', '')::uuid,
     now()
   )
   on conflict (id) do update set
